@@ -1,0 +1,69 @@
+<project name='shore' default='all'>
+
+   <property file='build.properties' />
+
+   <available file="./build.properties" type='file' property='setup.done' />
+   <path id='setuppath'>
+      <pathelement location='../..' />
+   </path>
+   <path id='shorepath'>
+      <pathelement location='.' />
+   </path>
+   <property name='setupfile' refid='setuppath' />
+   <property name='shorefile' refid='shorepath' />
+   <property name='PRO' value='${setupfile}' />
+   <property name='SHORE' value='${shorefile}' />
+
+   <target name='setup' unless='setup.done'>
+      <echo file='./build.properties' message="PRO=${setupfile}${line.separator}" />
+      <echo file='./build.properties' message='SHORE=${shorefile}${line.separator}' append='true' />
+      <mkdir dir='./java/edu/brown/cs/shore' />
+      <property name='PRO' value='${setupfile}' />
+      <property name='SHORE' value='${shorefile}' />
+   </target>
+
+
+   <available file='${PRO}/ivy' type="dir" property="ivy.present" />
+   <property name='IVYLIB' value='${PRO}/ivy/lib' />
+
+   <property name='SHORELIB' value='${SHORE}/lib' />
+   <path id='spr.classpath'>
+     <pathelement location='${SHORE}/java' />
+     <pathelement location='${SHORE}/javasrc' />
+     <fileset dir='${SHORELIB}' includes='ivy.jar' />
+     <fileset dir='${SHORELIB}' includes='junit.jar' />
+     <fileset dir='${SHORELIB}' includes='json.jar' />
+     <fileset dir='${SHORELIB}' includes='nanohttpd.jar' />
+     <fileset dir='${SHORELIB}' includes='mongojava.jar' />
+     <fileset dir='${SHORELIB}' includes='jsoup.jar' />
+     <fileset dir='${SHORELIB}' includes='googleapi.jar' />
+     <fileset dir='${SHORELIB}' includes='karma.jar' />
+  </path>
+
+  <target name='all' depends='setup,compile,jar' />
+
+  <target name='compile' depends='setup'>
+     <javac srcdir='.' destdir='${SHORE}/java' debug='on' deprecation='on' includeantruntime='false'>
+	<classpath refid='spr.classpath' />
+     </javac>
+  </target>
+
+  <target name='jar' depends='compile'>
+     <jar destfile='shore.jar'>
+	<manifest>
+	   <attribute name='Main-Class' value='edu.brown.cs.shore.catmain.CatmainMain' />
+	</manifest>
+	<fileset dir='${SHORE}/java' includes='**/*.class' />
+	<zipfileset src='${SHORELIB}/ivy.jar' excludes='META-INF/*' />
+     </jar>
+     <copy file='shore.jar' tofile='${SHORE}/../bin/shore.jar' />
+   </target>
+
+   <target name='test-setup' depends='compile'>
+      <java classname='edu.brown.cs.shore.shoretest.ShoreTestSetup' fork='true'>
+	 <classpath refid='spr.classpath' />
+      </java>
+   </target>
+
+</project>
+
