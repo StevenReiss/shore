@@ -35,7 +35,7 @@
 
 package edu.brown.cs.spr.shore.network;
 
-
+import java.net.DatagramPacket;
 
 public interface NetworkConstants
 {
@@ -47,11 +47,24 @@ public interface NetworkConstants
 /*										*/
 /********************************************************************************/
 
-int	UDP_PORT = 2400;
+int	UDP_PORT = 2390;
 int	CONTROLER_PORT = 2390;
 int	ENGINE_PORT = 8266;
 
 int     BUFFER_SIZE = 40;
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Callbacks                                                               */
+/*                                                                              */
+/********************************************************************************/
+
+interface MessageHandler {
+   
+   void handleMessage(DatagramPacket msg);
+   
+}       // end of inner interface MessageHandler
 
 
 

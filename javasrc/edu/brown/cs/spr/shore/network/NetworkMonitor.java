@@ -42,6 +42,11 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
+import javax.jmdns.JmDNS;
+import javax.jmdns.ServiceEvent;
+import javax.jmdns.ServiceInfo;
+import javax.jmdns.ServiceListener;
+
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 public class NetworkMonitor implements NetworkConstants
@@ -57,6 +62,8 @@ public class NetworkMonitor implements NetworkConstants
 
 public static void main(String [] args)
 {
+   ShoreLog.setup();
+   
    NetworkMonitor mon = new NetworkMonitor();
    // possibly handle args
    
@@ -106,6 +113,19 @@ NetworkMonitor()
     }
    catch (SocketException e) { }
    
+   try {
+      JmDNS jmdns = JmDNS.create(InetAddress.getLocalHost());
+      jmdns.addServiceListener("_http._udp.local",new ServiceFinder());
+      ServiceInfo info = ServiceInfo.create("_http._udp.local","shore",UDP_PORT,"SHORE controller");
+      jmdns.registerService(info);
+      ServiceInfo [] allinfo = jmdns.list("_http._udp.local");
+      ShoreLog.logD("NETWORK","SERVICES " + allinfo.length);
+    }
+   catch (IOException e) {
+      ShoreLog.logE("NETWORK","Problem registering service",e);
+    }
+   
+   
    ShoreLog.logD("NETWORK","Monitor setup " + can_broadcast + " " + our_socket);
 }
 
@@ -119,7 +139,7 @@ NetworkMonitor()
 
 void start()
 {
-   ReaderThread rt = new ReaderThread();
+   ReaderThread rt = new ReaderThread(our_socket,new NotificationHandler());
    rt.start();
 }
 
@@ -145,29 +165,33 @@ public void sendMessage(InetAddress who,int port,byte [] msg,int off,int len)
     }
 }
 
+
+
 /********************************************************************************/
 /*                                                                              */
 /*      Handle incoming messages                                                */
 /*                                                                              */
 /********************************************************************************/
 
-private void handleMessage(DatagramPacket msg)
-{
-   StringBuffer buf = new StringBuffer();
-   byte [] data = msg.getData();
-   for (int i = 0; i < msg.getLength(); ++i) {
-      int v = data[i + msg.getOffset()];
-      String vs = Integer.toHexString(v);
-      if (vs.length() == 1) vs = "0" + vs;
-      buf.append(vs);
-      buf.append(" ");
+private class NotificationHandler implements MessageHandler {
+  
+   @Override public void handleMessage(DatagramPacket msg) {
+      StringBuffer buf = new StringBuffer();
+      byte [] data = msg.getData();
+      for (int i = 0; i < msg.getLength(); ++i) {
+         int v = data[i + msg.getOffset()];
+         String vs = Integer.toHexString(v);
+         if (vs.length() == 1) vs = "0" + vs;
+         buf.append(vs);
+         buf.append(" ");
+       }
+      
+      ShoreLog.logD("NETWORK","Received from " + msg.getAddress() + " " +
+            msg.getPort() + " " + msg.getLength() + " " + msg.getOffset() + ": " +
+            buf.toString());
     }
    
-   ShoreLog.logD("NETWORK","Received from " + msg.getAddress() + " " +
-         msg.getPort() + " " + msg.getLength() + " " + msg.getOffset() + ": " +
-         buf.toString());
-}
-
+}       // end of inner class NotificationHandler
 
 
 
@@ -179,17 +203,22 @@ private void handleMessage(DatagramPacket msg)
 
 private class ReaderThread extends Thread {
    
-   ReaderThread() {
-      super("UDP_READER_" + our_socket.getLocalPort());
+   private DatagramSocket reader_socket;
+   private MessageHandler msg_handler;
+   
+   ReaderThread(DatagramSocket s,MessageHandler h) {
+      super("UDP_READER_" + s.getLocalPort());
+      reader_socket = s;
+      msg_handler = h;
     }
    
    @Override public void run() {
       byte [] buf = new byte[BUFFER_SIZE];
       DatagramPacket packet = new DatagramPacket(buf,buf.length);
-      while (our_socket != null) {
+      while (reader_socket != null) {
          try {
-            our_socket.receive(packet);
-            handleMessage(packet);
+            reader_socket.receive(packet);
+            msg_handler.handleMessage(packet);
           }
          catch (SocketTimeoutException e) { }
          catch (IOException e) {
@@ -199,6 +228,30 @@ private class ReaderThread extends Thread {
        }
     }
 }
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Handle mDNS service discovery                                           */
+/*                                                                              */
+/********************************************************************************/
+
+public class ServiceFinder implements ServiceListener {
+   
+   @Override public void serviceAdded(ServiceEvent event) {
+      ShoreLog.logI("NETWORK","Service added: " + event.getInfo());
+    }
+   
+   @Override public void serviceRemoved(ServiceEvent event) {
+      ShoreLog.logI("NETWORK","Service added: " + event.getInfo());
+    }
+   
+   @Override public void serviceResolved(ServiceEvent event) {
+      ShoreLog.logI("NETWORK","Service added: " + event.getInfo());
+    }
+   
+}       // end of inner class ServiceFinder
 
 
 

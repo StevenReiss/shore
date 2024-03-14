@@ -51,6 +51,8 @@ public class ShoreLog extends IvyLog implements ShoreConstants
 public static void setup()
 {
    setupLogging("SHORE",true);
+   setLogLevel(LogLevel.DEBUG);
+   useStdErr(true);
 }
 
 
