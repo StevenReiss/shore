@@ -43,9 +43,11 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
 import javax.jmdns.JmDNS;
+import javax.jmdns.JmmDNS;
 import javax.jmdns.ServiceEvent;
 import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceListener;
+import javax.jmdns.ServiceTypeListener;
 
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
@@ -116,16 +118,21 @@ NetworkMonitor()
    catch (SocketException e) { }
 
    try {
-      JmDNS jmdns = JmDNS.create(InetAddress.getLocalHost());
-      jmdns.addServiceListener("_http._udp.local",new ServiceFinder());
-      ServiceInfo info = ServiceInfo.create("_http._udp.local","shore",UDP_PORT,"SHORE controller");
-      jmdns.registerService(info);
-      ServiceInfo [] allinfo = jmdns.list("_http._udp.local");
-      ShoreLog.logD("NETWORK","SERVICES " + allinfo.length);
+      JmmDNS jmm = JmmDNS.Factory.getInstance();
+      String [] names = jmm.getNames();
+      jmm.addServiceListener("_controller._udp.local.", new ServiceFinder());
+      jmm.addServiceTypeListener(new ServiceFinder());
+      jmm.registerServiceType("_controller._udp.local.");
+      ServiceInfo info = ServiceInfo.create("_controller._udp.local","shore",UDP_PORT,"SHORE controller");
+      jmm.registerService(info);
+      ServiceInfo [] allinfo = jmm.list("_controller._udp.local.");
+      ShoreLog.logD("NETWORK","SERVICES " + allinfo.length); 
     }
    catch (IOException e) {
       ShoreLog.logE("NETWORK","Problem registering service",e);
     }
+   
+   broadcastInfo();
 
    ShoreLog.logD("NETWORK","Monitor setup " + can_broadcast + " " + our_socket);
 }
@@ -163,6 +170,13 @@ public void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.SwitchSetting set)
 
 }
 
+
+private void broadcastInfo()
+{
+   byte msg [] = { CONTROL_INFO, MESSAGE_ALL, 0, 0 };
+   sendMessage(null,UDP_PORT,msg,0,4);
+}
+
 /********************************************************************************/
 /*										*/
 /*	Handle Send requests							*/
@@ -178,7 +192,7 @@ public void sendMessage(InetAddress who,int port,byte [] msg,int off,int len)
    try {
       our_socket.send(packet);
     }
-   catch (IOException e) {
+   catch (Throwable e) {
       ShoreLog.logE("Problem sending packet " + who + " " + port,e);
     }
 }
@@ -280,20 +294,28 @@ private class ReaderThread extends Thread {
 /*										*/
 /********************************************************************************/
 
-public class ServiceFinder implements ServiceListener {
+public class ServiceFinder implements ServiceListener, ServiceTypeListener {
 
    @Override public void serviceAdded(ServiceEvent event) {
       ShoreLog.logI("NETWORK","Service added: " + event.getInfo());
     }
 
    @Override public void serviceRemoved(ServiceEvent event) {
-      ShoreLog.logI("NETWORK","Service added: " + event.getInfo());
+      ShoreLog.logI("NETWORK","Service removed: " + event.getInfo());
     }
 
    @Override public void serviceResolved(ServiceEvent event) {
-      ShoreLog.logI("NETWORK","Service added: " + event.getInfo());
+      ShoreLog.logI("NETWORK","Service resolved: " + event.getInfo());
     }
-
+   
+   @Override public void serviceTypeAdded(ServiceEvent event) {
+      ShoreLog.logI("NETWORK","Service type added: " + event);
+    }
+   
+   @Override public void subTypeForServiceTypeAdded(ServiceEvent event) {
+      ShoreLog.logI("NETWORK","Service added: " + event);
+    }
+   
 }	// end of inner class ServiceFinder
 
 
