@@ -8,7 +8,6 @@ bBACKUP
 javadep
 UNKNOWN
 filesystem.attributes
-bin.*
 ir.out
 xxx*
 hs_err_pid*

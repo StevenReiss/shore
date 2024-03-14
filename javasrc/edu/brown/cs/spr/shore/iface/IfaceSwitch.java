@@ -48,8 +48,8 @@ IfaceBlock getEntryBlock();
 IfaceBlock getNBlock();
 IfaceBlock getRBlock();
 
-int getControllerId();
-int getControllerSwitch();
+byte getControllerId();
+byte getControllerSwitch();
 
 
 }       // end of interface IfaceSwitch

@@ -40,13 +40,19 @@ package edu.brown.cs.spr.shore.model;
 public interface ModelConstants
 {
 
-interface ModelSwitch { }
 
-interface ModelSensor { }
+interface ModelSwitch {
+}
+
+interface ModelSensor {
+}
+
+
+interface ModelSignal {
+}
+
 
 interface ModelTrain { }
-
-interface ModelSignal { }
 
 
 
