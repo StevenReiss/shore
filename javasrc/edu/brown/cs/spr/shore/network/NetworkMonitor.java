@@ -121,11 +121,22 @@ NetworkMonitor()
       JmmDNS jmm = JmmDNS.Factory.getInstance();
       String [] names = jmm.getNames();
       jmm.addServiceListener("_controller._udp.local.", new ServiceFinder());
+      jmm.addServiceListener("_controller._udp.", new ServiceFinder()); 
+      jmm.addServiceListener("controller._udp.local.", new ServiceFinder()); 
+      jmm.addServiceListener("udp._udp.local.", new ServiceFinder()); 
       jmm.addServiceTypeListener(new ServiceFinder());
-      jmm.registerServiceType("_controller._udp.local.");
-      ServiceInfo info = ServiceInfo.create("_controller._udp.local","shore",UDP_PORT,"SHORE controller");
+      jmm.registerServiceType("_master._udp.local.");
+      jmm.registerServiceType("_controller_udp.local.");
+      ServiceInfo info = ServiceInfo.create("_master._udp.local","shore",UDP_PORT,"SHORE controller");
       jmm.registerService(info);
       ServiceInfo [] allinfo = jmm.list("_controller._udp.local.");
+      ServiceInfo [] allinfo1 = jmm.list("_controller._udp.");
+      ServiceInfo [] allinfo2 = jmm.list("_udp.local.");
+      ServiceInfo [] allinfo3 = jmm.getServiceInfos("udp.local.","controller");
+      ServiceInfo [] allinfo4 = jmm.getServiceInfos("_udp.local.","controller");
+      ServiceInfo [] allinfo5 = jmm.getServiceInfos("udp.local.","_controller");
+      ServiceInfo [] allinfo6 = jmm.getServiceInfos("_udp.local.","_controller");
+      
       ShoreLog.logD("NETWORK","SERVICES " + allinfo.length); 
     }
    catch (IOException e) {
