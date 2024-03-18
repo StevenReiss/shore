@@ -39,6 +39,9 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
@@ -48,6 +51,7 @@ import javax.jmdns.ServiceEvent;
 import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceListener;
 import javax.jmdns.ServiceTypeListener;
+import javax.xml.crypto.Data;
 
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
@@ -83,6 +87,8 @@ public static void main(String [] args)
 /********************************************************************************/
 
 private DatagramSocket	our_socket;
+private MulticastSocket multi_socket;
+private InetSocketAddress multi_group;
 private boolean can_broadcast;
 
 
@@ -104,6 +110,11 @@ NetworkMonitor()
       our_socket.setReuseAddress(true);
       our_socket.setSendBufferSize(BUFFER_SIZE);
       our_socket.setSoTimeout(0);
+      InetAddress mcastaddr = InetAddress.getByName("239.1.2.3");
+      multi_group = new InetSocketAddress(mcastaddr,6879);
+      NetworkInterface netif = NetworkInterface.getByName("wlo1");
+      multi_socket = new MulticastSocket(6879);
+      multi_socket.joinGroup(new InetSocketAddress(mcastaddr,0),netif);
     }
    catch (IOException e) {
       ShoreLog.logE("NETWORK","Can't create Datagram Socket",e);
@@ -121,30 +132,29 @@ NetworkMonitor()
       JmmDNS jmm = JmmDNS.Factory.getInstance();
       String [] names = jmm.getNames();
       jmm.addServiceListener("_controller._udp.local.", new ServiceFinder());
-      jmm.addServiceListener("_controller._udp.", new ServiceFinder()); 
       jmm.addServiceListener("controller._udp.local.", new ServiceFinder()); 
-      jmm.addServiceListener("udp._udp.local.", new ServiceFinder()); 
-      jmm.addServiceTypeListener(new ServiceFinder());
+      jmm.addServiceListener("_udp.local.",new ServiceFinder());
+//    jmm.addServiceTypeListener(new ServiceFinder());
       jmm.registerServiceType("_master._udp.local.");
-      jmm.registerServiceType("_controller_udp.local.");
-      ServiceInfo info = ServiceInfo.create("_master._udp.local","shore",UDP_PORT,"SHORE controller");
+      jmm.registerServiceType("_controller._udp.local.");
+      jmm.registerServiceType("master._udp.local.");
+      jmm.registerServiceType("controller._udp.local.");
+      ServiceInfo info = ServiceInfo.create("_master._udp.local.","shore",UDP_PORT,"SHORE controller");
       jmm.registerService(info);
       ServiceInfo [] allinfo = jmm.list("_controller._udp.local.");
       ServiceInfo [] allinfo1 = jmm.list("_controller._udp.");
-      ServiceInfo [] allinfo2 = jmm.list("_udp.local.");
-      ServiceInfo [] allinfo3 = jmm.getServiceInfos("udp.local.","controller");
+      ServiceInfo [] allinfo2  = jmm.list("._udp.local.");
+      ServiceInfo [] allinfo3 = jmm.getServiceInfos("._udp.local.","controller");
       ServiceInfo [] allinfo4 = jmm.getServiceInfos("_udp.local.","controller");
-      ServiceInfo [] allinfo5 = jmm.getServiceInfos("udp.local.","_controller");
-      ServiceInfo [] allinfo6 = jmm.getServiceInfos("_udp.local.","_controller");
+      ServiceInfo [] allinfo5 = jmm.list("controller._udp.local.");
+      ServiceInfo [] allinfo6 = jmm.getServiceInfos("_master._udp.local.","_controller");
       
       ShoreLog.logD("NETWORK","SERVICES " + allinfo.length); 
     }
    catch (IOException e) {
       ShoreLog.logE("NETWORK","Problem registering service",e);
     }
-   
-   broadcastInfo();
-
+  
    ShoreLog.logD("NETWORK","Monitor setup " + can_broadcast + " " + our_socket);
 }
 
@@ -160,6 +170,12 @@ void start()
 {
    ReaderThread rt = new ReaderThread(our_socket,new NotificationHandler());
    rt.start();
+   ReaderThread rt1 = new ReaderThread(multi_socket,new NotificationHandler());
+   rt1.start();
+   
+   broadcastInfo();
+   
+   ShoreLog.logD("NETWORK","MONITOR STARTED");   
 }
 
 
@@ -197,6 +213,18 @@ private void broadcastInfo()
 public void sendMessage(InetAddress who,int port,byte [] msg,int off,int len)
 {
    if (our_socket == null) return;
+   
+   if (who == null) {
+      try {
+         DatagramPacket dp = new DatagramPacket(msg,len,multi_group);
+         multi_socket.send(dp);
+         ShoreLog.logD("NETWORK","MULTI SEND");
+       }
+      catch (IOException e) {
+         ShoreLog.logE("NETWORK","Problem with multicast: ",e);
+       }
+      return;
+    }
 
    DatagramPacket packet = new DatagramPacket(msg,off,len,
 	 who,port);
@@ -222,39 +250,39 @@ private class NotificationHandler implements MessageHandler {
       StringBuffer buf = new StringBuffer();
       byte [] data = msg.getData();
       for (int i = 0; i < msg.getLength(); ++i) {
-	 int v = data[i + msg.getOffset()];
-	 String vs = Integer.toHexString(v);
-	 if (vs.length() == 1) vs = "0" + vs;
-	 buf.append(vs);
-	 buf.append(" ");
+         int v = data[i + msg.getOffset()];
+         String vs = Integer.toHexString(v);
+         if (vs.length() == 1) vs = "0" + vs;
+         buf.append(vs);
+         buf.append(" ");
        }
-
+   
       ShoreLog.logD("NETWORK","Received from " + msg.getAddress() + " " +
-	    msg.getPort() + " " + msg.getLength() + " " + msg.getOffset() + ": " +
-	    buf.toString());
-
+            msg.getPort() + " " + msg.getLength() + " " + msg.getOffset() + ": " +
+            buf.toString());
+   
       int which = data[1];
       int id = data[2];
       int value = data[3];
-
+   
       switch (data[0]) {
-	 case CONTROL_ID :
-	    // note which is at address/port
-	    break;
-	 case CONTROL_SENSOR :
-	    // find sensor in model for this controller/sensor #
-	    // set model sensor state
-	    break;
-	 case CONTROL_SWITCH :
-	    // find switch in model for this controller/switch #
-	    // set switch state
-	    break;
-	 case CONTROL_SIGNAL :
-	    // find signal in model for this controller/signal #
-	    // set signal state
-	    break;
-	 default :
-	    break;
+         case CONTROL_ID :
+            // note which is at address/port
+            break;
+         case CONTROL_SENSOR :
+            // find sensor in model for this controller/sensor #
+            // set model sensor state
+            break;
+         case CONTROL_SWITCH :
+            // find switch in model for this controller/switch #
+            // set switch state
+            break;
+         case CONTROL_SIGNAL :
+            // find signal in model for this controller/signal #
+            // set signal state
+            break;
+         default :
+            break;
        }
     }
 
@@ -283,15 +311,16 @@ private class ReaderThread extends Thread {
       byte [] buf = new byte[BUFFER_SIZE];
       DatagramPacket packet = new DatagramPacket(buf,buf.length);
       while (reader_socket != null) {
-	 try {
-	    reader_socket.receive(packet);
-	    msg_handler.handleMessage(packet);
-	  }
-	 catch (SocketTimeoutException e) { }
-	 catch (IOException e) {
-	    ShoreLog.logE("Problem reading UDP",e);
-	    // possibly recreate our_socket or set to null
-	  }
+         try {
+            reader_socket.receive(packet);
+            msg_handler.handleMessage(packet);
+          }
+         catch (SocketTimeoutException e) { }
+         catch (IOException e) {
+            ShoreLog.logE("Problem reading UDP",e);
+            // possibly recreate our_socket or set to null
+          }
+         ShoreLog.logD("NETWORK","FINISH PACKET");
        }
     }
 
