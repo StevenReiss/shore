@@ -38,12 +38,17 @@ package edu.brown.cs.spr.shore.network;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.Enumeration;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.jmdns.JmDNS;
 import javax.jmdns.JmmDNS;
@@ -53,6 +58,7 @@ import javax.jmdns.ServiceListener;
 import javax.jmdns.ServiceTypeListener;
 import javax.xml.crypto.Data;
 
+import edu.brown.cs.ivy.exec.IvyExecQuery;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
@@ -89,7 +95,8 @@ public static void main(String [] args)
 private DatagramSocket	our_socket;
 private MulticastSocket multi_socket;
 private InetSocketAddress multi_group;
-private boolean can_broadcast;
+
+private Map<SocketAddress,ControllerInfo>  controller_map;
 
 
 
@@ -101,18 +108,46 @@ private boolean can_broadcast;
 
 NetworkMonitor()
 {
+   controller_map = new ConcurrentHashMap<>();
+   
+   if (our_socket != null) {
+      try {
+         our_socket.close();
+       }
+      catch (Throwable e) { }
+    }
    our_socket = null;
-   can_broadcast = false;
-
+   InetAddress useaddr = null;
+   
    try {
-      our_socket = new DatagramSocket(UDP_PORT);
+      useaddr = InetAddress.getLocalHost();
+      NetworkInterface netif= null;
+      for (int i = 10; i >= 0 ; --i) {
+         NetworkInterface ni = NetworkInterface.getByIndex(i);
+         if (ni == null) continue;
+         if (ni.isLoopback()) continue;
+         if (ni.isVirtual()) continue;
+         netif = ni;
+         break;
+       }
+      useaddr = InetAddress.getLocalHost();
+      if (useaddr.isLoopbackAddress()) {
+         for (Enumeration<InetAddress> en = netif.getInetAddresses(); en.hasMoreElements(); ) {
+            InetAddress ia1 = en.nextElement();
+            if (ia1 instanceof Inet4Address) {
+               useaddr = ia1;
+               break;
+             }
+          }
+       }
+      
+      our_socket = new DatagramSocket(UDP_PORT,useaddr);
       our_socket.setReceiveBufferSize(BUFFER_SIZE);
       our_socket.setReuseAddress(true);
       our_socket.setSendBufferSize(BUFFER_SIZE);
       our_socket.setSoTimeout(0);
       InetAddress mcastaddr = InetAddress.getByName("239.1.2.3");
       multi_group = new InetSocketAddress(mcastaddr,6879);
-      NetworkInterface netif = NetworkInterface.getByName("wlo1");
       multi_socket = new MulticastSocket(6879);
       multi_socket.joinGroup(new InetSocketAddress(mcastaddr,0),netif);
     }
@@ -121,41 +156,37 @@ NetworkMonitor()
       System.err.println("Problem with network connection: " + e);
       System.exit(1);
     }
-
-   try {
-      our_socket.setBroadcast(true);
-      can_broadcast = our_socket.getBroadcast();
-    }
-   catch (SocketException e) { }
-
+   
    try {
       JmmDNS jmm = JmmDNS.Factory.getInstance();
       String [] names = jmm.getNames();
-      jmm.addServiceListener("_controller._udp.local.", new ServiceFinder());
-      jmm.addServiceListener("controller._udp.local.", new ServiceFinder()); 
-      jmm.addServiceListener("_udp.local.",new ServiceFinder());
-//    jmm.addServiceTypeListener(new ServiceFinder());
-      jmm.registerServiceType("_master._udp.local.");
+      JmDNS jm1 = JmDNS.create(useaddr);
+//    jmm.addServiceListener("._udp.local.", new ServiceFinder("0"));
+//    jmm.addServiceListener("_udp.local.", new ServiceFinder("1")); 
+      jmm.addServiceListener("_udp._udp.local.",new ServiceFinder("2"));
+//    jm1.addServiceListener("._udp.local.", new ServiceFinder("3"));
+//    jm1.addServiceListener("_udp.local.", new ServiceFinder("4")); 
+//    jm1.addServiceListener("_udp._udp.local.",new ServiceFinder("5"));
+//    jmm.addServiceTypeListener(new ServiceFinder("T1"));
+//    jm1.addServiceTypeListener(new ServiceFinder("T2"));
+      jmm.registerServiceType("_master._udp.local");
       jmm.registerServiceType("_controller._udp.local.");
-      jmm.registerServiceType("master._udp.local.");
+      jmm.registerServiceType("master._udp.local");
       jmm.registerServiceType("controller._udp.local.");
-      ServiceInfo info = ServiceInfo.create("_master._udp.local.","shore",UDP_PORT,"SHORE controller");
-      jmm.registerService(info);
-      ServiceInfo [] allinfo = jmm.list("_controller._udp.local.");
-      ServiceInfo [] allinfo1 = jmm.list("_controller._udp.");
-      ServiceInfo [] allinfo2  = jmm.list("._udp.local.");
-      ServiceInfo [] allinfo3 = jmm.getServiceInfos("._udp.local.","controller");
-      ServiceInfo [] allinfo4 = jmm.getServiceInfos("_udp.local.","controller");
-      ServiceInfo [] allinfo5 = jmm.list("controller._udp.local.");
-      ServiceInfo [] allinfo6 = jmm.getServiceInfos("_master._udp.local.","_controller");
+      jmm.registerServiceType("udp._udp.local.");
       
-      ShoreLog.logD("NETWORK","SERVICES " + allinfo.length); 
+      InetAddress [] iasd = jmm.getInetAddresses();
+      
+//    jmm.addServiceTypeListener(new ServiceFinder());
+      ServiceInfo info = ServiceInfo.create("master._udp.local.","shore",UDP_PORT,"SHORE controller");
+      jmm.registerService(info);
     }
    catch (IOException e) {
       ShoreLog.logE("NETWORK","Problem registering service",e);
     }
-  
-   ShoreLog.logD("NETWORK","Monitor setup " + can_broadcast + " " + our_socket);
+   
+   ShoreLog.logD("NETWORK","Monitor setup  " + our_socket.getLocalAddress() +
+         " " + multi_socket.getLocalAddress());
 }
 
 
@@ -201,8 +232,11 @@ public void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.SwitchSetting set)
 private void broadcastInfo()
 {
    byte msg [] = { CONTROL_INFO, MESSAGE_ALL, 0, 0 };
-   sendMessage(null,UDP_PORT,msg,0,4);
+   sendMessage(null,msg,0,4);
 }
+
+
+
 
 /********************************************************************************/
 /*										*/
@@ -210,7 +244,7 @@ private void broadcastInfo()
 /*										*/
 /********************************************************************************/
 
-public void sendMessage(InetAddress who,int port,byte [] msg,int off,int len)
+public void sendMessage(SocketAddress who,byte [] msg,int off,int len)
 {
    if (our_socket == null) return;
    
@@ -223,16 +257,18 @@ public void sendMessage(InetAddress who,int port,byte [] msg,int off,int len)
       catch (IOException e) {
          ShoreLog.logE("NETWORK","Problem with multicast: ",e);
        }
+      for (ControllerInfo ci : controller_map.values()) {
+         sendMessage(ci.getSocketAddress(),msg,off,len);
+       }
       return;
     }
 
-   DatagramPacket packet = new DatagramPacket(msg,off,len,
-	 who,port);
+   DatagramPacket packet = new DatagramPacket(msg,off,len,who);
    try {
       our_socket.send(packet);
     }
    catch (Throwable e) {
-      ShoreLog.logE("Problem sending packet " + who + " " + port,e);
+      ShoreLog.logE("Problem sending packet " + who,e);
     }
 }
 
@@ -329,23 +365,67 @@ private class ReaderThread extends Thread {
 
 
 /********************************************************************************/
+/*                                                                              */
+/*      Controller information                                                  */
+/*                                                                              */
+/********************************************************************************/
+
+private static class ControllerInfo {
+   
+   private int controller_id;
+   private SocketAddress net_address;
+   
+   ControllerInfo(SocketAddress net) {
+      net_address = net;
+      controller_id = -1;
+    }
+   
+   SocketAddress getSocketAddress()                     { return net_address; }
+   
+   
+}       // end of inner class ControllerInfo
+
+
+
+/********************************************************************************/
 /*										*/
 /*	Handle mDNS service discovery						*/
 /*										*/
 /********************************************************************************/
 
 public class ServiceFinder implements ServiceListener, ServiceTypeListener {
+   
+   private String finder_id;
+   
+   ServiceFinder(String id) {
+      finder_id = id;
+    }
 
    @Override public void serviceAdded(ServiceEvent event) {
-      ShoreLog.logI("NETWORK","Service added: " + event.getInfo());
+      ShoreLog.logI("NETWORK","Service added: " + finder_id + "> " + event.getInfo());
+      broadcastInfo();
     }
 
    @Override public void serviceRemoved(ServiceEvent event) {
-      ShoreLog.logI("NETWORK","Service removed: " + event.getInfo());
+      ShoreLog.logI("NETWORK","Service removed: " + finder_id + "> " + event.getInfo());
     }
 
    @Override public void serviceResolved(ServiceEvent event) {
       ShoreLog.logI("NETWORK","Service resolved: " + event.getInfo());
+      ServiceInfo si = event.getInfo();
+      String nm = si.getName();
+      if (nm.contains("controller")) {
+         ShoreLog.logD("NETWORK","Found controller: " + finder_id + "> " + si);
+         InetAddress ia = si.getAddress();
+         int port = si.getPort();
+         SocketAddress sa = new InetSocketAddress(ia,port);
+         ControllerInfo ci = controller_map.get(sa);
+         if (ci == null) {
+            ci = new ControllerInfo(sa);
+            controller_map.put(sa,ci);
+          }
+         broadcastInfo();
+       }    
     }
    
    @Override public void serviceTypeAdded(ServiceEvent event) {
@@ -357,6 +437,9 @@ public class ServiceFinder implements ServiceListener, ServiceTypeListener {
     }
    
 }	// end of inner class ServiceFinder
+
+
+
 
 
 
