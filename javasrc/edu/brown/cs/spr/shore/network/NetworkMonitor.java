@@ -44,21 +44,17 @@ import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.jmdns.JmDNS;
 import javax.jmdns.JmmDNS;
 import javax.jmdns.ServiceEvent;
 import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceListener;
 import javax.jmdns.ServiceTypeListener;
-import javax.xml.crypto.Data;
 
-import edu.brown.cs.ivy.exec.IvyExecQuery;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
@@ -161,8 +157,8 @@ NetworkMonitor()
    
    try {
       JmmDNS jmm = JmmDNS.Factory.getInstance();
-      String [] names = jmm.getNames();
-      JmDNS jm1 = JmDNS.create(useaddr);
+//    String [] names = jmm.getNames();
+//    JmDNS jm1 = JmDNS.create(useaddr);
 //    jmm.addServiceListener("._udp.local.", new ServiceFinder("0"));
 //    jmm.addServiceListener("_udp.local.", new ServiceFinder("1")); 
       jmm.addServiceListener("_udp._udp.local.",new ServiceFinder("2"));
@@ -172,12 +168,12 @@ NetworkMonitor()
 //    jmm.addServiceTypeListener(new ServiceFinder("T1"));
 //    jm1.addServiceTypeListener(new ServiceFinder("T2"));
       jmm.registerServiceType("_master._udp.local");
-      jmm.registerServiceType("_controller._udp.local.");
+      jmm.registerServiceType("_tower._udp.local.");
       jmm.registerServiceType("master._udp.local");
-      jmm.registerServiceType("controller._udp.local.");
+      jmm.registerServiceType("tower._udp.local.");
       jmm.registerServiceType("udp._udp.local.");
       
-      InetAddress [] iasd = jmm.getInetAddresses();
+//    InetAddress [] iasd = jmm.getInetAddresses();
       
 //    jmm.addServiceTypeListener(new ServiceFinder());
       ServiceInfo info = ServiceInfo.create("master._udp.local.","shore",UDP_PORT,"SHORE controller");
@@ -222,11 +218,12 @@ void start()
 public void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.SwitchSetting set)
 {
    if (sw == null) return;
-   byte id = sw.getControllerId();
-   byte idx = sw.getControllerSwitch();
+// byte id = sw.getControllerId();
+// byte idx = sw.getControllerSwitch();
    // get InetAddress/port for the controller
-   byte msg [] = { CONTROL_SETSWTICH, id, idx, (byte) set.ordinal() };
+// byte msg [] = { CONTROL_SETSWTICH, id, idx, (byte) set.ordinal() };
    // sendMessage(who,port,msg,0,4);
+   // should be done by the Controler, not here
 
 }
 
@@ -487,7 +484,7 @@ public class ServiceFinder implements ServiceListener, ServiceTypeListener {
       ShoreLog.logI("NETWORK","Service resolved: " + event.getInfo());
       ServiceInfo si = event.getInfo();
       String nm = si.getName();
-      if (nm.contains("controller")) {
+      if (nm.startsWith("controller") || nm.startsWith("tower")) {
          ShoreLog.logD("NETWORK","Found controller: " + finder_id + "> " + si);
          setupController(si);
        }    
