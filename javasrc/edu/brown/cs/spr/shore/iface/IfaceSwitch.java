@@ -39,17 +39,17 @@ package edu.brown.cs.spr.shore.iface;
 public interface IfaceSwitch
 {
 
-enum SwitchSetting { N, R };
+enum SwitchState { N, R, UNKNOWN };
 
-SwitchSetting getSwitchSetting();
-void setSwitch(SwitchSetting n);
+SwitchState getSwitchSetting();
+void setSwitch(SwitchState n);
 
 IfaceBlock getEntryBlock();
 IfaceBlock getNBlock();
 IfaceBlock getRBlock();
 
-byte getControllerId();
-byte getControllerSwitch();
+byte getTowerId();
+byte getTowerSwitch();
 
 
 }       // end of interface IfaceSwitch

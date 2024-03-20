@@ -35,7 +35,6 @@
 
 package edu.brown.cs.spr.shore.iface;
 
-import java.io.File;
 import java.util.Collection;
 
 public interface IfaceModel
@@ -45,10 +44,12 @@ Collection<IfaceSwitch> getSwitches();
 Collection<IfaceSignal> getSignals();
 Collection<IfaceSensor> getSensors();
 Collection<IfaceTrain> getTrains();
+Collection<IfaceBlock> getBlocks();
 
-void reset();
 
-void loadModel(File description);
+
+
+
 
 void addModelCallback(ModelCallback cb);
 void removeModelCallback(ModelCallback cb);
@@ -56,6 +57,11 @@ void removeModelCallback(ModelCallback cb);
 interface ModelCallback {
    void modelChanged();
 }
+
+IfaceSensor findSensor(int tower,int id);
+IfaceSwitch findSwitch(int tower,int id);
+IfaceSignal findSignal(int tower,int id);
+
 
 
 }       // end of interface IfaceModel

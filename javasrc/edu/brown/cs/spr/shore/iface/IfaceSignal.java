@@ -40,7 +40,7 @@ package edu.brown.cs.spr.shore.iface;
 public interface IfaceSignal
 {
 
-enum SignalState { RED, GREEN, YELLOW };
+enum SignalState { OFF, RED, GREEN, YELLOW };
 
 boolean getSupportsYellow();
 
@@ -50,8 +50,8 @@ SignalState getSignalState();
 IfaceBlock getExitBlock();
 IfaceBlock getEntryBlock();
 
-int getControllerId();
-int getControllerSignal();
+int getTowerId();
+byte getTowerSignal();
 
 
 

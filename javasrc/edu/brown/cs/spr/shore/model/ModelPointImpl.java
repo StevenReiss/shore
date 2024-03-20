@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              ModelFactory.java                                               */
+/*              ModelPointImpl.java                                             */
 /*                                                                              */
-/*      description of class                                                    */
+/*      Representation of a point on the layout                                 */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,17 +35,15 @@
 
 package edu.brown.cs.spr.shore.model;
 
-import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
-import edu.brown.cs.spr.shore.shore.ShoreLog;
+import edu.brown.cs.spr.shore.model.ModelConstants.ModelPoint;
 
-
-public class ModelFactory implements ModelConstants
+class ModelPointImpl implements ModelPoint, ModelConstants
 {
 
 
@@ -55,9 +53,13 @@ public class ModelFactory implements ModelConstants
 /*                                                                              */
 /********************************************************************************/
 
-private File    model_file;
-
-private static ModelFactory the_factory;
+private ModelDiagramImpl in_diagram;
+private String  point_id;
+private double  point_x;
+private double  point_y;
+private PointType point_type;
+private List<ModelPoint> to_points;
+private List<ModelPoint> from_points;
 
 
 
@@ -67,45 +69,28 @@ private static ModelFactory the_factory;
 /*                                                                              */
 /********************************************************************************/
 
-private ModelFactory()
-{ }
-
-
-synchronized public ModelFactory getFactory()
+ModelPointImpl(ModelDiagramImpl dgm,Element xml)
 {
-   if (the_factory == null) {
-      the_factory = new ModelFactory();
+   in_diagram = dgm;
+   point_id = IvyXml.getAttrString(xml,"ID");
+   point_x = IvyXml.getAttrDouble(xml,"X",0);
+   point_y = IvyXml.getAttrDouble(xml,"Y",0);
+   point_type = IvyXml.getAttrEnum(xml,"TYPE",PointType.STRAIGHT);
+   to_points = new ArrayList<>();
+   from_points = new ArrayList<>();
+}
+
+
+void resolve(ModelBase mdl,Element xml)
+{
+   for (Element toxml : IvyXml.children(xml,"TO")) {
+      String pid = IvyXml.getAttrString(toxml,"POINT");
+      ModelPointImpl topt = mdl.getPointById(pid);  
+      if (topt != null) {
+         to_points.add(topt);
+         topt.from_points.add(this);
+       }
     }
-   return the_factory;
-}
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Setup methods                                                           */
-/*                                                                              */
-/********************************************************************************/
-
-public void resetModel() 
-{
-   // reset everything to off
-   // if file has changed, reread the model file
-   // run initialization sequences to find states
-   // check connectivity
-   // try to locate trains
-}
-
-
-public void loadModel(File description)
-{
-   model_file = description;
-   Element xml = IvyXml.loadXmlFromFile(model_file);
-   
-   ShoreLog.logD("Loaded model: " + IvyXml.convertXmlToString(xml));
-   
-   // load model from file
-   // setup all switches, signals, trains, sensors
 }
 
 
@@ -116,31 +101,36 @@ public void loadModel(File description)
 /*                                                                              */
 /********************************************************************************/
 
-public Collection<ModelSwitch> getSwitches()
+ModelDiagram getDiagram()                       { return in_diagram; }
+
+@Override public String getId()                 { return point_id; }
+
+@Override public double getX()                  { return point_x; }
+
+@Override public double getY()                  { return point_y; }
+
+@Override public PointType getType()            { return point_type; }
+
+@Override public List<ModelPoint> getFromPoints()
 {
-   return new ArrayList<>();
+   return from_points;
 }
 
-public Collection<ModelSignal> getSignals()
+@Override public List<ModelPoint> getToPoints()
 {
-   return new ArrayList<>();
-}
-
-public Collection<ModelSensor> getSernsors()
-{
-   return new ArrayList<>();
-}
-
-public Collection<ModelTrain> getTrains()
-{
-   return new ArrayList<>();
+   return to_points;
 }
 
 
-}       // end of class ModelFactory
 
 
 
 
-/* end of ModelFactory.java */
+
+}       // end of class ModelPointImpl
+
+
+
+
+/* end of ModelPointImpl.java */
 

@@ -42,7 +42,7 @@ public interface IfaceController
 
 void sendCommand(InetAddress target,byte [] data); 
 
-void setSwitch(IfaceSwitch s,IfaceSwitch.SwitchSetting set);
+void setSwitch(IfaceSwitch s,IfaceSwitch.SwitchState set);
 void setSignal(IfaceSignal s,IfaceSignal.SignalState state);
 
 /*

@@ -40,6 +40,7 @@ package edu.brown.cs.spr.shore.iface;
 public interface IfaceSensor
 {
 
+enum SensorState { OFF, ON, UNKNOWN };
 /**
  *      Return switch if on N path to switch; null otherwise
  **/
@@ -50,8 +51,11 @@ IfaceSwitch getSwitchR();
 
 IfaceBlock getBlock();
 
-int getControllerId();
-int getControllerSensor();
+void setSensorState(SensorState state);
+SensorState getSensorState();
+
+int getTowerId();
+byte getTowerSensor();
 
 }       // end of interface IfaceSensor
 

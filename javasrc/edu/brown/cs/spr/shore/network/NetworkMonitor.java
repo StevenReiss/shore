@@ -55,6 +55,8 @@ import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceListener;
 import javax.jmdns.ServiceTypeListener;
 
+import edu.brown.cs.spr.shore.iface.IfaceSensor;
+import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
@@ -215,17 +217,41 @@ void start()
 /*										*/
 /********************************************************************************/
 
-public void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.SwitchSetting set)
+public void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.SwitchState set)
 {
    if (sw == null) return;
-// byte id = sw.getControllerId();
-// byte idx = sw.getControllerSwitch();
-   // get InetAddress/port for the controller
-// byte msg [] = { CONTROL_SETSWTICH, id, idx, (byte) set.ordinal() };
-   // sendMessage(who,port,msg,0,4);
-   // should be done by the Controler, not here
-
+   int id = sw.getTowerId();
+   ControllerInfo ci = id_map.get(id);
+   if (ci == null) return;
+   ci.sendSwitchMessage(sw.getTowerSwitch(),set);
 }
+
+
+public void sendSetSignal(IfaceSignal sig,IfaceSignal.SignalState set)
+{
+   if (sig == null) return;
+   
+   int id = sig.getTowerId();
+   ControllerInfo ci = id_map.get(id);
+   if (ci == null) return;
+   ci.sendSignalMessage(sig.getTowerSignal(),set);
+}
+
+
+
+public void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,IfaceSwitch.SwitchState set)
+{
+   if (sen == null) return;
+   int id = sen.getTowerId();
+   ControllerInfo ci = id_map.get(id);
+   if (ci == null) return;
+   int s = 64;
+   if (sw != null) {
+      s = sw.getTowerSwitch() * 4 + set.ordinal();
+    }
+   ci.sendDefSensorMessage(sen.getTowerSensor(),s);
+}
+
 
 
 private void broadcastInfo()
@@ -328,7 +354,7 @@ private class NotificationHandler implements MessageHandler {
             // set signal state
             break;
          case CONTROL_ENDSYNC :
-            ci.endSync();
+            ci.sendEndSync();
             break;
          default :
             break;
@@ -445,13 +471,27 @@ private class ControllerInfo {
       sendMessage(net_address,msg,0,4);
     }
    
-   void endSync() {
+   void sendEndSync() {
       byte msg [] = { CONTROL_HEARTBEAT, controller_id, 1, 0 };
       sendMessage(net_address,msg,0,4);
       // send DEFSENSOR messages
       // send SETSIGNAL and SETSWITCH messages if appropriate
     }
-
+   
+   void sendSwitchMessage(byte sid,IfaceSwitch.SwitchState state) {
+      byte msg [] = { CONTROL_SETSWTICH, controller_id, sid,(byte) state.ordinal()};
+      sendMessage(net_address,msg,0,4);
+    }
+   
+   void sendSignalMessage(byte sid,IfaceSignal.SignalState state) {
+      byte msg [] = { CONTROL_SETSIGNAL, controller_id, sid,(byte) state.ordinal()};
+      sendMessage(net_address,msg,0,4);
+    }
+   
+   void sendDefSensorMessage(byte sid,int value) {
+      byte msg [] = { CONTROL_DEFSENSOR, controller_id,sid,(byte) value };
+      sendMessage(net_address,msg,0,4);
+    }
    
 }       // end of inner class ControllerInfo
 
