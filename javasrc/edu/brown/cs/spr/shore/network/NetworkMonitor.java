@@ -97,6 +97,7 @@ private MulticastSocket multi_socket;
 private InetSocketAddress multi_group;
 
 private Map<SocketAddress,ControllerInfo>  controller_map;
+private Map<Integer,ControllerInfo>        id_map;
 
 
 
@@ -109,6 +110,7 @@ private Map<SocketAddress,ControllerInfo>  controller_map;
 NetworkMonitor()
 {
    controller_map = new ConcurrentHashMap<>();
+   id_map = new ConcurrentHashMap<>();
    
    if (our_socket != null) {
       try {
@@ -231,7 +233,7 @@ public void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.SwitchSetting set)
 
 private void broadcastInfo()
 {
-   byte msg [] = { CONTROL_INFO, MESSAGE_ALL, 0, 0 };
+   byte msg [] = { CONTROL_SYNC, MESSAGE_ALL, 0, 0 };
    sendMessage(null,msg,0,4);
 }
 
@@ -297,13 +299,24 @@ private class NotificationHandler implements MessageHandler {
             msg.getPort() + " " + msg.getLength() + " " + msg.getOffset() + ": " +
             buf.toString());
    
-      int which = data[1];
-      int id = data[2];
-      int value = data[3];
+      int id = data[1];                         // controller id
+      int which = data[2];                      // switch, signal, sensor id
+      int value = data[3];                      // switch, signal, sensor value
+      
+      SocketAddress sa = msg.getSocketAddress();
+      ControllerInfo ci = setupController(sa);
+      ControllerInfo ci1 = id_map.get(id);
+      if (ci1 == null) {
+         id_map.put(id,ci);
+         ci.setId(id);
+       }
+      else if (ci != ci1) {
+         ShoreLog.logE("NETWORK","Conflicing controllers for " + id);
+       }
    
       switch (data[0]) {
          case CONTROL_ID :
-            // note which is at address/port
+            ci.setId(id);
             break;
          case CONTROL_SENSOR :
             // find sensor in model for this controller/sensor #
@@ -316,6 +329,9 @@ private class NotificationHandler implements MessageHandler {
          case CONTROL_SIGNAL :
             // find signal in model for this controller/signal #
             // set signal state
+            break;
+         case CONTROL_ENDSYNC :
+            ci.endSync();
             break;
          default :
             break;
@@ -370,9 +386,52 @@ private class ReaderThread extends Thread {
 /*                                                                              */
 /********************************************************************************/
 
-private static class ControllerInfo {
+private ControllerInfo setupController(ServiceInfo si)
+{
+   InetAddress [] possibles = si.getInet4Addresses();
+   if (possibles == null || possibles.length == 0) {
+      possibles = si.getInetAddresses();
+    }
+   int port = si.getPort();
    
-   private int controller_id;
+   InetAddress use = null;
+   for (InetAddress ia : possibles) {
+      SocketAddress sa = new InetSocketAddress(ia,port);
+      ControllerInfo ci = controller_map.get(sa);
+      if (ci != null) return ci;
+      if (use == null) use = ia;
+      else if (use.isLoopbackAddress()) continue;
+      else if (use.isAnyLocalAddress()) continue;
+      else if (use instanceof Inet4Address) continue;
+      else if (ia instanceof Inet4Address) use = ia;
+    }
+   
+   if (use == null) return null;
+   
+   SocketAddress sa = new InetSocketAddress(use,port);
+   return setupController(sa);
+}
+ 
+
+
+private ControllerInfo setupController(SocketAddress sa)
+{
+   ControllerInfo ci = controller_map.get(sa);
+   if (ci == null) {
+      ci = new ControllerInfo(sa);
+      ControllerInfo nci = controller_map.putIfAbsent(sa,ci);
+      if (nci != null) ci = null;
+      else ci.sendSyncMessage();
+    }
+   
+   return ci;
+}
+
+
+
+private class ControllerInfo {
+   
+   private byte controller_id;
    private SocketAddress net_address;
    
    ControllerInfo(SocketAddress net) {
@@ -382,6 +441,20 @@ private static class ControllerInfo {
    
    SocketAddress getSocketAddress()                     { return net_address; }
    
+   void setId(int id)                                   { controller_id = (byte) id; }
+   
+   void sendSyncMessage() {
+      byte msg [] = { CONTROL_SYNC, MESSAGE_ALL, 0, 0 };
+      sendMessage(net_address,msg,0,4);
+    }
+   
+   void endSync() {
+      byte msg [] = { CONTROL_HEARTBEAT, controller_id, 1, 0 };
+      sendMessage(net_address,msg,0,4);
+      // send DEFSENSOR messages
+      // send SETSIGNAL and SETSWITCH messages if appropriate
+    }
+
    
 }       // end of inner class ControllerInfo
 
@@ -416,15 +489,7 @@ public class ServiceFinder implements ServiceListener, ServiceTypeListener {
       String nm = si.getName();
       if (nm.contains("controller")) {
          ShoreLog.logD("NETWORK","Found controller: " + finder_id + "> " + si);
-         InetAddress ia = si.getAddress();
-         int port = si.getPort();
-         SocketAddress sa = new InetSocketAddress(ia,port);
-         ControllerInfo ci = controller_map.get(sa);
-         if (ci == null) {
-            ci = new ControllerInfo(sa);
-            controller_map.put(sa,ci);
-          }
-         broadcastInfo();
+         setupController(si);
        }    
     }
    

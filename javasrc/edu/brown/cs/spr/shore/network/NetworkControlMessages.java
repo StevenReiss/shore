@@ -27,7 +27,7 @@ byte CONTROL_HEARTBEAT  = (byte) 0x0f;          // turn on/off heartbead
 byte CONTROL_REBOOT     = (byte) 0x0a;          // restart
 byte CONTROL_QUERY      = (byte) 0x40;          // ask for id
 byte CONTROL_RESET      = (byte) 0x41;          // reset sensors, etc.
-byte CONTROL_INFO       = (byte) 0x42;          // ask for settings of sensors, switches
+byte CONTROL_SYNC       = (byte) 0x42;          // ask for settings of sensors, switches
 byte CONTROL_SETSWTICH  = (byte) 0x43;          // set switch to state
 byte CONTROL_SETSIGNAL  = (byte) 0x44;          // set signal to stat
 byte CONTROL_DEFSENSOR  = (byte) 0x45;          // assoc sensor with switch state
@@ -44,6 +44,7 @@ byte CONTROL_ID         = (byte) 0x50;          // this is our ID
 byte CONTROL_SENSOR     = (byte) 0x51;          // sensor set to value
 byte CONTROL_SWITCH     = (byte) 0x52;          // switch set to value
 byte CONTROL_SIGNAL     = (byte) 0x53;          // signal set to value
+byte CONTROL_ENDSYNC    = (byte) 0x54;
 
 
 
