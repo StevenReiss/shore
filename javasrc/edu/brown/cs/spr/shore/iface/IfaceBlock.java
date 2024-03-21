@@ -40,13 +40,13 @@ import java.util.List;
 public interface IfaceBlock
 {
 
-enum BlockState { EMPTY, INUSE, PENDING };
+enum BlockState { EMPTY, INUSE, PENDING, UNKNOWN };
 
 BlockState getBlockState();
 void setBlockState(BlockState state);
 
-List<Integer> getEntrySensors();
-List<Integer> getExitSensors();
+List<IfaceSensor> getEntrySensors();
+List<IfaceSensor> getExitSensors();
 
 
 }       // end of interface IfaceBlock

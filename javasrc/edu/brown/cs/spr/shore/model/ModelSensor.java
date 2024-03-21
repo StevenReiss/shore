@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              ModelPointImpl.java                                             */
+/*              ModelSensor.java                                                */
 /*                                                                              */
-/*      Representation of a point on the layout                                 */
+/*      Representation of a sensor in the model                                 */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,15 +35,14 @@
 
 package edu.brown.cs.spr.shore.model;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
-import edu.brown.cs.spr.shore.model.ModelConstants.ModelPoint;
+import edu.brown.cs.spr.shore.iface.IfaceBlock;
+import edu.brown.cs.spr.shore.iface.IfaceSensor;
+import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 
-class ModelPointImpl implements ModelPoint, ModelConstants
+class ModelSensor implements IfaceSensor, ModelConstants
 {
 
 
@@ -53,13 +52,14 @@ class ModelPointImpl implements ModelPoint, ModelConstants
 /*                                                                              */
 /********************************************************************************/
 
-private ModelDiagramImpl in_diagram;
-private String  point_id;
-private double  point_x;
-private double  point_y;
-private PointType point_type;
-private List<ModelPoint> to_points;
-private List<ModelPoint> from_points;
+private String sensor_id;
+private ModelPoint sensor_point;
+private ModelBlock sensor_block;
+private SensorState sensor_state;
+private ModelSwitch n_switch;
+private ModelSwitch r_switch;
+private byte tower_id;
+private byte tower_index;
 
 
 
@@ -69,68 +69,52 @@ private List<ModelPoint> from_points;
 /*                                                                              */
 /********************************************************************************/
 
-ModelPointImpl(ModelDiagramImpl dgm,Element xml)
+ModelSensor(ModelBase mdl,Element xml)
 {
-   in_diagram = dgm;
-   point_id = IvyXml.getAttrString(xml,"ID");
-   point_x = IvyXml.getAttrDouble(xml,"X",0);
-   point_y = IvyXml.getAttrDouble(xml,"Y",0);
-   point_type = IvyXml.getAttrEnum(xml,"TYPE",PointType.STRAIGHT);
-   to_points = new ArrayList<>();
-   from_points = new ArrayList<>();
+   sensor_id = IvyXml.getAttrString(xml,"ID");
+   sensor_point = mdl.getPointById(IvyXml.getAttrString(xml,"POINT"));
+   tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
+   tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
+   n_switch = null;
+   r_switch = null;
+   sensor_block = null;
+   sensor_state = SensorState.UNKNOWN;
 }
 
-
-void resolve(ModelBase mdl,Element xml)
-{
-   for (Element toxml : IvyXml.children(xml,"TO")) {
-      String pid = IvyXml.getAttrString(toxml,"POINT");
-      ModelPointImpl topt = mdl.getPointById(pid);  
-      if (topt != null) {
-         to_points.add(topt);
-         topt.from_points.add(this);
-       }
-    }
-}
 
 
 
 /********************************************************************************/
 /*                                                                              */
-/*      Access methods                                                          */
+/*      Access Methods                                                          */
 /*                                                                              */
 /********************************************************************************/
 
-ModelDiagram getDiagram()                       { return in_diagram; }
+String getId()                                  { return sensor_id; }
 
-@Override public String getId()                 { return point_id; }
+ModelPoint getAtPoint()                         { return sensor_point; }
 
-@Override public double getX()                  { return point_x; }
+@Override public IfaceSwitch getSwitchN()       { return n_switch; }
 
-@Override public double getY()                  { return point_y; }
+@Override public IfaceSwitch getSwitchR()       { return r_switch; }
 
-@Override public PointType getType()            { return point_type; }
+@Override  public IfaceBlock getBlock()         { return sensor_block; }
 
-@Override public List<ModelPoint> getFromPoints()
+@Override public SensorState getSensorState()   { return sensor_state; }
+
+@Override public void setSensorState(SensorState st)
 {
-   return from_points;
+   sensor_state = st;
 }
 
-@Override public List<ModelPoint> getToPoints()
-{
-   return to_points;
-}
+@Override public byte getTowerId()              { return tower_id; } 
+
+@Override public byte getTowerSensor()          { return tower_index; }
+
+}       // end of class ModelSensor
 
 
 
 
-
-
-
-}       // end of class ModelPointImpl
-
-
-
-
-/* end of ModelPointImpl.java */
+/* end of ModelSensor.java */
 

@@ -41,7 +41,7 @@ public interface IfaceSwitch
 
 enum SwitchState { N, R, UNKNOWN };
 
-SwitchState getSwitchSetting();
+SwitchState getSwitchState();
 void setSwitch(SwitchState n);
 
 IfaceBlock getEntryBlock();

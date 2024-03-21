@@ -42,7 +42,9 @@ public interface IfaceSignal
 
 enum SignalState { OFF, RED, GREEN, YELLOW };
 
-boolean getSupportsYellow();
+enum SignalType { RG, RGY };
+
+SignalType getSignalType();
 
 void setSignalState(SignalState state);
 SignalState getSignalState();
@@ -50,7 +52,7 @@ SignalState getSignalState();
 IfaceBlock getExitBlock();
 IfaceBlock getEntryBlock();
 
-int getTowerId();
+byte getTowerId();
 byte getTowerSignal();
 
 

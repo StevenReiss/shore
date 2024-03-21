@@ -55,9 +55,13 @@ import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceListener;
 import javax.jmdns.ServiceTypeListener;
 
+import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
+import edu.brown.cs.spr.shore.iface.IfaceSensor.SensorState;
+import edu.brown.cs.spr.shore.iface.IfaceSignal.SignalState;
+import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 public class NetworkMonitor implements NetworkConstants, NetworkControlMessages,
@@ -76,7 +80,7 @@ public static void main(String [] args)
 {
    ShoreLog.setup();
 
-   NetworkMonitor mon = new NetworkMonitor();
+   NetworkMonitor mon = new NetworkMonitor(null);
    // possibly handle args
 
    mon.start();
@@ -93,6 +97,7 @@ public static void main(String [] args)
 private DatagramSocket	our_socket;
 private MulticastSocket multi_socket;
 private InetSocketAddress multi_group;
+private IfaceModel layout_model;
 
 private Map<SocketAddress,ControllerInfo>  controller_map;
 private Map<Integer,ControllerInfo>        id_map;
@@ -105,10 +110,11 @@ private Map<Integer,ControllerInfo>        id_map;
 /*										*/
 /********************************************************************************/
 
-NetworkMonitor()
+NetworkMonitor(IfaceModel model)
 {
    controller_map = new ConcurrentHashMap<>();
    id_map = new ConcurrentHashMap<>();
+   layout_model = model;
    
    if (our_socket != null) {
       try {
@@ -305,6 +311,20 @@ public void sendMessage(SocketAddress who,byte [] msg,int off,int len)
 /*										*/
 /********************************************************************************/
 
+@SuppressWarnings("unchecked")
+private <T extends Enum<T>> T getState(int v,T dflt)
+{
+   for (Object x : dflt.getClass().getEnumConstants()) {
+     Enum<?> e = (Enum<?>) x;
+     if (e.ordinal() == v) {
+        return (T) e;
+      }
+    }
+   
+   return dflt;
+}
+
+
 private class NotificationHandler implements MessageHandler {
 
    @Override public void handleMessage(DatagramPacket msg) {
@@ -342,16 +362,25 @@ private class NotificationHandler implements MessageHandler {
             ci.setId(id);
             break;
          case CONTROL_SENSOR :
-            // find sensor in model for this controller/sensor #
-            // set model sensor state
+            if (layout_model != null) {
+               IfaceSensor s = layout_model.findSensor(id,which);
+               SensorState sst = getState(value,SensorState.UNKNOWN);
+               s.setSensorState(sst);
+             }
             break;
          case CONTROL_SWITCH :
-            // find switch in model for this controller/switch #
-            // set switch state
+            if (layout_model != null) {
+               IfaceSwitch s = layout_model.findSwitch(id,which);
+               SwitchState sst = getState(value,SwitchState.UNKNOWN);
+               s.setSwitch(sst);
+             }
             break;
          case CONTROL_SIGNAL :
-            // find signal in model for this controller/signal #
-            // set signal state
+            if (layout_model != null) {
+               IfaceSignal s = layout_model.findSignal(id,which);
+               SignalState sst = getState(value,SignalState.OFF);
+               s.setSignalState(sst);
+             }
             break;
          case CONTROL_ENDSYNC :
             ci.sendEndSync();

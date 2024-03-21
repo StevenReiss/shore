@@ -35,13 +35,6 @@
 
 package edu.brown.cs.spr.shore.model;
 
-import java.util.Collection;
-import java.util.List;
-
-import edu.brown.cs.spr.shore.iface.IfaceBlock;
-import edu.brown.cs.spr.shore.iface.IfaceSensor;
-import edu.brown.cs.spr.shore.iface.IfaceSignal;
-import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceTrain;
 
 public interface ModelConstants
@@ -49,55 +42,10 @@ public interface ModelConstants
 
 enum PointType { TURNING, STRAIGHT, SWITCH, BLOCK, END, TURNTABLE, DIAGRAM };
 
-interface ModelPoint {
-   String getId();
-   double getX();
-   double getY();
-   PointType getType();
-   List<ModelPoint> getToPoints();
-   List<ModelPoint> getFromPoints();
-}
 
-
-interface ModelSwitch extends IfaceSwitch {
-   String getId();
-   ModelPoint getPivotPoint();
-   ModelPoint getNPoint();
-   ModelPoint getRPoint();
-   ModelSwitch getAssociatedSwitch();
-}
-
-
-interface ModelSensor extends IfaceSensor {
-   String getId();
-   ModelPoint getAtPoint();
-}
-
-
-interface ModelSignal extends IfaceSignal {
-   String getId();
-   ModelPoint getAtPoint();
-   ModelPoint getToPoint();
-}
-
-
-interface ModelBlock extends IfaceBlock {
-   String getId();
-   ModelPoint getAtPoint();
-}
 
 interface ModelTrain extends IfaceTrain {
    String getId();
-}
-
-
-interface ModelDiagram {
-   String getId();
-   Collection<ModelPointImpl> getPoints();
-   Collection<ModelSwitch> getSwitches();
-   Collection<ModelBlock> getBlocks();
-   Collection<ModelSensor> getSensors();
-   Collection<ModelSignal> getSignals();
 }
 
 

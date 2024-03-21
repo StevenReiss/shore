@@ -1,6 +1,6 @@
 /********************************************************************************/
 /*                                                                              */
-/*              ModelDiagramImpl.java                                           */
+/*              ModelDiagram.java                                               */
 /*                                                                              */
 /*      Representation of a digram for layout purposes                          */
 /*                                                                              */
@@ -42,9 +42,8 @@ import java.util.Map;
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
-import edu.brown.cs.spr.shore.model.ModelConstants.ModelDiagram;
 
-class ModelDiagramImpl implements ModelConstants, ModelDiagram
+class ModelDiagram implements ModelConstants
 {
 
  
@@ -56,7 +55,7 @@ class ModelDiagramImpl implements ModelConstants, ModelDiagram
 
 private String diagram_id;
 
-private Map<String,ModelPointImpl> diagram_points;
+private Map<String,ModelPoint> diagram_points;
 private Map<String,ModelSwitch> diagram_switches;
 private Map<String,ModelBlock> diagram_blocks;
 private Map<String,ModelSensor> diagram_sensors;
@@ -70,7 +69,7 @@ private Map<String,ModelSignal> diagram_signals;
 /*                                                                              */
 /********************************************************************************/
 
-ModelDiagramImpl(Element xml)
+ModelDiagram(Element xml)
 {
    diagram_id = null;
    diagram_points = new HashMap<>();
@@ -79,7 +78,7 @@ ModelDiagramImpl(Element xml)
    diagram_sensors = new HashMap<>();
    diagram_signals = new HashMap<>();
    
-   loadDiagram(xml);
+   preloadDiagram(xml);
    
    if (diagram_id == null) diagram_id = "MAIN";
 }
@@ -92,36 +91,36 @@ ModelDiagramImpl(Element xml)
 /*                                                                              */
 /********************************************************************************/
 
-@Override public String getId()                 { return diagram_id; }
+String getId()                                  { return diagram_id; }
 
 
-@Override public Collection<ModelSensor> getSensors()
+Collection<ModelSensor> getSensors()
 {
    return diagram_sensors.values();
 }
 
-@Override public Collection<ModelPointImpl> getPoints()
+Collection<ModelPoint> getPoints()
 { 
    return diagram_points.values();
 }
 
-@Override public Collection<ModelSwitch> getSwitches()
+Collection<ModelSwitch> getSwitches()
 {
    return diagram_switches.values();
 }
 
-@Override public Collection<ModelBlock> getBlocks()
+Collection<ModelBlock> getBlocks()
 {
    return diagram_blocks.values();
 }
 
-@Override public Collection<ModelSignal> getSignals()
+Collection<ModelSignal> getSignals()
 {
    return diagram_signals.values();
 }
 
 
-ModelPointImpl getPointById(String id)      
+ModelPoint getPointById(String id)      
 {
    return diagram_points.get(id);
 }
@@ -133,42 +132,44 @@ ModelPointImpl getPointById(String id)
 /*                                                                              */
 /********************************************************************************/
 
-private void loadDiagram(Element xml)
+private void preloadDiagram(Element xml)
 {
    diagram_id = IvyXml.getAttrString(xml,"ID");
    
    for (Element ptxml : IvyXml.children(xml,"POINT")) {
-      ModelPointImpl pt = new ModelPointImpl(this,ptxml); 
+      ModelPoint pt = new ModelPoint(this,ptxml);  
       diagram_points.put(pt.getId(),pt);
-    }
-   for (Element blkxml : IvyXml.children(xml,"BLOCK")) {
-      // ModelBlock blk = new ModelBlockImpl(this,blkxml);
-      // diagram_blocks.put(blk.getId(),blk);
-    }
-   for (Element sensorxml : IvyXml.children(xml,"SENSOR")) {
-      // ModelSensor  sensor = new ModelSensorImpl(this,sensorxml);
-      // diagram_sensors.put(sensor.getId(),sensor);
-    }
-   for (Element switchxml : IvyXml.children(xml,"SWITCH")) {
-      // ModelSwitch  switch = new ModelSwitchImpl(this,switchxml);
-      // diagram_switches.put(switch.getId(),switch);
-    }
-   for (Element signalxml : IvyXml.children(xml,"SIGNAL")) {
-      // ModelSignal Signal = new ModelSignalImpl(this,signalxml);
-      // diagram_signals.put(signal.getId(),signal);
     }
 }
 
-
-private void resolveDiagram(ModelBase mdl,Element xml)
+ 
+void loadDiagram(ModelBase mdl,Element xml)
 {
    for (Element ptxml : IvyXml.children(xml,"POINT")) {
       String pid = IvyXml.getAttrString(ptxml,"ID");
-      ModelPointImpl pt = diagram_points.get(pid);
+      ModelPoint pt = diagram_points.get(pid);
       if (pt == null) continue;
       // THIS SHOULD BE DONE BY THE MODEL, NOT THE DIAGRAM
       pt.resolve(mdl,ptxml); 
     }
+   
+   for (Element blkxml : IvyXml.children(xml,"BLOCK")) {
+      ModelBlock blk = new ModelBlock(mdl,blkxml);
+      diagram_blocks.put(blk.getId(),blk);
+    }
+   for (Element sensorxml : IvyXml.children(xml,"SENSOR")) {
+      ModelSensor  sensor = new ModelSensor(mdl,sensorxml);
+      diagram_sensors.put(sensor.getId(),sensor);
+    }
+   for (Element switchxml : IvyXml.children(xml,"SWITCH")) {
+      ModelSwitch  sw = new ModelSwitch(mdl,switchxml);
+      diagram_switches.put(sw.getId(),sw);
+    }
+   for (Element signalxml : IvyXml.children(xml,"SIGNAL")) {
+      ModelSignal signal = new ModelSignal(mdl,signalxml); 
+      diagram_signals.put(signal.getId(),signal);
+    }
+   
 }
 
 

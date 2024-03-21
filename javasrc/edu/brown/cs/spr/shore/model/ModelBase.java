@@ -50,6 +50,7 @@ import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceTrain;
+import edu.brown.cs.spr.shore.shore.ShoreException;
 
 class ModelBase implements ModelConstants, IfaceModel
 {
@@ -61,7 +62,7 @@ class ModelBase implements ModelConstants, IfaceModel
 /*                                                                              */
 /********************************************************************************/
 
-private Map<String,ModelPointImpl> model_points;
+private Map<String,ModelPoint> model_points;
 private Map<String,ModelSwitch> model_switches;
 private Map<String,ModelBlock> model_blocks;
 private Map<String,ModelSensor> model_sensors;
@@ -87,7 +88,13 @@ ModelBase(File file)
    model_diagrams = new HashMap<>();
    model_trains = new HashMap<>();
    
-   loadModel(file);
+   try {
+      loadModel(file);
+    }
+   catch (ShoreException e) {
+      System.err.println("SHORE: Problem loading model: " + e.toString());
+      System.exit(1);
+    }
 }
 
 
@@ -165,9 +172,14 @@ void removeTrain(ModelTrain mt)
    model_trains.remove(mt.getId()); 
 }
 
-ModelPointImpl getPointById(String id)
+ModelPoint getPointById(String id)
 {
    return model_points.get(id);
+}
+
+ModelSwitch getSwitchById(String id)
+{
+   return model_switches.get(id);
 }
 
 
@@ -195,27 +207,78 @@ ModelPointImpl getPointById(String id)
 /*                                                                              */
 /********************************************************************************/
 
-private boolean loadModel(File file) 
+private void loadModel(File file) throws ShoreException
 {
+   Map<ModelDiagram,Element> xmlmap = new HashMap<>();
+   
    Element xml = IvyXml.loadXmlFromFile(file);
-   if (xml == null) return false;
+   if (xml == null) throw new ShoreException("File " + file + " doesn't contain a model");
+   
    if (IvyXml.getChild(xml,"DIAGRAM") != null) {
       for (Element dxml : IvyXml.children(xml,"DIAGRAM")) {
-         ModelDiagram md = new ModelDiagramImpl(dxml);
+         ModelDiagram md = new ModelDiagram(dxml);
          model_diagrams.put(md.getId(),md);
+         xmlmap.put(md,dxml);
+       }
+    }  
+   else {
+      ModelDiagram md = new ModelDiagram(xml);
+      model_diagrams.put(md.getId(),md); 
+      xmlmap.put(md,xml);
+    }
+   
+   for (ModelDiagram md : xmlmap.keySet()) {
+      for (ModelPoint mp : md.getPoints()) {
+         model_points.put(mp.getId(),mp);
        }
     }
-   else {
-      ModelDiagram md = new ModelDiagramImpl(xml);
-      model_diagrams.put(md.getId(),md); 
+   
+   for (Map.Entry<ModelDiagram,Element> ent : xmlmap.entrySet()) {
+      ModelDiagram md = ent.getKey(); 
+      Element dxml = ent.getValue();
+      md.loadDiagram(this,dxml); 
+      loadDiagramData(md);
     }
    
-   // add all diagram information to the model
+   normalizeModel();
    
-   return true;
+   checkModel();
 }
  
 
+
+private void loadDiagramData(ModelDiagram md)
+{
+   for (ModelSwitch ms : md.getSwitches()) {
+      model_switches.put(ms.getId(),ms);  
+    }
+   for (ModelBlock mb : md.getBlocks()) { 
+      model_blocks.put(mb.getId(),mb);
+    }
+   for (ModelSensor ms : md.getSensors()) {
+      model_sensors.put(ms.getId(),ms);
+    }
+   for (ModelSignal ms : md.getSignals()) {
+      model_signals.put(ms.getId(),ms);
+    }
+}
+
+
+private void normalizeModel() throws ShoreException
+{
+   // now we need to normalize the model
+   //    Find all points in a block
+   //    find entry/exit sensors for a block
+   //    associate blocks with switches, signals, sensors
+   //    assiciate sensors with switches
+}
+
+
+private void checkModel() throws ShoreException 
+{
+   // finally we need to verify the model and print error messages if 
+   //   there is any problem (and terminate?)
+}
 
 }       // end of class ModelBase
 

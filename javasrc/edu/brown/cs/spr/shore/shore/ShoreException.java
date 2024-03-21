@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              IfaceSensor.java                                                */
+/*              ShoreException.java                                             */
 /*                                                                              */
-/*      Information about sensors                                               */
+/*      Exception for use in SHORE                                              */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -33,34 +33,46 @@
 
 
 
-package edu.brown.cs.spr.shore.iface;
+package edu.brown.cs.spr.shore.shore;
 
 
 
-public interface IfaceSensor
+public class ShoreException extends Exception
 {
 
-enum SensorState { OFF, ON, UNKNOWN };
-/**
- *      Return switch if on N path to switch; null otherwise
- **/
 
-IfaceSwitch getSwitchN();
+/********************************************************************************/
+/*                                                                              */
+/*      Private Storage                                                         */
+/*                                                                              */
+/********************************************************************************/
 
-IfaceSwitch getSwitchR();
-
-IfaceBlock getBlock();
-
-void setSensorState(SensorState state);
-SensorState getSensorState();
-
-byte getTowerId();
-byte getTowerSensor();
-
-}       // end of interface IfaceSensor
+static private final long serialVersionUID = 1;
 
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      Constructors                                                            */
+/*                                                                              */
+/********************************************************************************/
 
-/* end of IfaceSensor.java */
+public ShoreException(String msg)
+{
+   super(msg);
+}
+
+public ShoreException(String msg,Throwable e)
+{
+   super(msg,e);
+}
+
+
+
+}       // end of class ShoreException
+
+
+
+
+/* end of ShoreException.java */
 
