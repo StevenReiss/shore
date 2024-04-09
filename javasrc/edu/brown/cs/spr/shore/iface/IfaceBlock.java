@@ -35,18 +35,21 @@
 
 package edu.brown.cs.spr.shore.iface;
 
-import java.util.List;
+import java.util.Collection;
 
 public interface IfaceBlock
 {
 
 enum BlockState { EMPTY, INUSE, PENDING, UNKNOWN };
 
+
 BlockState getBlockState();
 void setBlockState(BlockState state);
+IfaceBlock getPendingFrom();
+boolean setPendingFrom(IfaceBlock blk);
+Collection<IfaceConnection> getConnections();
 
-List<IfaceSensor> getEntrySensors();
-List<IfaceSensor> getExitSensors();
+
 
 
 }       // end of interface IfaceBlock

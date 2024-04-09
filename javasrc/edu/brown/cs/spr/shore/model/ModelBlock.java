@@ -36,13 +36,15 @@
 package edu.brown.cs.spr.shore.model;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
-import edu.brown.cs.spr.shore.iface.IfaceSensor;
+import edu.brown.cs.spr.shore.iface.IfaceConnection;
 
 class ModelBlock implements ModelConstants, IfaceBlock
 {
@@ -54,11 +56,12 @@ class ModelBlock implements ModelConstants, IfaceBlock
 /*                                                                              */
 /********************************************************************************/
 
+private ModelBase for_model;
 private String block_id;
 private ModelPoint at_point;
 private BlockState block_state;
-private List<ModelSensor> entry_sensors;
-private List<ModelSensor> exit_sensors;
+private ModelBlock pending_from;
+private Set<ModelConnection> block_connects;
 
 
 
@@ -70,13 +73,17 @@ private List<ModelSensor> exit_sensors;
 
 ModelBlock(ModelBase model,Element xml)
 {
+   for_model = model;
    block_id = IvyXml.getAttrString(xml,"ID");
    String ptname = IvyXml.getAttrString(xml,"POINT");
    at_point = model.getPointById(ptname);
+   if (at_point == null) {
+      model.noteError("Point " + ptname + " not found for block " + block_id);
+    }
    block_state = BlockState.UNKNOWN;
-   entry_sensors = new ArrayList<>();
-   exit_sensors = new ArrayList<>();
-}
+   block_connects = new HashSet<>();
+   pending_from = null;
+} 
 
 
 /********************************************************************************/
@@ -89,23 +96,75 @@ String getId()                                  { return block_id; }
 ModelPoint getAtPoint()                         { return at_point; }
 
 @Override public BlockState getBlockState()     { return block_state; }
+@Override public ModelBlock getPendingFrom()    { return pending_from; }
 
 @Override public void setBlockState(BlockState st)
 {
+   if (block_state == st) return;
    block_state = st;
+   for_model.fireBlockChanged(this);
 }
 
-
-
-@Override public List<IfaceSensor> getEntrySensors()
+@Override public boolean setPendingFrom(IfaceBlock blk)  
 {
-   return new ArrayList<IfaceSensor>(entry_sensors);
+   if (block_state != BlockState.EMPTY) return false;
+   pending_from = (ModelBlock) blk;
+   setBlockState(BlockState.PENDING);
+   return true;
 }
 
-@Override public List<IfaceSensor> getExitSensors()
+
+@Override public Collection<IfaceConnection> getConnections()
 {
-   return new ArrayList<IfaceSensor>(exit_sensors);
+   return new ArrayList<>(block_connects); 
 }
+
+void addConnection(ModelConnection conn) 
+{
+   block_connects.add(conn);
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Normalize the block                                                     */
+/*                                                                              */
+/********************************************************************************/
+
+/*
+ * first pass associated each point with a block
+ **/
+
+void normalizeBlock(ModelBase mdl)
+{
+   ModelPoint pt = getAtPoint();
+   if (pt == null) {
+      mdl.noteError("No Point specified for block");
+      return;
+    }
+   propagateBlock(mdl,pt);
+}
+
+
+
+private void propagateBlock(ModelBase mdl,ModelPoint pt)
+{
+   if (pt.getBlock() != null) { 
+      if (pt.getBlock() == this) return;
+      mdl.noteError("Point " + pt.getId() + " is in block " +
+            pt.getBlock().getId() + " and block " + getId());
+      return;
+    }
+   
+   pt.setBlock(this);
+   
+   for (ModelPoint npt : pt.getAllPoints()) {
+      if (npt.getType() == PointType.GAP) continue;
+      propagateBlock(mdl,npt);
+    }
+}
+
 
 
 

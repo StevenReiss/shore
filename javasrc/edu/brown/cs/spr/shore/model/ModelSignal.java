@@ -35,9 +35,15 @@
 
 package edu.brown.cs.spr.shore.model;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
+import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 
 class ModelSignal implements IfaceSignal, ModelConstants
@@ -50,13 +56,14 @@ class ModelSignal implements IfaceSignal, ModelConstants
 /*                                                                              */
 /********************************************************************************/
 
+private ModelBase for_model;
 private String  signal_id;
 private ModelPoint at_point;
-private ModelPoint to_point;
-private ModelBlock entry_block;
-private ModelBlock exit_block;
+private ModelPoint gap_point;
+private Set<ModelConnection> for_connections;
 private SignalState signal_state;
 private SignalType signal_type; 
+private ModelSensor stop_sensor;
 private byte tower_id;
 private byte tower_index;
 
@@ -70,14 +77,15 @@ private byte tower_index;
 
 ModelSignal(ModelBase model,Element xml)
 {
+   for_model = model;
    signal_id = IvyXml.getAttrString(xml,"ID");
    at_point = model.getPointById(IvyXml.getAttrString(xml,"POINT"));
-   to_point = model.getPointById(IvyXml.getAttrString(xml,"TO"));
+   gap_point = model.getPointById(IvyXml.getAttrString(xml,"TO"));
+   for_connections = new HashSet<>(); 
    tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
    tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
    signal_type = IvyXml.getAttrEnum(xml,"TYPE",SignalType.RG);
-   entry_block = null;
-   exit_block = null;
+   stop_sensor = null;
    signal_state = SignalState.OFF;
 }
 
@@ -92,11 +100,21 @@ String getId()                                  { return signal_id; }
 
 ModelPoint getAtPoint()                         { return at_point; }
 
-ModelPoint getToPoint()                         { return to_point; }
+@Override public ModelBlock getFromBlock()      
+{
+   return at_point.getBlock();
+}
 
-@Override public ModelBlock getEntryBlock()     { return entry_block; }
+@Override public Collection<IfaceConnection> getConnections() 
+{
+   return new ArrayList<>(for_connections); 
+}
 
-@Override public ModelBlock getExitBlock()      { return exit_block; }
+void addConnection(ModelConnection conn) 
+{
+   for_connections.add(conn);
+}
+
 
 @Override public SignalType getSignalType()     { return signal_type; } 
 
@@ -106,12 +124,56 @@ ModelPoint getToPoint()                         { return to_point; }
 
 @Override public SignalState getSignalState()   { return signal_state; }
 
+@Override public ModelSensor getStopSensor()    { return stop_sensor; } 
+
 @Override public void setSignalState(SignalState state)
 {
+   if (signal_state == state) return;
    signal_state = state;
+   for_model.fireSignalChanged(this);
 }
 
 
+
+/********************************************************************************/
+/*                                                                              */
+/*      Normalization code                                                      */
+/*                                                                              */
+/********************************************************************************/
+
+void normalizeSignal(ModelBase mdl)
+{
+   ModelPoint fwdpt = null;
+   for (ModelPoint pt : at_point.getAllPoints()) {
+      if (goesTo(pt,at_point,gap_point)) ;
+      else if (fwdpt == null) fwdpt = pt;
+      else mdl.noteError("Can't find stop point for signal " + getId());
+    }
+   
+   stop_sensor = mdl.findSensorForPoint(at_point);
+   stop_sensor.setSignal(this); 
+}
+
+
+
+private boolean goesTo(ModelPoint pt,ModelPoint prev,ModelPoint tgt)
+{
+   if (pt == null) return false;
+   if (pt == tgt) return true;
+   while (pt != null) {
+      if (pt == tgt) return true;
+      Collection<ModelPoint> next = pt.getAllPoints();
+      if (next.size() != 2) break;
+      pt = null;
+      for (ModelPoint npt : next) {
+         if (npt != prev) {
+            pt = npt;
+            break;
+          }
+       }
+    }
+   return false;
+}
 
 
 }       // end of class ModelSignal

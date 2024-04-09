@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              IfaceSensor.java                                                */
+/*              IfaceConnection.java                                            */
 /*                                                                              */
-/*      Information about sensors                                               */
+/*      Representation of a conenction between blocks                           */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,36 +35,28 @@
 
 package edu.brown.cs.spr.shore.iface;
 
+import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
 
-
-public interface IfaceSensor
+public interface IfaceConnection
 {
 
-enum SensorState { OFF, ON, UNKNOWN };
-/**
- *      Return switch if on N path to switch; null otherwise
- **/
+IfaceBlock getOtherBlock(IfaceBlock inblock);
+IfaceSensor getExitSensor(IfaceBlock inblock);
+IfaceSensor getEntrySensor(IfaceBlock inblock);
+IfaceSignal getStopSignal(IfaceBlock inblock);
+IfaceSignal getEntryStopSignal(IfaceBlock inblock);
+IfaceSensor getStopSensor(IfaceBlock inblock);
+IfaceSwitch getExitSwitch(IfaceBlock inblock);
+IfaceSwitch getEntrySwitch(IfaceBlock inblock);
+SwitchState getExitSwitchState(IfaceBlock inblock);
+SwitchState getEntrySwitchState(IfaceBlock inblock);
 
-IfaceSwitch getSwitchN();
 
-IfaceSwitch getSwitchR();
 
-IfaceConnection getConnection();
-
-IfaceBlock getBlock();
-
-void setSensorState(SensorState state);
-SensorState getSensorState();
-
-IfaceSignal getSignal();
-
-byte getTowerId();
-byte getTowerSensor();
-
-}       // end of interface IfaceSensor
+}       // end of interface IfaceConnection
 
 
 
 
-/* end of IfaceSensor.java */
+/* end of IfaceConnection.java */
 

@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              ModelDiagram.java                                               */
+/*              ShoreMain.java                                                  */
 /*                                                                              */
-/*      Representation of a digram for layout purposes                          */
+/*      Main program for Smart HO Railroad Environment                          */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -33,36 +33,40 @@
 
 
 
-package edu.brown.cs.spr.shore.model;
+package edu.brown.cs.spr.shore.shore;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.StringTokenizer;
+import java.io.File;
 
-import org.w3c.dom.Element;
+import edu.brown.cs.spr.shore.model.ModelBase;
+import edu.brown.cs.spr.shore.network.NetworkMonitor;
 
-import edu.brown.cs.ivy.xml.IvyXml;
-
-class ModelDiagram implements ModelConstants
+public class ShoreMain implements ShoreConstants
 {
 
- 
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Main program                                                            */
+/*                                                                              */
+/********************************************************************************/
+
+public static void main(String [] args)
+{
+   ShoreMain sm = new ShoreMain(args);
+   sm.process();
+}
+
 /********************************************************************************/
 /*                                                                              */
 /*      Private Storage                                                         */
 /*                                                                              */
 /********************************************************************************/
 
-private String diagram_id;
-private double diagram_scale;
+private NetworkMonitor  network_monitor;
+private ModelBase       model_base;
 
-private Map<String,ModelPoint> diagram_points;
-private Map<String,ModelSwitch> diagram_switches;
-private Map<String,ModelBlock> diagram_blocks;
-private Map<String,ModelSensor> diagram_sensors;
-private Map<String,ModelSignal> diagram_signals;
-
+private File            model_file;
 
 
 
@@ -72,133 +76,74 @@ private Map<String,ModelSignal> diagram_signals;
 /*                                                                              */
 /********************************************************************************/
 
-ModelDiagram(Element xml)
+private ShoreMain(String [] args)
 {
-   diagram_id = null;
-   diagram_points = new HashMap<>();
-   diagram_switches = new HashMap<>();
-   diagram_blocks = new HashMap<>();
-   diagram_sensors = new HashMap<>();
-   diagram_signals = new HashMap<>();
+   model_base = null;
+   network_monitor = null;
+   model_file = null;
    
-   preloadDiagram(xml);
+   scanArgs(args);
+}
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Processing methods                                                      */
+/*                                                                              */
+/********************************************************************************/
+
+private void process()
+{
+   model_base = new ModelBase(model_file); 
+   network_monitor = new NetworkMonitor(model_base);
+   network_monitor.start(); 
    
-   if (diagram_id == null) diagram_id = "MAIN";
+   // now get sensor, switch, etc information
+   // set current model based on this -- or is it done automatically with query
 }
 
 
 
 /********************************************************************************/
 /*                                                                              */
-/*      Access methods                                                          */
+/*      Argument scanning methods                                               */
 /*                                                                              */
 /********************************************************************************/
 
-String getId()                                  { return diagram_id; }
-
-
-Collection<ModelSensor> getSensors()
+private void scanArgs(String [] args)
 {
-   return diagram_sensors.values();
-}
-
-Collection<ModelPoint> getPoints()
-{ 
-   return diagram_points.values();
-}
-
-Collection<ModelSwitch> getSwitches()
-{
-   return diagram_switches.values();
-}
-
-Collection<ModelBlock> getBlocks()
-{
-   return diagram_blocks.values();
-}
-
-Collection<ModelSignal> getSignals()
-{
-   return diagram_signals.values();
-}
-
-double getEngineSize()                          { return diagram_scale; }
-
-ModelPoint getPointById(String id)      
-{
-   return diagram_points.get(id);
-}
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Load diagram from XML                                                   */
-/*                                                                              */
-/********************************************************************************/
-
-private void preloadDiagram(Element xml)
-{
-   diagram_id = IvyXml.getAttrString(xml,"ID");
-   diagram_scale = IvyXml.getAttrDouble(xml,"ENGINE",10);
-   
-   for (Element ptxml : IvyXml.children(xml,"POINT")) {
-      ModelPoint pt = new ModelPoint(this,ptxml);  
-      diagram_points.put(pt.getId(),pt);
-    }
-}
-
- 
-void loadDiagram(ModelBase mdl,Element xml)
-{
-   for (Element conxml : IvyXml.children(xml,"CONNECT")) {
-      String pts = IvyXml.getAttrString(conxml,"POINTS");
-      StringTokenizer tok = new StringTokenizer(pts);
-      ModelPoint prev = null;
-      while (tok.hasMoreTokens()) {
-         String ptnm = tok.nextToken();
-         ModelPoint pn = mdl.getPointById(ptnm);
-         if (pn == null) {
-            mdl.noteError("POINT " + ptnm + 
-                  " not defined in connection list: " + pts);           
+   for (int i = 0; i < args.length; ++i) {
+      String arg = args[i];
+      if (arg.startsWith("-")) {
+         if (arg.startsWith("-m")) {                            // -model <file>
+            if (i+1 < args.length && model_file == null) {
+               model_file = new File(args[++i]);
+             }
+            else badArgs();
           }
-         else {
-            if (prev != null) prev.connectTo(pn); 
-            prev = pn;
-          }
+         else badArgs();
+       }
+      else if (model_file == null) {
+         model_file = new File(arg);
        }
     }
    
-   for (Element blkxml : IvyXml.children(xml,"BLOCK")) {
-      ModelBlock blk = new ModelBlock(mdl,blkxml);
-      if (diagram_blocks.put(blk.getId(),blk) != null) {
-         mdl.noteError("Block " + blk.getId() + " defined twice");
-       }
-    }
-   for (Element sensorxml : IvyXml.children(xml,"SENSOR")) {
-      ModelSensor sensor = new ModelSensor(mdl,sensorxml);
-      if (diagram_sensors.put(sensor.getId(),sensor) != null) {
-         mdl.noteError("Sensor " + sensor.getId() + " defined twice");
-       }
-    }
-   for (Element switchxml : IvyXml.children(xml,"SWITCH")) {
-      ModelSwitch  sw = new ModelSwitch(mdl,switchxml);
-      if (diagram_switches.put(sw.getId(),sw) != null) {
-         mdl.noteError("Switch " + sw.getId() + " defined twice");
-       }
-    }
-   for (Element signalxml : IvyXml.children(xml,"SIGNAL")) {
-      ModelSignal signal = new ModelSignal(mdl,signalxml); 
-      if (diagram_signals.put(signal.getId(),signal) != null) {
-         mdl.noteError("Signal " + signal.getId() + " defined twice");
-       }
-    }
+   if (model_file == null || !model_file.canRead()) badArgs();
 }
 
 
-}       // end of class ModelDiagramImpl
+private void badArgs()
+{
+   System.err.println("SHORE -m <modelfile>");
+   System.exit(1);
+}
+
+
+
+}       // end of class ShoreMain
 
 
 
 
-/* end of ModelDiagramImpl.java */
+/* end of ShoreMain.java */
 

@@ -39,8 +39,11 @@ import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
+import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
+import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
+import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
 
 class ModelSensor implements IfaceSensor, ModelConstants
 {
@@ -52,12 +55,16 @@ class ModelSensor implements IfaceSensor, ModelConstants
 /*                                                                              */
 /********************************************************************************/
 
+private ModelBase for_model;
 private String sensor_id;
 private ModelPoint sensor_point;
 private ModelBlock sensor_block;
 private SensorState sensor_state;
 private ModelSwitch n_switch;
 private ModelSwitch r_switch;
+private ModelSwitch entry_switch;
+private ModelConnection in_connection;
+private ModelSignal for_signal;
 private byte tower_id;
 private byte tower_index;
 
@@ -71,14 +78,18 @@ private byte tower_index;
 
 ModelSensor(ModelBase mdl,Element xml)
 {
+   for_model = mdl;
    sensor_id = IvyXml.getAttrString(xml,"ID");
    sensor_point = mdl.getPointById(IvyXml.getAttrString(xml,"POINT"));
    tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
    tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
    n_switch = null;
    r_switch = null;
-   sensor_block = null;
+   entry_switch = null;
+   sensor_block = sensor_point.getBlock();
    sensor_state = SensorState.UNKNOWN;
+   for_signal = null;
+   in_connection = null;
 }
 
 
@@ -98,13 +109,52 @@ ModelPoint getAtPoint()                         { return sensor_point; }
 
 @Override public IfaceSwitch getSwitchR()       { return r_switch; }
 
+IfaceSwitch getSwitchEntry()                    { return entry_switch; }
+
+@Override public IfaceSignal getSignal()        { return for_signal; }
+
+@Override public IfaceConnection getConnection()                 
+{
+   return in_connection; 
+} 
+
+void setConnection(ModelConnection conn)
+{
+   in_connection = conn;
+}
+
+
+
+void assignSwitch(ModelSwitch sw,SwitchState state)
+{
+   switch (state) {
+      case N :
+         n_switch = sw;
+         break;
+      case R :
+         r_switch = sw;
+         break;
+      case UNKNOWN :
+         entry_switch = sw;
+         break;
+    }
+}
+
+
 @Override  public IfaceBlock getBlock()         { return sensor_block; }
 
 @Override public SensorState getSensorState()   { return sensor_state; }
 
 @Override public void setSensorState(SensorState st)
 {
+   if (st == sensor_state) return;
    sensor_state = st;
+   for_model.fireSensorChanged(this);
+}
+
+void setSignal(ModelSignal sig)
+{
+   for_signal = sig;
 }
 
 @Override public byte getTowerId()              { return tower_id; } 

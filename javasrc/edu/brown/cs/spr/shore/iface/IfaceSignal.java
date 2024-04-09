@@ -35,12 +35,12 @@
 
 package edu.brown.cs.spr.shore.iface;
 
-
+import java.util.Collection;
 
 public interface IfaceSignal
 {
 
-enum SignalState { OFF, RED, GREEN, YELLOW };
+enum SignalState { OFF, GREEN, YELLOW, RED };
 
 enum SignalType { RG, RGY };
 
@@ -49,8 +49,10 @@ SignalType getSignalType();
 void setSignalState(SignalState state);
 SignalState getSignalState();
 
-IfaceBlock getExitBlock();
-IfaceBlock getEntryBlock();
+IfaceBlock getFromBlock();
+Collection<IfaceConnection> getConnections();
+
+IfaceSensor getStopSensor();
 
 byte getTowerId();
 byte getTowerSignal();

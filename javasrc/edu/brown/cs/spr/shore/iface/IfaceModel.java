@@ -36,11 +36,13 @@
 package edu.brown.cs.spr.shore.iface;
 
 import java.util.Collection;
+import java.util.EventListener;
 
 public interface IfaceModel
 {
 
 Collection<IfaceSwitch> getSwitches();
+Collection<IfaceConnection> getConnections(); 
 Collection<IfaceSignal> getSignals();
 Collection<IfaceSensor> getSensors();
 Collection<IfaceTrain> getTrains();
@@ -54,8 +56,11 @@ Collection<IfaceBlock> getBlocks();
 void addModelCallback(ModelCallback cb);
 void removeModelCallback(ModelCallback cb);
 
-interface ModelCallback {
-   void modelChanged();
+interface ModelCallback extends EventListener {
+   default void sensorChanged(IfaceSensor sensor)       { }
+   default void switchChanged(IfaceSwitch sw)           { }
+   default void signalChanged(IfaceSignal sig)          { }
+   default void blockChanged(IfaceBlock blk)            { }
 }
 
 IfaceSensor findSensor(int tower,int id);

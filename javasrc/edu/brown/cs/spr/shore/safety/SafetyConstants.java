@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              IfaceSensor.java                                                */
+/*              SafetyConstants.java                                            */
 /*                                                                              */
-/*      Information about sensors                                               */
+/*      Constants for safety checks and actions for SHORE                       */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -33,38 +33,20 @@
 
 
 
-package edu.brown.cs.spr.shore.iface;
+package edu.brown.cs.spr.shore.safety;
 
 
 
-public interface IfaceSensor
+public interface SafetyConstants
 {
 
-enum SensorState { OFF, ON, UNKNOWN };
-/**
- *      Return switch if on N path to switch; null otherwise
- **/
 
-IfaceSwitch getSwitchN();
 
-IfaceSwitch getSwitchR();
 
-IfaceConnection getConnection();
-
-IfaceBlock getBlock();
-
-void setSensorState(SensorState state);
-SensorState getSensorState();
-
-IfaceSignal getSignal();
-
-byte getTowerId();
-byte getTowerSensor();
-
-}       // end of interface IfaceSensor
+}       // end of interface SafetyConstants
 
 
 
 
-/* end of IfaceSensor.java */
+/* end of SafetyConstants.java */
 

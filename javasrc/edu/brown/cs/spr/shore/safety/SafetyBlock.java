@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              ModelDiagram.java                                               */
+/*              SafetyBlock.java                                                */
 /*                                                                              */
-/*      Representation of a digram for layout purposes                          */
+/*      Handle automatic block state setting and checking                       */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -33,36 +33,33 @@
 
 
 
-package edu.brown.cs.spr.shore.model;
+package edu.brown.cs.spr.shore.safety;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.StringTokenizer;
+import java.util.Set;
 
-import org.w3c.dom.Element;
+import edu.brown.cs.spr.shore.iface.IfaceBlock;
+import edu.brown.cs.spr.shore.iface.IfaceConnection;
+import edu.brown.cs.spr.shore.iface.IfaceSensor;
+import edu.brown.cs.spr.shore.iface.IfaceBlock.BlockState;
+import edu.brown.cs.spr.shore.iface.IfaceSensor.SensorState;
 
-import edu.brown.cs.ivy.xml.IvyXml;
-
-class ModelDiagram implements ModelConstants
+class SafetyBlock implements SafetyConstants
 {
 
- 
+
 /********************************************************************************/
 /*                                                                              */
 /*      Private Storage                                                         */
 /*                                                                              */
 /********************************************************************************/
 
-private String diagram_id;
-private double diagram_scale;
-
-private Map<String,ModelPoint> diagram_points;
-private Map<String,ModelSwitch> diagram_switches;
-private Map<String,ModelBlock> diagram_blocks;
-private Map<String,ModelSensor> diagram_sensors;
-private Map<String,ModelSignal> diagram_signals;
-
+// private SafetyFactory   safety_factory;
+private Map<IfaceBlock,BlockData> active_blocks;
+private Map<IfaceSensor,BlockData> wait_sensors;
 
 
 
@@ -72,133 +69,105 @@ private Map<String,ModelSignal> diagram_signals;
 /*                                                                              */
 /********************************************************************************/
 
-ModelDiagram(Element xml)
+SafetyBlock(SafetyFactory fac) 
 {
-   diagram_id = null;
-   diagram_points = new HashMap<>();
-   diagram_switches = new HashMap<>();
-   diagram_blocks = new HashMap<>();
-   diagram_sensors = new HashMap<>();
-   diagram_signals = new HashMap<>();
-   
-   preloadDiagram(xml);
-   
-   if (diagram_id == null) diagram_id = "MAIN";
+// safety_factory = fac;
+   active_blocks = new HashMap<>();
+   wait_sensors = new HashMap<>();
 }
 
 
 
 /********************************************************************************/
 /*                                                                              */
-/*      Access methods                                                          */
+/*      Handle sensor changes                                                   */
 /*                                                                              */
 /********************************************************************************/
 
-String getId()                                  { return diagram_id; }
-
-
-Collection<ModelSensor> getSensors()
+void handleSensorChange(IfaceSensor s)
 {
-   return diagram_sensors.values();
-}
-
-Collection<ModelPoint> getPoints()
-{ 
-   return diagram_points.values();
-}
-
-Collection<ModelSwitch> getSwitches()
-{
-   return diagram_switches.values();
-}
-
-Collection<ModelBlock> getBlocks()
-{
-   return diagram_blocks.values();
-}
-
-Collection<ModelSignal> getSignals()
-{
-   return diagram_signals.values();
-}
-
-double getEngineSize()                          { return diagram_scale; }
-
-ModelPoint getPointById(String id)      
-{
-   return diagram_points.get(id);
-}
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Load diagram from XML                                                   */
-/*                                                                              */
-/********************************************************************************/
-
-private void preloadDiagram(Element xml)
-{
-   diagram_id = IvyXml.getAttrString(xml,"ID");
-   diagram_scale = IvyXml.getAttrDouble(xml,"ENGINE",10);
-   
-   for (Element ptxml : IvyXml.children(xml,"POINT")) {
-      ModelPoint pt = new ModelPoint(this,ptxml);  
-      diagram_points.put(pt.getId(),pt);
+   IfaceBlock blk = s.getBlock();
+   BlockData bd = active_blocks.get(blk);
+   if (bd == null && s.getSensorState() == SensorState.ON) {
+      bd = new BlockData(blk,s);
+      active_blocks.put(blk,bd);
+      blk.setBlockState(BlockState.INUSE);
     }
-}
-
- 
-void loadDiagram(ModelBase mdl,Element xml)
-{
-   for (Element conxml : IvyXml.children(xml,"CONNECT")) {
-      String pts = IvyXml.getAttrString(conxml,"POINTS");
-      StringTokenizer tok = new StringTokenizer(pts);
-      ModelPoint prev = null;
-      while (tok.hasMoreTokens()) {
-         String ptnm = tok.nextToken();
-         ModelPoint pn = mdl.getPointById(ptnm);
-         if (pn == null) {
-            mdl.noteError("POINT " + ptnm + 
-                  " not defined in connection list: " + pts);           
-          }
-         else {
-            if (prev != null) prev.connectTo(pn); 
-            prev = pn;
+   else if (s.getSensorState() == SensorState.ON) {
+      if (bd.noteSensor(s)) {
+         for (IfaceConnection conn : blk.getConnections()) {
+            if (conn.getExitSensor(blk) == s) {
+               IfaceSensor ent = conn.getEntrySensor(blk);
+               bd.setExitSensor(s,ent);
+             }
           }
        }
     }
+   else if (s.getSensorState() == SensorState.OFF && s == bd.getExitSensor()) {
+      for (IfaceSensor chksen : bd.getAllSensors()) {
+         if (chksen.getSensorState() == SensorState.ON) return;
+       }
+      IfaceSensor chk = bd.getExitCheck();
+      if (chk != null) wait_sensors.put(chk,bd);
+      else {
+         active_blocks.remove(bd.getBlock());
+         blk.setBlockState(BlockState.EMPTY);
+       }
+    }
    
-   for (Element blkxml : IvyXml.children(xml,"BLOCK")) {
-      ModelBlock blk = new ModelBlock(mdl,blkxml);
-      if (diagram_blocks.put(blk.getId(),blk) != null) {
-         mdl.noteError("Block " + blk.getId() + " defined twice");
-       }
-    }
-   for (Element sensorxml : IvyXml.children(xml,"SENSOR")) {
-      ModelSensor sensor = new ModelSensor(mdl,sensorxml);
-      if (diagram_sensors.put(sensor.getId(),sensor) != null) {
-         mdl.noteError("Sensor " + sensor.getId() + " defined twice");
-       }
-    }
-   for (Element switchxml : IvyXml.children(xml,"SWITCH")) {
-      ModelSwitch  sw = new ModelSwitch(mdl,switchxml);
-      if (diagram_switches.put(sw.getId(),sw) != null) {
-         mdl.noteError("Switch " + sw.getId() + " defined twice");
-       }
-    }
-   for (Element signalxml : IvyXml.children(xml,"SIGNAL")) {
-      ModelSignal signal = new ModelSignal(mdl,signalxml); 
-      if (diagram_signals.put(signal.getId(),signal) != null) {
-         mdl.noteError("Signal " + signal.getId() + " defined twice");
-       }
+   BlockData bdw = wait_sensors.get(s);
+   if (bdw != null && s.getSensorState() == SensorState.OFF) {
+      wait_sensors.remove(s);
+      active_blocks.remove(bdw.getBlock());
+      bdw.getBlock().setBlockState(BlockState.EMPTY);
     }
 }
 
 
-}       // end of class ModelDiagramImpl
+
+/********************************************************************************/
+/*                                                                              */
+/*      Data for active blocks                                                  */
+/*                                                                              */
+/********************************************************************************/
+
+private class BlockData {
+   
+   private IfaceBlock for_block;
+   private IfaceSensor exit_sensor;
+   private IfaceSensor exit_check;
+   private Set<IfaceSensor> hit_sensors;
+   
+   BlockData(IfaceBlock blk,IfaceSensor s) {
+      for_block = blk;
+      exit_sensor = null;
+      exit_check = null;
+      hit_sensors = new HashSet<>();
+      hit_sensors.add(s);
+    }
+   
+   boolean noteSensor(IfaceSensor s) {
+      return hit_sensors.add(s);
+    }
+   
+   IfaceBlock getBlock()                        { return for_block; }
+   IfaceSensor getExitSensor()                  { return exit_sensor; }
+   IfaceSensor getExitCheck()                   { return exit_check; }
+   
+   void setExitSensor(IfaceSensor s,IfaceSensor check) {
+      exit_sensor = s;
+      exit_check = check;
+    }
+      
+   Collection<IfaceSensor> getAllSensors()      { return hit_sensors; }
+   
+}
+
+
+}       // end of class SafetyBlock
 
 
 
 
-/* end of ModelDiagramImpl.java */
+/* end of SafetyBlock.java */
 

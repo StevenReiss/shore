@@ -40,7 +40,19 @@ import edu.brown.cs.spr.shore.iface.IfaceTrain;
 public interface ModelConstants
 {
 
-enum PointType { TURNING, STRAIGHT, SWITCH, BLOCK, END, TURNTABLE, DIAGRAM };
+enum PointType { 
+   TURNING, 
+   STRAIGHT, 
+   BLOCK, 
+   SENSOR, 
+   SWITCH,
+   SIGNAL,
+   GAP, 
+   END, 
+   TURNTABLE, 
+   DIAGRAM,
+   LABEL,
+};
 
 
 

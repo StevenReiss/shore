@@ -55,6 +55,7 @@ import javax.jmdns.ServiceInfo;
 import javax.jmdns.ServiceListener;
 import javax.jmdns.ServiceTypeListener;
 
+import edu.brown.cs.spr.shore.iface.IfaceNetwork;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
@@ -65,7 +66,7 @@ import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 public class NetworkMonitor implements NetworkConstants, NetworkControlMessages,
-      NetworkLocoFiMessages
+      NetworkLocoFiMessages, IfaceNetwork 
 {
 
 
@@ -110,7 +111,7 @@ private Map<Integer,ControllerInfo>        id_map;
 /*										*/
 /********************************************************************************/
 
-NetworkMonitor(IfaceModel model)
+public NetworkMonitor(IfaceModel model)
 {
    controller_map = new ConcurrentHashMap<>();
    id_map = new ConcurrentHashMap<>();
@@ -203,7 +204,7 @@ NetworkMonitor(IfaceModel model)
 /*										*/
 /********************************************************************************/
 
-void start()
+public void start()
 {
    ReaderThread rt = new ReaderThread(our_socket,new NotificationHandler());
    rt.start();
@@ -223,6 +224,7 @@ void start()
 /*										*/
 /********************************************************************************/
 
+@Override 
 public void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.SwitchState set)
 {
    if (sw == null) return;
@@ -231,8 +233,9 @@ public void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.SwitchState set)
    if (ci == null) return;
    ci.sendSwitchMessage(sw.getTowerSwitch(),set);
 }
+ 
 
-
+@Override
 public void sendSetSignal(IfaceSignal sig,IfaceSignal.SignalState set)
 {
    if (sig == null) return;

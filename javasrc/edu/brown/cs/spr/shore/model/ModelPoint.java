@@ -35,6 +35,7 @@
 
 package edu.brown.cs.spr.shore.model;
 
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,8 +58,9 @@ private String  point_id;
 private double  point_x;
 private double  point_y;
 private PointType point_type;
-private List<ModelPoint> to_points;
-private List<ModelPoint> from_points;
+private List<ModelPoint> conn_points;
+private String ref_id;
+private ModelBlock in_block;
 
 
 
@@ -75,21 +77,23 @@ ModelPoint(ModelDiagram dgm,Element xml)
    point_x = IvyXml.getAttrDouble(xml,"X",0);
    point_y = IvyXml.getAttrDouble(xml,"Y",0);
    point_type = IvyXml.getAttrEnum(xml,"TYPE",PointType.STRAIGHT);
-   to_points = new ArrayList<>();
-   from_points = new ArrayList<>();
+   ref_id = IvyXml.getAttrString(xml,"REF");
+   
+   conn_points = new ArrayList<>();
 }
 
 
-void resolve(ModelBase mdl,Element xml)
+
+/********************************************************************************/
+/*                                                                              */
+/*      Setup methods                                                           */
+/*                                                                              */
+/********************************************************************************/
+
+void connectTo(ModelPoint pt)
 {
-   for (Element toxml : IvyXml.children(xml,"TO")) {
-      String pid = IvyXml.getAttrString(toxml,"POINT");
-      ModelPoint topt = mdl.getPointById(pid);  
-      if (topt != null) {
-         to_points.add(topt);
-         topt.from_points.add(this); 
-       }
-    }
+   conn_points.add(pt);
+   pt.conn_points.add(this);
 }
 
 
@@ -108,18 +112,28 @@ double getX()                                   { return point_x; }
 
 double getY()                                   { return point_y; }
 
+Point2D getPoint2D()                            
+{ 
+   return new Point2D.Double(point_x,point_y);
+}
+
+void setPoint2D(double x,double y)
+{
+   point_x = x;
+   point_y = y;
+}
+
 PointType getType()                             { return point_type; }
 
-List<ModelPoint> getFromPoints()
+String getRefId()                               { return ref_id; }
+
+List<ModelPoint> getAllPoints()
 {
-   return from_points;
+   return conn_points;
 }
 
-List<ModelPoint> getToPoints()
-{
-   return to_points;
-}
-
+ModelBlock getBlock()                           { return in_block; }
+void setBlock(ModelBlock blk)                   { in_block = blk; }
 
 
 }       // end of class ModelPointImpl

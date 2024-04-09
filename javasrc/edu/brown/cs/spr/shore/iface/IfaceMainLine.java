@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              IfaceSensor.java                                                */
+/*              IfaceMainLine.java                                              */
 /*                                                                              */
-/*      Information about sensors                                               */
+/*      Representation of a track loop a train can go on multiple times         */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,36 +35,22 @@
 
 package edu.brown.cs.spr.shore.iface;
 
+import java.util.List;
 
-
-public interface IfaceSensor
+public interface IfaceMainLine
 {
 
-enum SensorState { OFF, ON, UNKNOWN };
-/**
- *      Return switch if on N path to switch; null otherwise
- **/
+String getId();
 
-IfaceSwitch getSwitchN();
+List<IfaceBlock> getBlocks();
 
-IfaceSwitch getSwitchR();
+boolean isLoop();
 
-IfaceConnection getConnection();
 
-IfaceBlock getBlock();
-
-void setSensorState(SensorState state);
-SensorState getSensorState();
-
-IfaceSignal getSignal();
-
-byte getTowerId();
-byte getTowerSensor();
-
-}       // end of interface IfaceSensor
+}       // end of interface IfaceMainLine
 
 
 
 
-/* end of IfaceSensor.java */
+/* end of IfaceMainLine.java */
 

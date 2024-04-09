@@ -48,6 +48,9 @@ IfaceBlock getEntryBlock();
 IfaceBlock getNBlock();
 IfaceBlock getRBlock();
 
+IfaceSensor getNSensor();
+IfaceSensor getRSensor();
+
 byte getTowerId();
 byte getTowerSwitch();
 
