@@ -45,6 +45,7 @@ import org.w3c.dom.Element;
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
+import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 class ModelBlock implements ModelConstants, IfaceBlock
 {
@@ -101,6 +102,8 @@ ModelPoint getAtPoint()                         { return at_point; }
 @Override public void setBlockState(BlockState st)
 {
    if (block_state == st) return;
+   
+   ShoreLog.logD("MODEL","Set Block State " + block_id + "=" + st);
    block_state = st;
    for_model.fireBlockChanged(this);
 }

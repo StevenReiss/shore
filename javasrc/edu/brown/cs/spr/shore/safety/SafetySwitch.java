@@ -43,6 +43,7 @@ import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceSensor.SensorState;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
+import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 class SafetySwitch implements SafetyConstants
 {
@@ -130,6 +131,8 @@ private class SwitchData {
     }
    
    void trigger(SensorState sen,SwitchState state) {
+      ShoreLog.logD("SAFETY","Trigger switch " + for_switch + "=" + state);
+      
       switch (current_mode) {
          case NORMAL :
             if (sen != SensorState.ON) return;

@@ -47,6 +47,7 @@ import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceModel.ModelCallback;
 import edu.brown.cs.spr.shore.iface.IfaceSensor.SensorState;
+import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 public class SafetyFactory implements SafetyConstants
 {
@@ -127,6 +128,7 @@ private void handleSensorChange(IfaceSensor s)
 
 private void handleActualSensorChange(IfaceSensor s)
 {
+   ShoreLog.logD("SAFETY","Actual sensor change " + s);
    safety_switch.handleSensorChange(s);
    safety_signal.handleSensorChange(s);
 }

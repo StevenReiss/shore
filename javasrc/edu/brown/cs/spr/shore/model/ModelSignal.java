@@ -45,6 +45,7 @@ import org.w3c.dom.Element;
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
+import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 class ModelSignal implements IfaceSignal, ModelConstants
 {
@@ -129,6 +130,9 @@ void addConnection(ModelConnection conn)
 @Override public void setSignalState(SignalState state)
 {
    if (signal_state == state) return;
+   
+   ShoreLog.logD("MODEL","Set signal " + signal_id + "=" + state);
+   
    signal_state = state;
    for_model.fireSignalChanged(this);
 }

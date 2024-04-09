@@ -44,6 +44,7 @@ import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
+import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 class ModelSensor implements IfaceSensor, ModelConstants
 {
@@ -148,6 +149,9 @@ void assignSwitch(ModelSwitch sw,SwitchState state)
 @Override public void setSensorState(SensorState st)
 {
    if (st == sensor_state) return;
+   
+   ShoreLog.logD("MODEL","Set sensor state " + sensor_id + "=" + st);
+   
    sensor_state = st;
    for_model.fireSensorChanged(this);
 }
@@ -160,6 +164,19 @@ void setSignal(ModelSignal sig)
 @Override public byte getTowerId()              { return tower_id; } 
 
 @Override public byte getTowerSensor()          { return tower_index; }
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Output methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public String toString()
+{
+   return "SENSOR[" + sensor_id + "]";
+}
 
 }       // end of class ModelSensor
 

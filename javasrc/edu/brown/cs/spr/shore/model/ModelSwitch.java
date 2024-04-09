@@ -43,6 +43,7 @@ import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
+import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 class ModelSwitch implements IfaceSwitch, ModelConstants
 {
@@ -149,6 +150,9 @@ ModelSwitch getAssociatedSwitch()
 @Override public void setSwitch(SwitchState st)
 {
    if (switch_state == st) return;
+   
+   ShoreLog.logD("MODEL","Set switch state " + switch_id + "=" + st);
+   
    switch_state = st;
    for_model.fireSwitchChanged(this); 
 }
@@ -312,6 +316,21 @@ private ModelPoint findSensorPoint(ModelPoint frm,ModelPoint to)
    if (next == null) return null;
    return findSensorPoint(to,next);
 }
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Output Methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public String toString()
+{
+   return "SWITCH[" + switch_id + "]";
+}
+
+
 
 }       // end of class ModelSwitch
 
