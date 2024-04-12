@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimerTask;
 
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
@@ -57,9 +58,11 @@ class SafetyBlock implements SafetyConstants
 /*                                                                              */
 /********************************************************************************/
 
-// private SafetyFactory   safety_factory;
+private SafetyFactory   safety_factory;
 private Map<IfaceBlock,BlockData> active_blocks;
 private Map<IfaceSensor,BlockData> wait_sensors;
+
+private static final long BLOCK_DELAY = 5000;
 
 
 
@@ -71,9 +74,29 @@ private Map<IfaceSensor,BlockData> wait_sensors;
 
 SafetyBlock(SafetyFactory fac) 
 {
-// safety_factory = fac;
+   safety_factory = fac;
    active_blocks = new HashMap<>();
    wait_sensors = new HashMap<>();
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Access methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+boolean checkPriorSensors(Collection<IfaceSensor> prior)
+{
+   for (IfaceSensor s : prior) {
+      IfaceBlock blk = s.getBlock();
+      BlockData bd = active_blocks.get(blk);
+      if (bd != null) {
+         if (bd.pastSensor(s)) return true;
+       }
+    }
+   return false;
 }
 
 
@@ -110,16 +133,14 @@ void handleSensorChange(IfaceSensor s)
       IfaceSensor chk = bd.getExitCheck();
       if (chk != null) wait_sensors.put(chk,bd);
       else {
-         active_blocks.remove(bd.getBlock());
-         blk.setBlockState(BlockState.EMPTY);
+         bd.checkEmptyBlock();
        }
     }
    
    BlockData bdw = wait_sensors.get(s);
    if (bdw != null && s.getSensorState() == SensorState.OFF) {
       wait_sensors.remove(s);
-      active_blocks.remove(bdw.getBlock());
-      bdw.getBlock().setBlockState(BlockState.EMPTY);
+      bdw.checkEmptyBlock();
     }
 }
 
@@ -137,6 +158,7 @@ private class BlockData {
    private IfaceSensor exit_sensor;
    private IfaceSensor exit_check;
    private Set<IfaceSensor> hit_sensors;
+   private long exit_time;
    
    BlockData(IfaceBlock blk,IfaceSensor s) {
       for_block = blk;
@@ -144,13 +166,14 @@ private class BlockData {
       exit_check = null;
       hit_sensors = new HashSet<>();
       hit_sensors.add(s);
+      exit_time = 0;
     }
    
    boolean noteSensor(IfaceSensor s) {
+      exit_time = 0;
       return hit_sensors.add(s);
     }
    
-   IfaceBlock getBlock()                        { return for_block; }
    IfaceSensor getExitSensor()                  { return exit_sensor; }
    IfaceSensor getExitCheck()                   { return exit_check; }
    
@@ -161,6 +184,39 @@ private class BlockData {
       
    Collection<IfaceSensor> getAllSensors()      { return hit_sensors; }
    
+   boolean pastSensor(IfaceSensor s) {
+      if (s == null) return false;
+      return hit_sensors.contains(s);
+    }
+   
+   void checkEmptyBlock() {
+      exit_time = System.currentTimeMillis();
+      safety_factory.schedule(new BlockTask(this,exit_time),BLOCK_DELAY);
+    }
+   
+   void noteDone(long time) {
+      if (exit_time != time) return;
+      active_blocks.remove(for_block);
+      for_block.setBlockState(BlockState.EMPTY);
+    }
+   
+}       // end of inner class BlockData
+
+
+
+private class BlockTask extends TimerTask {
+   
+   private BlockData block_data;
+   private long start_time;
+   
+   BlockTask(BlockData bd,long time) {
+      block_data = bd;
+      start_time = time;
+    }
+   
+   @Override public void run() {
+      block_data.noteDone(start_time);
+    }
 }
 
 

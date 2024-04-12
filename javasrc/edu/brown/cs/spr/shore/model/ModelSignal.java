@@ -44,6 +44,7 @@ import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
+import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
@@ -65,6 +66,7 @@ private Set<ModelConnection> for_connections;
 private SignalState signal_state;
 private SignalType signal_type; 
 private ModelSensor stop_sensor;
+private Set<ModelSensor> prior_sensors;
 private byte tower_id;
 private byte tower_index;
 
@@ -87,6 +89,7 @@ ModelSignal(ModelBase model,Element xml)
    tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
    signal_type = IvyXml.getAttrEnum(xml,"TYPE",SignalType.RG);
    stop_sensor = null;
+   prior_sensors = new HashSet<>();
    signal_state = SignalState.OFF;
 }
 
@@ -127,6 +130,12 @@ void addConnection(ModelConnection conn)
 
 @Override public ModelSensor getStopSensor()    { return stop_sensor; } 
 
+@Override public Collection<IfaceSensor> getPriorSensors()
+{
+   return new ArrayList<>(prior_sensors);
+}
+
+
 @Override public void setSignalState(SignalState state)
 {
    if (signal_state == state) return;
@@ -147,20 +156,17 @@ void addConnection(ModelConnection conn)
 
 void normalizeSignal(ModelBase mdl)
 {
-   ModelPoint fwdpt = null;
    for (ModelPoint pt : at_point.getAllPoints()) {
-      if (goesTo(pt,at_point,gap_point)) ;
-      else if (fwdpt == null) fwdpt = pt;
-      else mdl.noteError("Can't find stop point for signal " + getId());
+      if (goesTo(at_point,pt,gap_point)) ;
+      else addPriorSensors(at_point,pt);
     }
    
    stop_sensor = mdl.findSensorForPoint(at_point);
-   stop_sensor.setSignal(this); 
+   stop_sensor.addSignal(this); 
 }
 
 
-
-private boolean goesTo(ModelPoint pt,ModelPoint prev,ModelPoint tgt)
+private boolean goesTo(ModelPoint prev,ModelPoint pt,ModelPoint tgt)
 {
    if (pt == null) return false;
    if (pt == tgt) return true;
@@ -177,6 +183,20 @@ private boolean goesTo(ModelPoint pt,ModelPoint prev,ModelPoint tgt)
        }
     }
    return false;
+}
+
+
+private void addPriorSensors(ModelPoint prev,ModelPoint pt)
+{
+   ModelSensor s = for_model.findSensorForPoint(pt);
+   if (s != null) prior_sensors.add(s);
+   else {
+      for (ModelPoint npt : pt.getAllPoints()) {
+         if (npt == prev) continue;
+         if (npt.getBlock() != prev.getBlock()) continue;
+         addPriorSensors(pt,npt);
+       }
+    }
 }
 
 

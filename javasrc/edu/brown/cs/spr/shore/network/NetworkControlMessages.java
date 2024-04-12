@@ -31,6 +31,7 @@ byte CONTROL_SYNC       = (byte) 0x42;          // ask for settings of sensors, 
 byte CONTROL_SETSWTICH  = (byte) 0x43;          // set switch to state
 byte CONTROL_SETSIGNAL  = (byte) 0x44;          // set signal to stat
 byte CONTROL_DEFSENSOR  = (byte) 0x45;          // assoc sensor with switch state
+byte CONTROL_SETSENSOR  = (byte) 0x46;          // note sensor state
 
 
 

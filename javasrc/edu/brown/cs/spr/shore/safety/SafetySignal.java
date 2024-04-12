@@ -35,6 +35,7 @@
 
 package edu.brown.cs.spr.shore.safety;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -87,19 +88,23 @@ SafetySignal(SafetyFactory sf)
 
 void handleSensorChange(IfaceSensor s)
 {
-   IfaceSignal sig = s.getSignal();
-   if (s.getSensorState() == SensorState.ON && sig != null) {
-      SignalData sd = active_signals.get(sig);
-      if (sd == null) {
-         if (sig.getSignalState() != SignalState.GREEN) {
-            // get train for block
-            SignalData si = new SignalData(sig,null);
-            active_signals.put(sig,si);
-            si.stopTrain();
-          }
-         else {
-            active_signals.put(sig,new SignalData(sig,null));
-            sig.setSignalState(SignalState.RED);
+   for (IfaceSignal sig : s.getSignals()) { 
+      Collection<IfaceSensor> pset = sig.getPriorSensors();
+      if (safety_factory.checkPriorSensors(pset)) {  
+         if (s.getSensorState() == SensorState.ON && sig != null) {
+            SignalData sd = active_signals.get(sig);
+            if (sd == null) {
+               if (sig.getSignalState() != SignalState.GREEN) {
+                  // get train for block
+                  SignalData si = new SignalData(sig,null);
+                  active_signals.put(sig,si);
+                  si.stopTrain();
+                }
+               else {
+                  active_signals.put(sig,new SignalData(sig,null));
+                  sig.setSignalState(SignalState.RED);
+                }
+             }
           }
        }
     }

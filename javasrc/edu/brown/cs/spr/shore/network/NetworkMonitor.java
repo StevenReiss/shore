@@ -248,6 +248,19 @@ public void sendSetSignal(IfaceSignal sig,IfaceSignal.SignalState set)
 
 
 
+@Override
+public void sendSetSensor(IfaceSensor sig,IfaceSensor.SensorState set) 
+{
+   if (sig == null) return;
+   
+   int id = sig.getTowerId();
+   ControllerInfo ci = id_map.get(id);
+   if (ci == null) return;
+   ci.sendSensorMessage(sig.getTowerSensor(),set);
+}
+
+
+@Override
 public void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,IfaceSwitch.SwitchState set)
 {
    if (sen == null) return;
@@ -259,6 +272,47 @@ public void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,IfaceSwitch.SwitchState
       s = sw.getTowerSwitch() * 4 + set.ordinal();
     }
    ci.sendDefSensorMessage(sen.getTowerSensor(),s);
+}
+
+
+
+private void sendSetupMessages(byte controller)
+{
+   if (layout_model == null) return;
+   
+   for (IfaceSensor sen : layout_model.getSensors()) {
+      if (sen.getTowerId() == controller) {
+         SwitchState state = SwitchState.UNKNOWN;
+         IfaceSwitch stsw = null;
+         for (IfaceSwitch sw : layout_model.getSwitches()) {
+            if (sw.getTowerId() == controller) {
+               if (sw.getNSensor() == sen) {
+                  stsw = sw;
+                  state = SwitchState.N;
+                  break;
+                }
+               else if (sw.getRSensor() == sen) {
+                  stsw = null;
+                  state = SwitchState.R;
+                  break;
+                }
+             }
+          }
+         sendDefSensor(sen,stsw,state);
+       }
+    }
+   
+   for (IfaceSignal sig : layout_model.getSignals()) {
+      if (sig.getTowerId() == controller) {
+         sendSetSignal(sig,sig.getSignalState());
+       }
+    }
+   
+   for (IfaceSwitch sw : layout_model.getSwitches()) {
+      if (sw.getTowerId() == controller) {
+         sendSetSwitch(sw,sw.getSwitchState());
+       }
+    }
 }
 
 
@@ -506,8 +560,8 @@ private class ControllerInfo {
    void sendEndSync() {
       byte msg [] = { CONTROL_HEARTBEAT, controller_id, 1, 0 };
       sendMessage(net_address,msg,0,4);
-      // send DEFSENSOR messages
-      // send SETSIGNAL and SETSWITCH messages if appropriate
+      sendSyncMessage();
+      sendSetupMessages(controller_id);
     }
    
    void sendSwitchMessage(byte sid,IfaceSwitch.SwitchState state) {
@@ -519,6 +573,12 @@ private class ControllerInfo {
       byte msg [] = { CONTROL_SETSIGNAL, controller_id, sid,(byte) state.ordinal()};
       sendMessage(net_address,msg,0,4);
     }
+   
+   
+   void sendSensorMessage(byte sid,IfaceSensor.SensorState state) {
+      byte msg [] = { CONTROL_SETSENSOR, controller_id, sid,(byte) state.ordinal()}; 
+      sendMessage(net_address,msg,0,4);
+   }
    
    void sendDefSensorMessage(byte sid,int value) {
       byte msg [] = { CONTROL_DEFSENSOR, controller_id,sid,(byte) value };

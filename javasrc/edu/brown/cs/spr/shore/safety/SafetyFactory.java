@@ -35,6 +35,7 @@
 
 package edu.brown.cs.spr.shore.safety;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
@@ -65,6 +66,7 @@ private Timer           safety_timer;
 private Map<IfaceSensor,SensorStatus> sensor_map;
 private SafetySwitch    safety_switch;
 private SafetySignal    safety_signal;
+private SafetyBlock     safety_block;
 
 private static final long OFF_TIME = 2000L;
 
@@ -85,6 +87,7 @@ public SafetyFactory(IfaceNetwork net,IfaceModel mdl)
    
    safety_switch = new SafetySwitch(this); 
    safety_signal = new SafetySignal(this); 
+   safety_block = new SafetyBlock(this);
    
    mdl.addModelCallback(new SafetyCallback());
 }
@@ -100,6 +103,11 @@ public SafetyFactory(IfaceNetwork net,IfaceModel mdl)
 IfaceNetwork getNetworkModel()                  { return network_model; }
 
 IfaceModel getLayoutModel()                     { return layout_model; }
+
+boolean checkPriorSensors(Collection<IfaceSensor> prior)
+{
+   return safety_block.checkPriorSensors(prior); 
+}
 
 
 void schedule(TimerTask task,long delay)
@@ -131,6 +139,7 @@ private void handleActualSensorChange(IfaceSensor s)
    ShoreLog.logD("SAFETY","Actual sensor change " + s);
    safety_switch.handleSensorChange(s);
    safety_signal.handleSensorChange(s);
+   safety_block.handleSensorChange(s);
 }
 
 

@@ -53,6 +53,7 @@ IfaceBlock getFromBlock();
 Collection<IfaceConnection> getConnections();
 
 IfaceSensor getStopSensor();
+Collection<IfaceSensor> getPriorSensors();
 
 byte getTowerId();
 byte getTowerSignal();

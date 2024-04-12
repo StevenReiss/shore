@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              ModelSensor.java                                                */
+/*              VisionTest.java                                                 */
 /*                                                                              */
-/*      Representation of a sensor in the model                                 */
+/*      Test program for experimenting with opencv                              */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -33,26 +33,34 @@
 
 
 
-package edu.brown.cs.spr.shore.model;
+package edu.brown.cs.spr.shore.vision;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.awt.image.WritableRaster;
 
-import org.w3c.dom.Element;
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.videoio.VideoCapture;
 
-import edu.brown.cs.ivy.xml.IvyXml;
-import edu.brown.cs.spr.shore.iface.IfaceBlock;
-import edu.brown.cs.spr.shore.iface.IfaceConnection;
-import edu.brown.cs.spr.shore.iface.IfaceSensor;
-import edu.brown.cs.spr.shore.iface.IfaceSignal;
-import edu.brown.cs.spr.shore.iface.IfaceSwitch;
-import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
-import edu.brown.cs.spr.shore.shore.ShoreLog;
-
-class ModelSensor implements IfaceSensor, ModelConstants
+public class VisionTest implements VisionConstants
 {
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Main program                                                            */
+/*                                                                              */
+/********************************************************************************/
+
+public static void main(String [] args)
+{
+   VisionTest vt = new VisionTest(args);
+   vt.process0();
+}
+
 
 
 /********************************************************************************/
@@ -60,19 +68,6 @@ class ModelSensor implements IfaceSensor, ModelConstants
 /*      Private Storage                                                         */
 /*                                                                              */
 /********************************************************************************/
-
-private ModelBase for_model;
-private String sensor_id;
-private ModelPoint sensor_point;
-private ModelBlock sensor_block;
-private SensorState sensor_state;
-private ModelSwitch n_switch;
-private ModelSwitch r_switch;
-private ModelSwitch entry_switch;
-private ModelConnection in_connection;
-private Set<ModelSignal> for_signals;
-private byte tower_id;
-private byte tower_index;
 
 
 
@@ -82,114 +77,43 @@ private byte tower_index;
 /*                                                                              */
 /********************************************************************************/
 
-ModelSensor(ModelBase mdl,Element xml)
-{
-   for_model = mdl;
-   sensor_id = IvyXml.getAttrString(xml,"ID");
-   sensor_point = mdl.getPointById(IvyXml.getAttrString(xml,"POINT"));
-   tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
-   tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
-   n_switch = null;
-   r_switch = null;
-   entry_switch = null;
-   sensor_block = sensor_point.getBlock();
-   sensor_state = SensorState.UNKNOWN;
-   for_signals = new HashSet<>();
-   in_connection = null;
-}
-
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Access Methods                                                          */
-/*                                                                              */
-/********************************************************************************/
-
-String getId()                                  { return sensor_id; }
-
-ModelPoint getAtPoint()                         { return sensor_point; }
-
-@Override public IfaceSwitch getSwitchN()       { return n_switch; }
-
-@Override public IfaceSwitch getSwitchR()       { return r_switch; }
-
-IfaceSwitch getSwitchEntry()                    { return entry_switch; }
-
-@Override public Collection<IfaceSignal> getSignals()        
+private VisionTest(String [] args)
 { 
-   return new ArrayList<>(for_signals);
+   System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 }
-
-@Override public IfaceConnection getConnection()                 
-{
-   return in_connection; 
-} 
-
-void setConnection(ModelConnection conn)
-{
-   in_connection = conn;
-}
-
-
-
-void assignSwitch(ModelSwitch sw,SwitchState state)
-{
-   switch (state) {
-      case N :
-         n_switch = sw;
-         break;
-      case R :
-         r_switch = sw;
-         break;
-      case UNKNOWN :
-         entry_switch = sw;
-         break;
-    }
-}
-
-
-@Override  public IfaceBlock getBlock()         { return sensor_block; }
-
-@Override public SensorState getSensorState()   { return sensor_state; }
-
-@Override public void setSensorState(SensorState st)
-{
-   if (st == sensor_state) return;
-   
-   ShoreLog.logD("MODEL","Set sensor state " + sensor_id + "=" + st);
-   
-   sensor_state = st;
-   for_model.fireSensorChanged(this);
-}
-
-void addSignal(ModelSignal sig)
-{
-   for_signals.add(sig);
-}
-
-@Override public byte getTowerId()              { return tower_id; } 
-
-@Override public byte getTowerSensor()          { return tower_index; }
 
 
 
 /********************************************************************************/
 /*                                                                              */
-/*      Output methods                                                          */
+/*      Test methods                                                            */
 /*                                                                              */
 /********************************************************************************/
 
-@Override public String toString()
+private void process0()
 {
-   return "SENSOR[" + sensor_id + "]";
+   VideoCapture capture = new VideoCapture(CAMERA_ID);
+   Mat matrix = new Mat();
+   capture.read(matrix);
+   System.err.println("CAPTRUED FRAME");
+   BufferedImage image = new BufferedImage(matrix.width(),
+         matrix.height(),BufferedImage.TYPE_3BYTE_BGR);
+   WritableRaster raster = image.getRaster();
+   DataBufferByte db = (DataBufferByte) raster.getDataBuffer();
+   byte [] data = db.getData();
+   matrix.get(0,0,data);
+   // want to get average brightness of image, and set camera BRIGHTNESS, CONTRAST,
+   //   SATURATION, EXPOSURE accordingly
+   
+   String file = "/home/spr/testimage.jpg";
+   Imgcodecs.imwrite(file,matrix);
 }
 
-}       // end of class ModelSensor
+
+}       // end of class VisionTest
 
 
 
 
-/* end of ModelSensor.java */
+/* end of VisionTest.java */
 

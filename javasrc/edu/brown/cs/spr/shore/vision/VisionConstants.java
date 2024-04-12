@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              IfaceSensor.java                                                */
+/*              VisionConstants.java                                            */
 /*                                                                              */
-/*      Information about sensors                                               */
+/*      Constants for using computer vision to detect trainsrr55                    */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -33,38 +33,20 @@
 
 
 
-package edu.brown.cs.spr.shore.iface;
+package edu.brown.cs.spr.shore.vision;
 
-import java.util.Collection;
 
-public interface IfaceSensor
+
+public interface VisionConstants
 {
 
-enum SensorState { OFF, ON, UNKNOWN };
-/**
- *      Return switch if on N path to switch; null otherwise
- **/
+int CAMERA_ID = 3;
 
-IfaceSwitch getSwitchN();
 
-IfaceSwitch getSwitchR();
-
-IfaceConnection getConnection();
-
-IfaceBlock getBlock();
-
-void setSensorState(SensorState state);
-SensorState getSensorState();
-
-Collection<IfaceSignal> getSignals();
-
-byte getTowerId();
-byte getTowerSensor();
-
-}       // end of interface IfaceSensor
+}       // end of interface VisionConstants
 
 
 
 
-/* end of IfaceSensor.java */
+/* end of VisionConstants.java */
 

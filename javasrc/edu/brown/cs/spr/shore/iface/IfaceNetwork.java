@@ -41,6 +41,8 @@ public interface IfaceNetwork
 
 void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.SwitchState set);
 void sendSetSignal(IfaceSignal sig,IfaceSignal.SignalState set);
+void sendSetSensor(IfaceSensor sen,IfaceSensor.SensorState set);
+void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,IfaceSwitch.SwitchState state);
 
 
 
