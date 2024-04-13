@@ -40,7 +40,7 @@ package edu.brown.cs.spr.shore.vision;
 public interface VisionConstants
 {
 
-int CAMERA_ID = 3;
+int CAMERA_ID = 0;
 
 
 }       // end of interface VisionConstants
