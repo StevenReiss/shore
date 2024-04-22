@@ -41,12 +41,15 @@ import java.awt.image.WritableRaster;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
-import org.opencv.videoio.Videoio;
 
 public class VisionTest implements VisionConstants
 {
@@ -63,6 +66,7 @@ public static void main(String [] args)
 {
    VisionTest vt = new VisionTest(args);
    vt.process0();
+   
    try {
       BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
       System.err.println("INPUT WHEN READY");
@@ -70,7 +74,10 @@ public static void main(String [] args)
       System.err.println("READ: " + wait);
     }
    catch (IOException e) { }
+   
    vt.process1();
+   
+   vt.process2();
 }
 
 
@@ -83,6 +90,7 @@ public static void main(String [] args)
 
 private VideoCapture train_cam;
 private Mat     background_image;
+private Mat     delta_image;
 
 
 /********************************************************************************/
@@ -95,6 +103,7 @@ private VisionTest(String [] args)
 { 
    System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
    background_image = null;
+   delta_image = null;
    train_cam = new VideoCapture(CAMERA_ID);
 }
 
@@ -137,24 +146,40 @@ private void process1()
    
    saveMatrix(next,"/home/spr/trainimage.jpg");
    
-   Mat delta = new Mat();
-   Core.absdiff(background_image,next,delta);
+   delta_image = new Mat();
+   Core.absdiff(background_image,next,delta_image);
    
    double threshold = 30;
    int [] data = new int[3];
-   for (int j = 0; j < delta.rows(); ++j) {
-      for (int i = 0; i < delta.cols(); ++i) {
-         delta.get(j,i,data);
+   for (int j = 0; j < delta_image.rows(); ++j) {
+      for (int i = 0; i < delta_image.cols(); ++i) {
+         delta_image.get(j,i,data);
          double dist = data[0] * data[0] + data[1] * data[1] + data[2] * data[2];
          dist = Math.sqrt(dist);
          if (dist > threshold) {
             data[0] = data[1] = data[2] = 255;
-            delta.put(0,0,data);
+            delta_image.put(0,0,data);
           }
        }
     }
    
-   saveMatrix(delta,"/home/spr/deltaimage.jpg");
+   saveMatrix(delta_image,"/home/spr/deltaimage.jpg");
+}
+
+
+private void process2()
+{
+   Mat gray = new Mat();
+   Imgproc.cvtColor(delta_image,gray,Imgproc.COLOR_BGR2GRAY);
+   Mat thresh = new Mat();
+   Imgproc.threshold(gray,thresh,50,255,Imgproc.THRESH_BINARY);
+   
+   List<MatOfPoint> contours = new ArrayList<>();
+   Imgproc.findContours(thresh,contours,null,
+         Imgproc.RETR_TREE,Imgproc.CHAIN_APPROX_SIMPLE);
+   
+   Mat conn = new Mat();
+   Imgproc.connectedComponents(thresh,conn);
 }
 
 

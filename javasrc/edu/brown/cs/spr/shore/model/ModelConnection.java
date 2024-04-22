@@ -179,7 +179,7 @@ ModelConnection(ModelPoint gap,ModelBlock from,ModelBlock to)
 
 void normalizeConnection(ModelBase mdl)
 {
-   for (ModelPoint pt : gap_point.getAllPoints()) {
+   for (ModelPoint pt : gap_point.getModelConnectedTo()) {
       Set<ModelPoint> done = new HashSet<>();
       done.add(gap_point);
       followPath(mdl,pt,done);
@@ -266,7 +266,7 @@ private void followPath(ModelBase mdl,ModelPoint pt,Set<ModelPoint> done)
       done.add(pt);
       
       ModelPoint nxt = null;
-      for (ModelPoint npt : pt.getAllPoints()) {
+      for (ModelPoint npt : pt.getModelConnectedTo()) {
          if (done.contains(npt)) continue;
          if (nxt == null) nxt = npt;
          else return;

@@ -162,8 +162,8 @@ private void propagateBlock(ModelBase mdl,ModelPoint pt)
    
    pt.setBlock(this);
    
-   for (ModelPoint npt : pt.getAllPoints()) {
-      if (npt.getType() == PointType.GAP) continue;
+   for (ModelPoint npt : pt.getModelConnectedTo()) {
+      if (npt.getType() == ShorePointType.GAP) continue;
       propagateBlock(mdl,npt);
     }
 }

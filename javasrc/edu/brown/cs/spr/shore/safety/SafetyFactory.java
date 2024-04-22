@@ -46,6 +46,7 @@ import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
+import edu.brown.cs.spr.shore.iface.IfaceTrains;
 import edu.brown.cs.spr.shore.iface.IfaceModel.ModelCallback;
 import edu.brown.cs.spr.shore.iface.IfaceSensor.SensorState;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
@@ -77,7 +78,7 @@ private static final long OFF_TIME = 2000L;
 /*                                                                              */
 /********************************************************************************/
 
-public SafetyFactory(IfaceNetwork net,IfaceModel mdl)
+public SafetyFactory(IfaceNetwork net,IfaceModel mdl,IfaceTrains trains)
 {
    network_model = net;
    layout_model = mdl;

@@ -39,6 +39,7 @@
      <fileset dir='${SHORELIB}' includes='googleapi.jar' />
      <fileset dir='${SHORELIB}' includes='karma.jar' />
      <fileset dir='${SHORELIB}' includes='jmdns.jar' />
+     <fileset dir='/usr/share/java/' includes='opencv.jar' />
   </path>
 
   <target name='all' depends='setup,compile,jar' />

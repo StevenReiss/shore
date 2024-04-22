@@ -45,7 +45,7 @@ import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
-import edu.brown.cs.spr.shore.iface.IfaceTrain;
+import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfaceBlock.BlockState;
 import edu.brown.cs.spr.shore.iface.IfaceSensor.SensorState;
 import edu.brown.cs.spr.shore.iface.IfaceSignal.SignalState;
@@ -205,16 +205,16 @@ private SignalState updateSignal(IfaceSignal sig,IfaceConnection conn)
 private class SignalData {
    
    private IfaceSignal for_signal;
-   private IfaceTrain for_train;
+   private IfaceEngine for_train;
    
-   SignalData(IfaceSignal sig,IfaceTrain train) {
+   SignalData(IfaceSignal sig,IfaceEngine train) {
       for_signal = sig;
       for_train = train;
     }
    
    void stopTrain() {
       if (for_train != null) {
-         // stop train here
+         for_train.stopTrain();
        }
     } 
    

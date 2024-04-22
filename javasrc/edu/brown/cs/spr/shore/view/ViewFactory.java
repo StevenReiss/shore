@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              ShoreMain.java                                                  */
+/*              ViewFactory.java                                                */
 /*                                                                              */
-/*      Main program for Smart HO Railroad Environment                          */
+/*      Main access point for the user interface for SHORE                      */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -33,32 +33,16 @@
 
 
 
-package edu.brown.cs.spr.shore.shore;
+package edu.brown.cs.spr.shore.view;
 
-import java.io.File;
+import javax.swing.JFrame;
 
-import edu.brown.cs.spr.shore.model.ModelBase;
-import edu.brown.cs.spr.shore.network.NetworkMonitor;
-import edu.brown.cs.spr.shore.safety.SafetyFactory;
-import edu.brown.cs.spr.shore.train.TrainFactory;
-import edu.brown.cs.spr.shore.view.ViewFactory;
+import edu.brown.cs.spr.shore.iface.IfaceModel;
+import edu.brown.cs.spr.shore.iface.IfaceTrains;
 
-public class ShoreMain implements ShoreConstants
+public class ViewFactory implements ViewConstants
 {
 
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Main program                                                            */
-/*                                                                              */
-/********************************************************************************/
-
-public static void main(String [] args)
-{
-   ShoreMain sm = new ShoreMain(args);
-   sm.process();
-}
 
 /********************************************************************************/
 /*                                                                              */
@@ -66,13 +50,8 @@ public static void main(String [] args)
 /*                                                                              */
 /********************************************************************************/
 
-private NetworkMonitor  network_monitor;
-private ModelBase       model_base;
-private TrainFactory    train_base;
-private SafetyFactory   safety_base;
-private ViewFactory     view_base;
-
-private File            model_file;
+private IfaceModel      layout_model;
+private IfaceTrains     train_model;
 
 
 
@@ -82,18 +61,26 @@ private File            model_file;
 /*                                                                              */
 /********************************************************************************/
 
-private ShoreMain(String [] args)
-{
-   ShoreLog.setup();
-   
-   model_base = null;
-   network_monitor = null;
-   model_file = null;
-   train_base = null;
-   safety_base = null;
-   
-   scanArgs(args);
+public ViewFactory(IfaceModel mdl,IfaceTrains trns)
+{ 
+   layout_model = mdl;
+   train_model = trns;
 }
+
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Access methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+IfaceModel getLayoutModel()                     { return layout_model; }
+
+
+IfaceTrains getTrainModel()                     { return train_model; }
+
 
 
 /********************************************************************************/
@@ -102,65 +89,17 @@ private ShoreMain(String [] args)
 /*                                                                              */
 /********************************************************************************/
 
-private void process()
+public void startDisplay()
 {
-   model_base = new ModelBase(model_file); 
-   network_monitor = new NetworkMonitor(model_base);
-   train_base = new TrainFactory(network_monitor,model_base);
-   safety_base = new SafetyFactory(network_monitor,model_base,train_base); 
-   view_base = new ViewFactory(model_base,train_base);
-  
-   // set up vision module here
-   // set up user interface module here
-   // set up control module here
-   ShoreLog.logD("SHORE","ALL MOUDLES SET UP: " + safety_base);
-   
-   network_monitor.start(); 
-   view_base.startDisplay(); 
+   ViewDisplay vd = new ViewDisplay(this); 
+   vd.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+   vd.setVisible(true);
 }
 
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Argument scanning methods                                               */
-/*                                                                              */
-/********************************************************************************/
-
-private void scanArgs(String [] args)
-{
-   for (int i = 0; i < args.length; ++i) {
-      String arg = args[i];
-      if (arg.startsWith("-")) {
-         if (arg.startsWith("-m")) {                            // -model <file>
-            if (i+1 < args.length && model_file == null) {
-               model_file = new File(args[++i]);
-             }
-            else badArgs();
-          }
-         else badArgs();
-       }
-      else if (model_file == null) {
-         model_file = new File(arg);
-       }
-    }
-   
-   if (model_file == null || !model_file.canRead()) badArgs();
-}
-
-
-private void badArgs()
-{
-   System.err.println("SHORE -m <modelfile>");
-   System.exit(1);
-}
-
-
-
-}       // end of class ShoreMain
+}       // end of class ViewFactory
 
 
 
 
-/* end of ShoreMain.java */
+/* end of ViewFactory.java */
 

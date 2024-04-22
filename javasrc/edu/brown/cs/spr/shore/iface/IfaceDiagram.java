@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              IfaceController.java                                            */
+/*              IfaceDiagram.java                                               */
 /*                                                                              */
-/*      Controller to handle command requests                                   */
+/*      Representation of a diagram to display                                  */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,28 +35,38 @@
 
 package edu.brown.cs.spr.shore.iface;
 
-import java.net.InetAddress;
+import java.util.Collection;
 
-public interface IfaceController
+public interface IfaceDiagram extends IfaceConstants
 {
 
-void sendCommand(InetAddress target,byte [] data); 
+String getId();
 
-void setSwitch(IfaceSwitch s,IfaceSwitch.SwitchState set);
-void setSignal(IfaceSignal s,IfaceSignal.SignalState state);
+Collection<DiagramPoint> getPoints();
+Collection<IfaceSensor> getSensors();
+Collection<IfaceSignal> getSignals();
+Collection<IfaceSwitch> getSwitches();
 
-/*
- *   Sets speed for train t; 0 indicates stop; 100 is full ahead; -100 is full backwards
- **/
-
-void setTrainSpeed(IfaceTrain t,int speed);
+boolean invertY();
 
 
+interface DiagramPoint {
+   
+   double getX();
+   double getY();
+   ShorePointType getType();
+   Collection<DiagramPoint> getConnectedTo();
+   IfaceDiagram getDiagram();
+  
+   
+}
 
-}       // end of interface IfaceController
+
+
+}       // end of interface IfaceDiagram
 
 
 
 
-/* end of IfaceController.java */
+/* end of IfaceDiagram.java */
 

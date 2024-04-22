@@ -37,13 +37,16 @@ package edu.brown.cs.spr.shore.model;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
+import edu.brown.cs.spr.shore.iface.IfaceDiagram;
+import edu.brown.cs.spr.shore.iface.IfaceDiagram.DiagramPoint;
 
-class ModelPoint implements ModelConstants
+class ModelPoint implements ModelConstants, IfaceDiagram.DiagramPoint 
 {
 
 
@@ -57,7 +60,7 @@ private ModelDiagram in_diagram;
 private String  point_id;
 private double  point_x;
 private double  point_y;
-private PointType point_type;
+private ShorePointType point_type;
 private List<ModelPoint> conn_points;
 private String ref_id;
 private ModelBlock in_block;
@@ -76,7 +79,7 @@ ModelPoint(ModelDiagram dgm,Element xml)
    point_id = IvyXml.getAttrString(xml,"ID");
    point_x = IvyXml.getAttrDouble(xml,"X",0);
    point_y = IvyXml.getAttrDouble(xml,"Y",0);
-   point_type = IvyXml.getAttrEnum(xml,"TYPE",PointType.STRAIGHT);
+   point_type = IvyXml.getAttrEnum(xml,"TYPE",ShorePointType.STRAIGHT);
    ref_id = IvyXml.getAttrString(xml,"REF");
    
    conn_points = new ArrayList<>();
@@ -104,13 +107,13 @@ void connectTo(ModelPoint pt)
 /*                                                                              */
 /********************************************************************************/
 
-ModelDiagram getDiagram()                       { return in_diagram; }
+@Override public ModelDiagram getDiagram()      { return in_diagram; } 
 
 String getId()                                  { return point_id; }
 
-double getX()                                   { return point_x; }
+@Override public double getX()                  { return point_x; } 
 
-double getY()                                   { return point_y; }
+@Override public double getY()                  { return point_y; }
 
 Point2D getPoint2D()                            
 { 
@@ -123,17 +126,37 @@ void setPoint2D(double x,double y)
    point_y = y;
 }
 
-PointType getType()                             { return point_type; }
+@Override public ShorePointType getType()               { return point_type; }   
 
 String getRefId()                               { return ref_id; }
 
-List<ModelPoint> getAllPoints()
+List<ModelPoint> getModelConnectedTo()
 {
    return conn_points;
 }
 
+@Override public Collection<DiagramPoint> getConnectedTo()
+{
+   return new ArrayList<>(conn_points); 
+}
+
+
+
 ModelBlock getBlock()                           { return in_block; }
 void setBlock(ModelBlock blk)                   { in_block = blk; }
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Output Methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public String toString()
+{
+   return point_id + "[" + point_type + "]";
+}
 
 
 }       // end of class ModelPointImpl

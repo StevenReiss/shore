@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              ModelSignal.java                                                */
+/*              TrainEngine.java                                                */
 /*                                                                              */
-/*      Representation of a track signal in the model                           */
+/*      description of class                                                    */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -33,22 +33,17 @@
 
 
 
-package edu.brown.cs.spr.shore.model;
+package edu.brown.cs.spr.shore.train;
 
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
-import org.w3c.dom.Element;
+import edu.brown.cs.spr.shore.iface.IfaceBlock;
+import edu.brown.cs.spr.shore.iface.IfaceEngine;
 
-import edu.brown.cs.ivy.xml.IvyXml;
-import edu.brown.cs.spr.shore.iface.IfaceConnection;
-import edu.brown.cs.spr.shore.iface.IfaceSensor;
-import edu.brown.cs.spr.shore.iface.IfaceSignal;
-import edu.brown.cs.spr.shore.shore.ShoreLog;
-
-class ModelSignal implements IfaceSignal, ModelConstants
+class TrainEngine implements TrainConstants, IfaceEngine
 {
 
 
@@ -58,17 +53,12 @@ class ModelSignal implements IfaceSignal, ModelConstants
 /*                                                                              */
 /********************************************************************************/
 
-private ModelBase for_model;
-private String  signal_id;
-private ModelPoint at_point;
-private ModelPoint gap_point;
-private Set<ModelConnection> for_connections;
-private SignalState signal_state;
-private SignalType signal_type; 
-private ModelSensor stop_sensor;
-private Set<ModelSensor> prior_sensors;
-private byte tower_id;
-private byte tower_index;
+private TrainFactory            train_factory;
+private String                  engine_name;
+private List<IfaceBlock>        train_blocks;
+private SocketAddress           socket_address;
+private boolean                 is_stopped;
+private boolean                 is_emergency;
 
 
 
@@ -78,20 +68,16 @@ private byte tower_index;
 /*                                                                              */
 /********************************************************************************/
 
-ModelSignal(ModelBase model,Element xml)
+TrainEngine(TrainFactory fac,String name)
 {
-   for_model = model;
-   signal_id = IvyXml.getAttrString(xml,"ID");
-   at_point = model.getPointById(IvyXml.getAttrString(xml,"POINT"));
-   gap_point = model.getPointById(IvyXml.getAttrString(xml,"TO"));
-   for_connections = new HashSet<>(); 
-   tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
-   tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
-   signal_type = IvyXml.getAttrEnum(xml,"TYPE",SignalType.RG);
-   stop_sensor = null;
-   prior_sensors = new HashSet<>();
-   signal_state = SignalState.OFF;
+   train_factory = fac;
+   engine_name = name;
+   train_blocks = new ArrayList<>();
+   socket_address = null;
+   is_stopped = true;
+   is_emergency = false;
 }
+
 
 
 /********************************************************************************/
@@ -100,122 +86,117 @@ ModelSignal(ModelBase model,Element xml)
 /*                                                                              */
 /********************************************************************************/
 
-String getId()                                  { return signal_id; } 
+@Override public String getTrainName()                  { return engine_name; }
 
-ModelPoint getAtPoint()                         { return at_point; }
+@Override public SocketAddress getEngineAddress()       { return socket_address; }
 
-@Override public ModelBlock getFromBlock()      
+void setEngineAddress(SocketAddress sa)                 { socket_address = sa; }  
+
+@Override public boolean isStopped()                    { return is_stopped; }
+
+@Override public boolean isEmergencyStopped()
 {
-   return at_point.getBlock();
-}
-
-@Override public Collection<IfaceConnection> getConnections() 
-{
-   return new ArrayList<>(for_connections); 
-}
-
-void addConnection(ModelConnection conn) 
-{
-   for_connections.add(conn);
-}
-
-
-@Override public SignalType getSignalType()     { return signal_type; } 
-
-@Override public byte getTowerId()              { return tower_id; } 
-
-@Override public byte getTowerSignal()          { return tower_index; }
-
-@Override public SignalState getSignalState()   { return signal_state; }
-
-@Override public ModelSensor getStopSensor()    { return stop_sensor; } 
-
-@Override public Collection<IfaceSensor> getPriorSensors()
-{
-   return new ArrayList<>(prior_sensors);
-}
-
-
-@Override public void setSignalState(SignalState state)
-{
-   if (signal_state == state) return;
-   
-   ShoreLog.logD("MODEL","Set signal " + signal_id + "=" + state);
-   
-   signal_state = state;
-   for_model.fireSignalChanged(this);
+   return is_stopped && is_emergency;
 }
 
 
 
 /********************************************************************************/
 /*                                                                              */
-/*      Normalization code                                                      */
+/*      Block tracking methods                                                  */
 /*                                                                              */
 /********************************************************************************/
 
-void normalizeSignal(ModelBase mdl)
+
+@Override public Collection<IfaceBlock> getAllBlocks()
 {
-   if (at_point == null) {
-      mdl.noteError("Missing POINT for signal " + getId());
-      return;
-    }
-   if (gap_point == null) {
-      mdl.noteError("Missing TO for signal " + getId());
-      return;
-    }
-   
-   for (ModelPoint pt : at_point.getModelConnectedTo()) {
-      if (goesTo(at_point,pt,gap_point)) ;
-      else addPriorSensors(at_point,pt);
-    }
-   
-   stop_sensor = mdl.findSensorForPoint(at_point);
-   if (stop_sensor == null) {
-      mdl.noteError("No sensor found for signal " + signal_id);
-    }
-   stop_sensor.addSignal(this); 
+   return new ArrayList<>(train_blocks);
+}
+
+@Override public IfaceBlock getEngineBlock()
+{
+   if (train_blocks.isEmpty()) return null;
+   return train_blocks.get(train_blocks.size()-1);
+}
+
+@Override public IfaceBlock getCabooseBlock()
+{
+   if (train_blocks.isEmpty()) return null;
+   return train_blocks.get(0);
 }
 
 
-private boolean goesTo(ModelPoint prev,ModelPoint pt,ModelPoint tgt)
+@Override public void enterBlock(IfaceBlock blk)
 {
-   if (pt == null) return false;
-   if (pt == tgt) return true;
-   while (pt != null) {
-      if (pt == tgt) return true;
-      Collection<ModelPoint> next = pt.getModelConnectedTo();
-      if (next.size() != 2) break;
-      pt = null;
-      for (ModelPoint npt : next) {
-         if (npt != prev) {
-            pt = npt;
-            break;
-          }
-       }
-    }
-   return false;
+   if (getEngineBlock() == blk) return;
+   train_blocks.add(blk);
+}
+
+@Override 
+public void exitBlock(IfaceBlock blk)
+{
+   train_blocks.remove(blk);
 }
 
 
-private void addPriorSensors(ModelPoint prev,ModelPoint pt)
+
+/********************************************************************************/
+/*                                                                              */
+/*      Action methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public void stopTrain()
 {
-   ModelSensor s = for_model.findSensorForPoint(pt);
-   if (s != null) prior_sensors.add(s);
-   else {
-      for (ModelPoint npt : pt.getModelConnectedTo()) {
-         if (npt == prev) continue;
-         if (npt.getBlock() != prev.getBlock()) continue;
-         addPriorSensors(pt,npt);
-       }
-    }
+   is_stopped = true;
+   is_emergency = false;
+   train_factory.getNetworkModel().sendStopTrain(this,false);
 }
 
 
-}       // end of class ModelSignal
+@Override public void emergencyStopTrain()
+{
+   is_stopped = true;
+   is_emergency = true;
+   train_factory.getNetworkModel().sendStopTrain(this,true);
+}
+
+
+@Override public void startTrain()
+{
+   is_stopped = false;
+   train_factory.getNetworkModel().sendStartTrain(this);
+}
+
+
+@Override public void setSpeed(int arg0)
+{
+   // method body goes here
+}
+
+@Override public void ringBell()
+{
+   // method body goes here
+}
+
+@Override public void blowHorn()
+{
+   // method body goes here
+}
 
 
 
 
-/* end of ModelSignal.java */
+
+
+
+
+
+
+}       // end of class TrainEngine
+
+
+
+
+/* end of TrainEngine.java */
 

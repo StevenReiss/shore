@@ -38,6 +38,8 @@ package edu.brown.cs.spr.shore.iface;
 import java.util.Collection;
 import java.util.EventListener;
 
+import org.w3c.dom.Element;
+
 public interface IfaceModel
 {
 
@@ -45,8 +47,11 @@ Collection<IfaceSwitch> getSwitches();
 Collection<IfaceConnection> getConnections(); 
 Collection<IfaceSignal> getSignals();
 Collection<IfaceSensor> getSensors();
-Collection<IfaceTrain> getTrains();
 Collection<IfaceBlock> getBlocks();
+
+Collection<IfaceDiagram> getDiagrams();
+
+Element getModelXml();
 
 
 

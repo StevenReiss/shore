@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              ShoreMain.java                                                  */
+/*              ViewDisplay.java                                                */
 /*                                                                              */
-/*      Main program for Smart HO Railroad Environment                          */
+/*      Main display for SHORE user interface                                   */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -33,32 +33,22 @@
 
 
 
-package edu.brown.cs.spr.shore.shore;
+package edu.brown.cs.spr.shore.view;
 
-import java.io.File;
+import java.awt.Dimension;
+import java.util.Collection;
 
-import edu.brown.cs.spr.shore.model.ModelBase;
-import edu.brown.cs.spr.shore.network.NetworkMonitor;
-import edu.brown.cs.spr.shore.safety.SafetyFactory;
-import edu.brown.cs.spr.shore.train.TrainFactory;
-import edu.brown.cs.spr.shore.view.ViewFactory;
+import javax.swing.JComponent;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JSplitPane;
 
-public class ShoreMain implements ShoreConstants
+import edu.brown.cs.spr.shore.iface.IfaceDiagram;
+import edu.brown.cs.spr.shore.iface.IfaceEngine;
+
+class ViewDisplay extends JFrame implements ViewConstants
 {
 
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Main program                                                            */
-/*                                                                              */
-/********************************************************************************/
-
-public static void main(String [] args)
-{
-   ShoreMain sm = new ShoreMain(args);
-   sm.process();
-}
 
 /********************************************************************************/
 /*                                                                              */
@@ -66,13 +56,9 @@ public static void main(String [] args)
 /*                                                                              */
 /********************************************************************************/
 
-private NetworkMonitor  network_monitor;
-private ModelBase       model_base;
-private TrainFactory    train_base;
-private SafetyFactory   safety_base;
-private ViewFactory     view_base;
+private ViewFactory     view_factory;
 
-private File            model_file;
+private static final long serialVersionUID = 1;
 
 
 
@@ -82,85 +68,99 @@ private File            model_file;
 /*                                                                              */
 /********************************************************************************/
 
-private ShoreMain(String [] args)
+ViewDisplay(ViewFactory fac)
 {
-   ShoreLog.setup();
+   super("SHORE Display");
    
-   model_base = null;
-   network_monitor = null;
-   model_file = null;
-   train_base = null;
-   safety_base = null;
+   view_factory = fac;
    
-   scanArgs(args);
-}
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Processing methods                                                      */
-/*                                                                              */
-/********************************************************************************/
-
-private void process()
-{
-   model_base = new ModelBase(model_file); 
-   network_monitor = new NetworkMonitor(model_base);
-   train_base = new TrainFactory(network_monitor,model_base);
-   safety_base = new SafetyFactory(network_monitor,model_base,train_base); 
-   view_base = new ViewFactory(model_base,train_base);
-  
-   // set up vision module here
-   // set up user interface module here
-   // set up control module here
-   ShoreLog.logD("SHORE","ALL MOUDLES SET UP: " + safety_base);
+   EngineerPanel epanel = new EngineerPanel();
+   ViewPlanner ppanel = new ViewPlanner();
+   DiagramPanel dpanel = new DiagramPanel();
    
-   network_monitor.start(); 
-   view_base.startDisplay(); 
+   JSplitPane p0 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, 
+         dpanel,ppanel);
+   JSplitPane p1 = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+         p0,epanel);
+   
+   setContentPane(p1);
+   pack();
 }
 
 
 
 /********************************************************************************/
 /*                                                                              */
-/*      Argument scanning methods                                               */
+/*      Engineer panel -- hold multiple engineers                               */
 /*                                                                              */
 /********************************************************************************/
 
-private void scanArgs(String [] args)
-{
-   for (int i = 0; i < args.length; ++i) {
-      String arg = args[i];
-      if (arg.startsWith("-")) {
-         if (arg.startsWith("-m")) {                            // -model <file>
-            if (i+1 < args.length && model_file == null) {
-               model_file = new File(args[++i]);
-             }
-            else badArgs();
+private class EngineerPanel extends JPanel {
+   
+   private static final long serialVersionUID = 1;
+   
+   EngineerPanel() {
+      Collection<IfaceEngine> engs = view_factory.getTrainModel().getAllEngines(); 
+      JComponent comp = null;
+      for (IfaceEngine eng : engs) {
+         ViewEngineer ve = new ViewEngineer(eng);
+         if (comp == null) comp = ve;
+         else {
+            comp = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+                  comp,ve);
           }
-         else badArgs();
        }
-      else if (model_file == null) {
-         model_file = new File(arg);
+      if (comp == null) {
+         comp = new ViewEngineer(null);
        }
+     
+      add(comp);
     }
    
-   if (model_file == null || !model_file.canRead()) badArgs();
-}
-
-
-private void badArgs()
-{
-   System.err.println("SHORE -m <modelfile>");
-   System.exit(1);
-}
-
-
-
-}       // end of class ShoreMain
+}       // end of inner class EngineerPanel
 
 
 
 
-/* end of ShoreMain.java */
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Diagram panel -- hold multiple diagrams                                 */
+/*                                                                              */
+/********************************************************************************/
+
+private class DiagramPanel extends JPanel {
+   
+   private static final long serialVersionUID = 1;
+   
+   DiagramPanel() {
+      Collection<IfaceDiagram> dgms = view_factory.getLayoutModel().getDiagrams();
+      JComponent comp = null;
+      Dimension d1;
+      for (IfaceDiagram dgm : dgms) {
+         ViewDiagram vd = new ViewDiagram(dgm); 
+         d1 = vd.getPreferredSize();
+         if (comp == null) comp = vd;
+         else {
+            comp = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+                  comp,vd); 
+          }
+       }
+      add(comp);
+      Dimension d0 = comp.getPreferredSize();
+      
+    }
+   
+}       // end of inner class DiagramPanel
+
+
+
+}       // end of class ViewDisplay
+
+
+
+
+/* end of ViewDisplay.java */
 

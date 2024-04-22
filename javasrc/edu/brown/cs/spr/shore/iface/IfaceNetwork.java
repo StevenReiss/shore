@@ -44,6 +44,9 @@ void sendSetSignal(IfaceSignal sig,IfaceSignal.SignalState set);
 void sendSetSensor(IfaceSensor sen,IfaceSensor.SensorState set);
 void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,IfaceSwitch.SwitchState state);
 
+void sendStopTrain(IfaceEngine train,boolean emergency);
+void sendStartTrain(IfaceEngine train);
+
 
 
 }	// end of interface IfaceNetwork

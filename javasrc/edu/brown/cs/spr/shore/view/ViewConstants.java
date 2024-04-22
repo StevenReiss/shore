@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              IfaceSignal.java                                                */
+/*              ViewConstants.java                                              */
 /*                                                                              */
-/*      Representation of a signal for SHORE                                    */
+/*      User interface constants for SHORE railroad controller                  */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -33,37 +33,20 @@
 
 
 
-package edu.brown.cs.spr.shore.iface;
+package edu.brown.cs.spr.shore.view;
 
-import java.util.Collection;
 
-public interface IfaceSignal
+
+public interface ViewConstants
 {
 
-enum SignalState { OFF, GREEN, YELLOW, RED };
-
-enum SignalType { RG, RGY, ENGINE };
-
-SignalType getSignalType();
-
-void setSignalState(SignalState state);
-SignalState getSignalState();
-
-IfaceBlock getFromBlock();
-Collection<IfaceConnection> getConnections();
-
-IfaceSensor getStopSensor();
-Collection<IfaceSensor> getPriorSensors();
-
-byte getTowerId();
-byte getTowerSignal();
 
 
 
-}       // end of interface IfaceSignal
+}       // end of interface ViewConstants
 
 
 
 
-/* end of IfaceSignal.java */
+/* end of ViewConstants.java */
 

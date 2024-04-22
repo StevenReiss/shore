@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              IfaceSignal.java                                                */
+/*              IfaceConstants.java                                             */
 /*                                                                              */
-/*      Representation of a signal for SHORE                                    */
+/*      Global constants and enumerations for SHORE                               */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,35 +35,30 @@
 
 package edu.brown.cs.spr.shore.iface;
 
-import java.util.Collection;
 
-public interface IfaceSignal
+
+public interface IfaceConstants
 {
 
-enum SignalState { OFF, GREEN, YELLOW, RED };
-
-enum SignalType { RG, RGY, ENGINE };
-
-SignalType getSignalType();
-
-void setSignalState(SignalState state);
-SignalState getSignalState();
-
-IfaceBlock getFromBlock();
-Collection<IfaceConnection> getConnections();
-
-IfaceSensor getStopSensor();
-Collection<IfaceSensor> getPriorSensors();
-
-byte getTowerId();
-byte getTowerSignal();
+enum ShorePointType { 
+   TURNING, 
+   STRAIGHT, 
+   BLOCK, 
+   SENSOR, 
+   SWITCH,
+   SIGNAL,
+   GAP, 
+   END, 
+   TURNTABLE, 
+   DIAGRAM,
+   LABEL,
+};
 
 
-
-}       // end of interface IfaceSignal
+}       // end of interface IfaceConstants
 
 
 
 
-/* end of IfaceSignal.java */
+/* end of IfaceConstants.java */
 

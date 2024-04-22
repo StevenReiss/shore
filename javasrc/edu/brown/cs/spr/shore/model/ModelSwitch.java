@@ -196,7 +196,7 @@ void findNRPoints(ModelBase mdl)
     }
    ModelPoint [] next = new ModelPoint[3];
    int ctr = 0;
-   for (ModelPoint pt1 : pvt.getAllPoints()) { 
+   for (ModelPoint pt1 : pvt.getModelConnectedTo()) { 
       if (ctr >= next.length) {
          mdl.noteError("Switch " + getId() + " pivot " + pvt.getId() + 
                " has too many connections");
@@ -305,10 +305,10 @@ private ModelSensor findSensor(ModelBase mdl,ModelPoint pt)
 
 private ModelPoint findSensorPoint(ModelPoint frm,ModelPoint to)
 {
-   if (to.getType() == PointType.SENSOR) return to;
+   if (to.getType() == ShorePointType.SENSOR) return to;
    
    ModelPoint next = null;
-   for (ModelPoint npt : to.getAllPoints()) {
+   for (ModelPoint npt : to.getModelConnectedTo()) {
       if (npt.equals(frm)) continue;
       if (next == null) next = npt;
       else return null;

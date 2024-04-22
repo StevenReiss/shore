@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              IfaceSignal.java                                                */
+/*              ViewEngineer.java                                               */
 /*                                                                              */
-/*      Representation of a signal for SHORE                                    */
+/*      description of class                                                    */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -33,37 +33,52 @@
 
 
 
-package edu.brown.cs.spr.shore.iface;
+package edu.brown.cs.spr.shore.view;
 
-import java.util.Collection;
+import javax.swing.JTextArea;
 
-public interface IfaceSignal
+import edu.brown.cs.ivy.swing.SwingGridPanel;
+import edu.brown.cs.spr.shore.iface.IfaceEngine;
+
+class ViewEngineer extends SwingGridPanel implements ViewConstants
 {
 
-enum SignalState { OFF, GREEN, YELLOW, RED };
 
-enum SignalType { RG, RGY, ENGINE };
+/********************************************************************************/
+/*                                                                              */
+/*      Private Storage                                                         */
+/*                                                                              */
+/********************************************************************************/
 
-SignalType getSignalType();
+private IfaceEngine     for_engine;
 
-void setSignalState(SignalState state);
-SignalState getSignalState();
-
-IfaceBlock getFromBlock();
-Collection<IfaceConnection> getConnections();
-
-IfaceSensor getStopSensor();
-Collection<IfaceSensor> getPriorSensors();
-
-byte getTowerId();
-byte getTowerSignal();
+private static final long serialVersionUID = 1;
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      Constructors                                                            */
+/*                                                                              */
+/********************************************************************************/
 
-}       // end of interface IfaceSignal
+ViewEngineer(IfaceEngine engine)
+{
+   for_engine = engine;
+   
+   JTextArea t1 = new JTextArea(10,10);
+   String nm = (for_engine == null ? "Unknown Engine" : for_engine.getTrainName());
+   t1.setText("Engineer panel for " + nm + " goes here");
+   add(t1);
+}
 
 
 
 
-/* end of IfaceSignal.java */
+
+}       // end of class ViewEngineer
+
+
+
+
+/* end of ViewEngineer.java */
 

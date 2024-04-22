@@ -35,6 +35,7 @@
 
 package edu.brown.cs.spr.shore.model;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,9 +44,13 @@ import java.util.StringTokenizer;
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
+import edu.brown.cs.spr.shore.iface.IfaceDiagram;
+import edu.brown.cs.spr.shore.iface.IfaceSensor;
+import edu.brown.cs.spr.shore.iface.IfaceSignal;
+import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 
-class ModelDiagram implements ModelConstants
-{
+class ModelDiagram implements ModelConstants, IfaceDiagram
+{ 
 
  
 /********************************************************************************/
@@ -56,6 +61,7 @@ class ModelDiagram implements ModelConstants
 
 private String diagram_id;
 private double diagram_scale;
+private boolean invert_y;
 
 private Map<String,ModelPoint> diagram_points;
 private Map<String,ModelSwitch> diagram_switches;
@@ -80,7 +86,7 @@ ModelDiagram(Element xml)
    diagram_blocks = new HashMap<>();
    diagram_sensors = new HashMap<>();
    diagram_signals = new HashMap<>();
-   
+    
    preloadDiagram(xml);
    
    if (diagram_id == null) diagram_id = "MAIN";
@@ -94,22 +100,39 @@ ModelDiagram(Element xml)
 /*                                                                              */
 /********************************************************************************/
 
-String getId()                                  { return diagram_id; }
+@Override public String getId()                         { return diagram_id; } 
 
 
-Collection<ModelSensor> getSensors()
+Collection<ModelSensor> getModelSensors()
 {
    return diagram_sensors.values();
 }
 
-Collection<ModelPoint> getPoints()
+@Override public Collection<IfaceSensor> getSensors() 
+{
+   return new ArrayList<>(diagram_sensors.values());
+}
+
+Collection<ModelPoint> getModelPoints()
 { 
    return diagram_points.values();
 }
 
-Collection<ModelSwitch> getSwitches()
+
+@Override public Collection<DiagramPoint> getPoints()
+{
+   return new ArrayList<>(diagram_points.values());
+}
+
+Collection<ModelSwitch> getModelSwitches()
 {
    return diagram_switches.values();
+}
+
+
+@Override public Collection<IfaceSwitch> getSwitches()
+{ 
+   return new ArrayList<>(diagram_switches.values());
 }
 
 Collection<ModelBlock> getBlocks()
@@ -117,12 +140,20 @@ Collection<ModelBlock> getBlocks()
    return diagram_blocks.values();
 }
 
-Collection<ModelSignal> getSignals()
+Collection<ModelSignal> getModelSignals()
 {
    return diagram_signals.values();
 }
 
+
+@Override public Collection<IfaceSignal> getSignals() 
+{
+   return new ArrayList<>(diagram_signals.values());
+}
+
 double getEngineSize()                          { return diagram_scale; }
+
+@Override public boolean invertY()              { return invert_y; }
 
 ModelPoint getPointById(String id)      
 {
@@ -140,6 +171,7 @@ private void preloadDiagram(Element xml)
 {
    diagram_id = IvyXml.getAttrString(xml,"ID");
    diagram_scale = IvyXml.getAttrDouble(xml,"ENGINE",10);
+   invert_y = IvyXml.getAttrBool(xml,"INVERT");
    
    for (Element ptxml : IvyXml.children(xml,"POINT")) {
       ModelPoint pt = new ModelPoint(this,ptxml);  

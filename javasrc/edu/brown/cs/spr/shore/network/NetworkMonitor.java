@@ -60,6 +60,7 @@ import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
+import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfaceSensor.SensorState;
 import edu.brown.cs.spr.shore.iface.IfaceSignal.SignalState;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
@@ -102,6 +103,7 @@ private IfaceModel layout_model;
 
 private Map<SocketAddress,ControllerInfo>  controller_map;
 private Map<Integer,ControllerInfo>        id_map;
+private Map<SocketAddress,EngineInfo>      engine_map;
 
 
 
@@ -115,6 +117,8 @@ public NetworkMonitor(IfaceModel model)
 {
    controller_map = new ConcurrentHashMap<>();
    id_map = new ConcurrentHashMap<>();
+   engine_map = new ConcurrentHashMap<>();
+   
    layout_model = model;
    
    if (our_socket != null) {
@@ -272,6 +276,41 @@ public void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,IfaceSwitch.SwitchState
       s = sw.getTowerSwitch() * 4 + set.ordinal();
     }
    ci.sendDefSensorMessage(sen.getTowerSensor(),s);
+}
+
+
+@Override 
+public void sendStopTrain(IfaceEngine tr,boolean emergency) 
+{
+   SocketAddress sa = tr.getEngineAddress();
+   if (sa == null) return;
+   EngineInfo ei = engine_map.get(sa);
+   if (ei == null) return;
+   
+   if (emergency) {
+      ei.sendEmergencyStop();
+    }
+   else {
+      ei.sendStopEngine();
+    }
+}
+
+
+public void sendStartTrain(IfaceEngine tr)
+{
+   SocketAddress sa = tr.getEngineAddress();
+   if (sa == null) return;
+   EngineInfo ei = engine_map.get(sa);
+   if (ei == null) return;
+   
+   boolean emergency = tr.isEmergencyStopped();
+   
+   if (emergency) {
+      ei.sendEmergencyStart();
+    }
+   else {
+      ei.sendStartEngine();
+    }
 }
 
 
@@ -497,6 +536,14 @@ private class ReaderThread extends Thread {
 
 private ControllerInfo setupController(ServiceInfo si)
 {
+   SocketAddress sa = getServiceSocket(si,controller_map);
+   return setupController(sa);
+}
+
+
+
+private SocketAddress getServiceSocket(ServiceInfo si,Map<?,?> known)
+{
    InetAddress [] possibles = si.getInet4Addresses();
    if (possibles == null || possibles.length == 0) {
       possibles = si.getInetAddresses();
@@ -506,8 +553,7 @@ private ControllerInfo setupController(ServiceInfo si)
    InetAddress use = null;
    for (InetAddress ia : possibles) {
       SocketAddress sa = new InetSocketAddress(ia,port);
-      ControllerInfo ci = controller_map.get(sa);
-      if (ci != null) return ci;
+      if (known != null && known.containsKey(sa)) return sa;
       if (use == null) use = ia;
       else if (use.isLoopbackAddress()) continue;
       else if (use.isAnyLocalAddress()) continue;
@@ -518,22 +564,50 @@ private ControllerInfo setupController(ServiceInfo si)
    if (use == null) return null;
    
    SocketAddress sa = new InetSocketAddress(use,port);
-   return setupController(sa);
+   
+   return sa;
 }
  
 
 
 private ControllerInfo setupController(SocketAddress sa)
 {
+   if (sa == null) return null;
    ControllerInfo ci = controller_map.get(sa);
    if (ci == null) {
       ci = new ControllerInfo(sa);
       ControllerInfo nci = controller_map.putIfAbsent(sa,ci);
-      if (nci != null) ci = null;
+      if (nci != null) ci = nci;
       else ci.sendSyncMessage();
     }
    
    return ci;
+}
+
+
+
+private EngineInfo setupEngine(ServiceInfo si)
+{
+   SocketAddress sa = getServiceSocket(si,engine_map);
+   return setupEngine(sa);
+}
+
+
+private EngineInfo setupEngine(SocketAddress sa)
+{
+   if (sa == null) return null;
+   EngineInfo ei = engine_map.get(sa);
+   if (ei == null) {
+      ei = new EngineInfo(sa);
+      EngineInfo nei = engine_map.putIfAbsent(sa,ei);
+      if (nei != null) ei = nei;
+      else {
+         ei.sendQueryAboutMessage();
+         ei.sendQueryStateMessage();
+       }
+    }
+   
+   return ei;
 }
 
 
@@ -589,6 +663,52 @@ private class ControllerInfo {
 
 
 
+private class EngineInfo {
+
+   private SocketAddress net_address;
+   
+   EngineInfo(SocketAddress net) {
+      net_address = net;
+    }
+   
+// SocketAddress getSocketAddress()                     { return net_address; }
+   
+   void sendQueryStateMessage() {
+      byte msg [] = LOCOFI_QUERY_LOCO_STATE_CMD;
+      sendMessage(net_address,msg,0,msg.length);
+    }
+   
+   void sendQueryAboutMessage() {
+      byte msg [] = LOCOFI_QUERY_ABOUT_LOCO_CMD;
+      sendMessage(net_address,msg,0,msg.length);
+    }
+   
+   void sendEmergencyStop() {
+      byte msg [] = LOCOFI_EMERGENCY_STOP_CMD;
+      sendMessage(net_address,msg,0,msg.length);
+    }
+   
+   void sendEmergencyStart() {
+      byte msg [] = LOCOFI_EMERGENCY_START_CMD;
+      sendMessage(net_address,msg,0,msg.length);
+    }
+   
+   void sendStopEngine() {
+      byte msg [] = LOCOFI_STOP_ENGINE_CMD;
+      sendMessage(net_address,msg,0,msg.length);
+    }
+   
+   void sendStartEngine() {
+      byte msg [] = LOCOFI_START_ENGINE_CMD;
+      sendMessage(net_address,msg,0,msg.length);
+    }
+   
+   
+}       // end of inner class EngineInfo
+
+
+
+
 /********************************************************************************/
 /*										*/
 /*	Handle mDNS service discovery						*/
@@ -620,6 +740,12 @@ public class ServiceFinder implements ServiceListener, ServiceTypeListener {
          ShoreLog.logD("NETWORK","Found controller: " + finder_id + "> " + si);
          setupController(si);
        }    
+      else if (nm.equals("loco") || nm.equals("consist")) {
+         setupEngine(si);
+       }
+      else if (nm.equals("engineer")) {
+         
+       }
     }
    
    @Override public void serviceTypeAdded(ServiceEvent event) {

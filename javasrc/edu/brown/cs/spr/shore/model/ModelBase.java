@@ -51,11 +51,11 @@ import edu.brown.cs.ivy.swing.SwingEventListenerList;
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
+import edu.brown.cs.spr.shore.iface.IfaceDiagram;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
-import edu.brown.cs.spr.shore.iface.IfaceTrain;
 import edu.brown.cs.spr.shore.shore.ShoreException;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
@@ -97,10 +97,10 @@ private Map<String,ModelBlock> model_blocks;
 private Map<String,ModelSensor> model_sensors;
 private Map<String,ModelSignal> model_signals;
 private Map<String,ModelDiagram> model_diagrams;
-private Map<String,ModelTrain> model_trains;
 private List<ModelConnection> block_connections;
 private List<String> model_errors;
 private SwingEventListenerList<ModelCallback> model_listeners;
+private Element model_xml;
 
 
 
@@ -114,16 +114,16 @@ private SwingEventListenerList<ModelCallback> model_listeners;
 public ModelBase(File file)
 {
    model_points = new HashMap<>();
-   model_switches = new HashMap<>();
+   model_switches = new HashMap<>(); 
    model_blocks = new HashMap<>();
    model_sensors = new HashMap<>();
    model_signals = new HashMap<>();
    model_diagrams = new HashMap<>();
-   model_trains = new HashMap<>();
    block_connections = new ArrayList<>();
    model_listeners = new SwingEventListenerList<>(ModelCallback.class);
    
    model_errors = new ArrayList<>();
+   model_xml = null;
    
    try {
       loadModel(file);
@@ -187,14 +187,16 @@ Collection<ModelSwitch> getModelSwitches()
    return model_switches.values(); 
 }
 
-@Override public Collection<IfaceTrain> getTrains()
-{
-   return new ArrayList<>(model_trains.values());
-}
- 
+
 @Override public Collection<IfaceBlock> getBlocks() 
 {
    return new ArrayList<>(model_blocks.values());
+}
+
+
+@Override public Collection<IfaceDiagram> getDiagrams()
+{
+   return new ArrayList<>(model_diagrams.values());  
 }
 
 
@@ -271,17 +273,6 @@ ModelDiagram findDiagram(String id)
 }
 
 
-void addTrain(ModelTrain mt)
-{
-   model_trains.put(mt.getId(),mt);
-}
-
-
-void removeTrain(ModelTrain mt)
-{
-   model_trains.remove(mt.getId()); 
-}
-
 ModelPoint getPointById(String id)
 {
    if (id == null) return null;
@@ -294,6 +285,8 @@ ModelSwitch getSwitchById(String id)
    return model_switches.get(id);
 }
 
+@Override public Element getModelXml()          { return model_xml; }
+
 
 void noteError(String msg)
 {
@@ -305,6 +298,9 @@ boolean hasErrors()
 {
    return !model_errors.isEmpty();
 }
+
+
+
 
 /********************************************************************************/
 /*                                                                              */
@@ -368,6 +364,7 @@ private void loadModel(File file) throws ShoreException
    
    Element xml = IvyXml.loadXmlFromFile(file);
    if (xml == null) throw new ShoreException("File " + file + " doesn't contain a model");
+   model_xml = xml;
    
    if (IvyXml.getChild(xml,"DIAGRAM") != null) {
       for (Element dxml : IvyXml.children(xml,"DIAGRAM")) {
@@ -385,7 +382,7 @@ private void loadModel(File file) throws ShoreException
    if (hasErrors()) return;
    
    for (ModelDiagram md : xmlmap.keySet()) {
-      for (ModelPoint mp : md.getPoints()) {
+      for (ModelPoint mp : md.getModelPoints()) {  
          if (model_points.put(mp.getId(),mp) != null) {
             noteError("Point " + mp.getId() + " defined twice");
           }
@@ -412,7 +409,7 @@ private void loadModel(File file) throws ShoreException
 
 private void loadDiagramData(ModelDiagram md)
 {
-   for (ModelSwitch ms : md.getSwitches()) {
+   for (ModelSwitch ms : md.getModelSwitches()) {
       if (model_switches.put(ms.getId(),ms) != null) {
          noteError("Switch " + ms.getId() + " defined twice");
        } 
@@ -422,12 +419,12 @@ private void loadDiagramData(ModelDiagram md)
          noteError("Block " + mb.getId() + " defined twice");
        }
     }
-   for (ModelSensor ms : md.getSensors()) {
+   for (ModelSensor ms : md.getModelSensors()) {
       if (model_sensors.put(ms.getId(),ms) != null) {
          noteError("Sensor " + ms.getId() + " defined twice");
        }
     }
-   for (ModelSignal ms : md.getSignals()) {
+   for (ModelSignal ms : md.getModelSignals()) {
       if (model_signals.put(ms.getId(),ms) != null) {
          noteError("Signal " + ms.getId() + " defined twice");
        }
@@ -450,8 +447,8 @@ private void normalizeModel() throws ShoreException
       blk.normalizeBlock(this); 
     }
    
-   for (ModelPoint pt : model_points.values()) {
-      if (pt.getType() == PointType.GAP) {
+   for (ModelPoint pt : model_points.values()) { 
+      if (pt.getType() == ShorePointType.GAP) {
          setupConnection(pt);
        }
     }
@@ -482,8 +479,8 @@ private void normalizePoints()
    List<List<ModelPoint>> seqs = new ArrayList<>();
    
    for (ModelPoint pt : model_points.values()) {
-      if (pt.getType() == PointType.TURNING) {
-         for (ModelPoint npt: pt.getAllPoints()) {
+      if (pt.getType() == ShorePointType.TURNING) {
+         for (ModelPoint npt: pt.getModelConnectedTo()) {
             if (done.isDone(npt,pt)) continue;
             List<ModelPoint> seq = createSequence(pt,npt,done);
             if (seq != null && seq.size() > 2) seqs.add(seq);
@@ -492,7 +489,7 @@ private void normalizePoints()
     }
    
    for (ModelPoint pt : model_points.values()) {
-      if (pt.getType() == PointType.SWITCH) {
+      if (pt.getType() == ShorePointType.SWITCH) {
          ModelSwitch sw = findSwitchForPoint(pt);
          if (sw == null) {
             noteError("Switch not found for point " + pt.getId());
@@ -541,7 +538,7 @@ private List<ModelPoint> createSequence(ModelPoint pt0,ModelPoint pt1,DoneMap do
          case TURNTABLE :
             break;
          default :
-            for (ModelPoint conn : pt.getAllPoints()) {
+            for (ModelPoint conn : pt.getModelConnectedTo()) {
                if (conn == prev) continue;
                else if (npt == null) npt = conn;
                else {
@@ -619,12 +616,12 @@ private void setupConnection(ModelPoint gap)
 {
    ModelBlock b0 = null;
    ModelBlock b1 = null;
-   if (gap.getAllPoints().size() != 2) {
+   if (gap.getModelConnectedTo().size() != 2) {
       noteError("Gap " + gap.getId() + " must have exactly 2 connections");
       return;
     }
    
-   for (ModelPoint pt : gap.getAllPoints()) {
+   for (ModelPoint pt : gap.getModelConnectedTo()) {
       if (b0 == null) b0 = pt.getBlock();
       else if (b1 == null) b1 = pt.getBlock();
     }
@@ -699,7 +696,7 @@ private void checkModel() throws ShoreException
             break;
        }
       if (tgt > 0) {
-         int sz = pt.getAllPoints().size();
+         int sz = pt.getModelConnectedTo().size();
          if (sz != tgt) {
             noteError("Point " + pt.getId() + " has the wrong number of connections");
           }

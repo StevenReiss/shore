@@ -35,28 +35,13 @@
 
 package edu.brown.cs.spr.shore.model;
 
-import edu.brown.cs.spr.shore.iface.IfaceTrain;
+import edu.brown.cs.spr.shore.iface.IfaceConstants;
+import edu.brown.cs.spr.shore.iface.IfaceEngine;
 
-public interface ModelConstants
+public interface ModelConstants extends IfaceConstants
 {
 
-enum PointType { 
-   TURNING, 
-   STRAIGHT, 
-   BLOCK, 
-   SENSOR, 
-   SWITCH,
-   SIGNAL,
-   GAP, 
-   END, 
-   TURNTABLE, 
-   DIAGRAM,
-   LABEL,
-};
-
-
-
-interface ModelTrain extends IfaceTrain {
+interface ModelTrain extends IfaceEngine {
    String getId();
 }
 

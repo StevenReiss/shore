@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              IfaceSignal.java                                                */
+/*              IfaceTrain.java                                                 */
 /*                                                                              */
-/*      Representation of a signal for SHORE                                    */
+/*      Information about a train in SHORE                                      */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,35 +35,37 @@
 
 package edu.brown.cs.spr.shore.iface;
 
+import java.net.SocketAddress;
 import java.util.Collection;
 
-public interface IfaceSignal
+public interface IfaceEngine
 {
 
-enum SignalState { OFF, GREEN, YELLOW, RED };
+IfaceBlock getEngineBlock();
+IfaceBlock getCabooseBlock();
+Collection<IfaceBlock> getAllBlocks();
+void enterBlock(IfaceBlock blk);
+void exitBlock(IfaceBlock blk);
 
-enum SignalType { RG, RGY, ENGINE };
+boolean isStopped();
+boolean isEmergencyStopped();
+void stopTrain();
+void emergencyStopTrain();
+void startTrain();
 
-SignalType getSignalType();
+String getTrainName();
+SocketAddress getEngineAddress();
 
-void setSignalState(SignalState state);
-SignalState getSignalState();
-
-IfaceBlock getFromBlock();
-Collection<IfaceConnection> getConnections();
-
-IfaceSensor getStopSensor();
-Collection<IfaceSensor> getPriorSensors();
-
-byte getTowerId();
-byte getTowerSignal();
-
-
-
-}       // end of interface IfaceSignal
+void setSpeed(int speed);
+void blowHorn();
+void ringBell();
 
 
 
+}       // end of interface IfaceTrain
 
-/* end of IfaceSignal.java */
+
+
+
+/* end of IfaceTrain.java */
 
