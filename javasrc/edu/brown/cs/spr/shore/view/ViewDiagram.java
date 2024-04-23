@@ -157,8 +157,8 @@ private List<DiagramPoint> computeLineSegment(DiagramPoint pt,Set<DiagramPoint> 
       fwd = false;
     }
    
+   if (endpt != null && !fwd) pts.addFirst(endpt);
    if (pts.size() <= 1) return null;
-   if (endpt != null && !fwd) pts.addFirst(pt);
    
    return pts;
 }
