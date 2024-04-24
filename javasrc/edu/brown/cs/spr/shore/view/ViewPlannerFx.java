@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              ViewFactory.java                                                */
+/*              ViewPlannerFx.java                                              */
 /*                                                                              */
-/*      Main access point for the user interface for SHORE                      */
+/*      description of class                                                    */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,12 +35,10 @@
 
 package edu.brown.cs.spr.shore.view;
 
-import javax.swing.JFrame;
+import javafx.scene.control.TextArea;
+import javafx.scene.layout.AnchorPane;
 
-import edu.brown.cs.spr.shore.iface.IfaceModel;
-import edu.brown.cs.spr.shore.iface.IfaceTrains;
-
-public class ViewFactory implements ViewConstants
+class ViewPlannerFx extends AnchorPane implements ViewConstants
 {
 
 
@@ -50,9 +48,6 @@ public class ViewFactory implements ViewConstants
 /*                                                                              */
 /********************************************************************************/
 
-private IfaceModel      layout_model;
-private IfaceTrains     train_model;
-
 
 
 /********************************************************************************/
@@ -61,68 +56,22 @@ private IfaceTrains     train_model;
 /*                                                                              */
 /********************************************************************************/
 
-public ViewFactory(IfaceModel mdl,IfaceTrains trns)
-{ 
-   layout_model = mdl;
-   train_model = trns;
-}
-
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Access methods                                                          */
-/*                                                                              */
-/********************************************************************************/
-
-IfaceModel getLayoutModel()                     { return layout_model; }
-
-
-IfaceTrains getTrainModel()                     { return train_model; }
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Processing methods                                                      */
-/*                                                                              */
-/********************************************************************************/
-
-public void startDisplay()
+ViewPlannerFx()
 {
-   JavaFxStarter starter = new JavaFxStarter();
-   starter.start();
-   
-   ViewDisplay vd = new ViewDisplay(this); 
-   vd.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-   vd.setVisible(true);
+   TextArea ta = new TextArea("Dummy Panel for Planner Interface");
+   AnchorPane.setTopAnchor(ta,0.0);
+   AnchorPane.setBottomAnchor(ta,0.0);
+   AnchorPane.setLeftAnchor(ta,0.0);
+   AnchorPane.setRightAnchor(ta,0.0);
+   getChildren().add(ta);
+   setPrefSize(10240,200);
 }
 
 
-
-/********************************************************************************/
-/*                                                                              */
-/*      JavaFx starter                                                          */
-/*                                                                              */
-/********************************************************************************/
-
-private class JavaFxStarter extends Thread {
-   
-   JavaFxStarter() {
-      super("JavaFxStarter");
-    }
-   
-   @Override public void run() {
-      ViewDisplayFx.setupFx(ViewFactory.this);
-    }
-}
-
-
-}       // end of class ViewFactory
+}       // end of class ViewPlannerFx
 
 
 
 
-/* end of ViewFactory.java */
+/* end of ViewPlannerFx.java */
 

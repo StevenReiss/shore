@@ -479,7 +479,8 @@ private void normalizePoints()
    List<List<ModelPoint>> seqs = new ArrayList<>();
    
    for (ModelPoint pt : model_points.values()) {
-      if (pt.getType() == ShorePointType.TURNING) {
+      if (pt.getType() == ShorePointType.TURNING ||
+            pt.getType() == ShorePointType.TURNTABLE) {
          for (ModelPoint npt: pt.getModelConnectedTo()) {
             if (npt.getDiagram() != pt.getDiagram()) continue;
             if (done.isDone(npt,pt)) continue;
@@ -498,7 +499,8 @@ private void normalizePoints()
           }
          ModelPoint npt = sw.getRPoint();
          if (done.isDone(npt,pt)) continue;
-         if (npt.getDiagram() != pt.getDiagram()) continue;         List<ModelPoint> seq = createSequence(pt,npt,done);
+         if (npt.getDiagram() != pt.getDiagram()) continue;    
+         List<ModelPoint> seq = createSequence(pt,npt,done);
          if (seq != null && seq.size() > 2) seqs.add(seq);
        }
     }

@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              ViewFactory.java                                                */
+/*              ViewEngineerFx.java                                             */
 /*                                                                              */
-/*      Main access point for the user interface for SHORE                      */
+/*      Engineer Panel to control a train                                       */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,12 +35,12 @@
 
 package edu.brown.cs.spr.shore.view;
 
-import javax.swing.JFrame;
 
-import edu.brown.cs.spr.shore.iface.IfaceModel;
-import edu.brown.cs.spr.shore.iface.IfaceTrains;
+import edu.brown.cs.spr.shore.iface.IfaceEngine;
+import javafx.scene.control.TextArea;
+import javafx.scene.layout.AnchorPane;
 
-public class ViewFactory implements ViewConstants
+class ViewEngineerFx extends AnchorPane implements ViewConstants
 {
 
 
@@ -50,8 +50,7 @@ public class ViewFactory implements ViewConstants
 /*                                                                              */
 /********************************************************************************/
 
-private IfaceModel      layout_model;
-private IfaceTrains     train_model;
+private IfaceEngine    for_engine;
 
 
 
@@ -61,68 +60,24 @@ private IfaceTrains     train_model;
 /*                                                                              */
 /********************************************************************************/
 
-public ViewFactory(IfaceModel mdl,IfaceTrains trns)
-{ 
-   layout_model = mdl;
-   train_model = trns;
-}
-
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Access methods                                                          */
-/*                                                                              */
-/********************************************************************************/
-
-IfaceModel getLayoutModel()                     { return layout_model; }
-
-
-IfaceTrains getTrainModel()                     { return train_model; }
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Processing methods                                                      */
-/*                                                                              */
-/********************************************************************************/
-
-public void startDisplay()
+ViewEngineerFx(IfaceEngine engine)
 {
-   JavaFxStarter starter = new JavaFxStarter();
-   starter.start();
+   for_engine = engine;
    
-   ViewDisplay vd = new ViewDisplay(this); 
-   vd.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-   vd.setVisible(true);
+   TextArea ta = new TextArea("Dummy Panel for Engine " + for_engine.getTrainName());
+   AnchorPane.setTopAnchor(ta,0.0);
+   AnchorPane.setBottomAnchor(ta,0.0);
+   AnchorPane.setLeftAnchor(ta,0.0);
+   AnchorPane.setRightAnchor(ta,0.0);
+   getChildren().add(ta);
+   setPrefSize(400,500);
 }
 
 
-
-/********************************************************************************/
-/*                                                                              */
-/*      JavaFx starter                                                          */
-/*                                                                              */
-/********************************************************************************/
-
-private class JavaFxStarter extends Thread {
-   
-   JavaFxStarter() {
-      super("JavaFxStarter");
-    }
-   
-   @Override public void run() {
-      ViewDisplayFx.setupFx(ViewFactory.this);
-    }
-}
-
-
-}       // end of class ViewFactory
+}       // end of class ViewEngineerFx
 
 
 
 
-/* end of ViewFactory.java */
+/* end of ViewEngineerFx.java */
 

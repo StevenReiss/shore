@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              ViewDiagram.java                                                */
+/*              ViewDiagramFx.java                                              */
 /*                                                                              */
-/*      Panel for a diagram                                                     */
+/*      JavaFx implementation of an interactive diagram                         */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,27 +35,24 @@
 
 package edu.brown.cs.spr.shore.view;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Stroke;
-import java.awt.geom.Path2D;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import javax.swing.JPanel;
-
 import edu.brown.cs.spr.shore.iface.IfaceDiagram;
 import edu.brown.cs.spr.shore.iface.IfaceDiagram.DiagramPoint;
 
-class ViewDiagram extends JPanel implements ViewConstants
+import javafx.geometry.Point2D;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.shape.StrokeLineCap;
+import javafx.scene.shape.StrokeLineJoin;
+
+class ViewDiagramFx extends AnchorPane implements ViewConstants
 {
 
 
@@ -71,10 +68,8 @@ private boolean invert_y;
 private double scale_value;
 private List<List<DiagramPoint>> line_segments;
 
-private static final int BORDER_SPACE = 30;
-private static final int MIN_WIDTH = 1200;
-
-private static final long serialVersionUID = 1;
+private static final double BORDER_SPACE = 30;
+private static final double MIN_WIDTH = 1200;
 
 
 
@@ -84,7 +79,7 @@ private static final long serialVersionUID = 1;
 /*                                                                              */
 /********************************************************************************/
 
-ViewDiagram(IfaceDiagram dgm) 
+ViewDiagramFx(IfaceDiagram dgm)
 {
    for_diagram = dgm;
    invert_y = false;
@@ -98,15 +93,22 @@ ViewDiagram(IfaceDiagram dgm)
       miny = Math.min(miny,pt.getY());
       maxy = Math.max(maxy,pt.getY());
     }
-   display_bounds = new Rectangle2D.Double(minx,miny,maxx-minx,maxy-miny);
-   double ratio = (maxx-minx)/(maxy-miny);
+   display_bounds = new Rectangle2D(minx,miny,maxx-minx,maxy-miny);
+   double ratio = display_bounds.getWidth() / display_bounds.getHeight();
+   double minw = MIN_WIDTH;
+   double minh = MIN_WIDTH / ratio;
    
-   Dimension d = new Dimension(MIN_WIDTH,(int)(MIN_WIDTH/ratio));
-         
-   setMinimumSize(d);
-   setPreferredSize(d);
+   setMinSize(minw,minh);
+   setPrefSize(minw,minh);
    
    setupLineSegments();
+   
+   ResizableCanvas canvas = new ResizableCanvas();
+   AnchorPane.setTopAnchor(canvas,0.0);
+   AnchorPane.setBottomAnchor(canvas,0.0);
+   AnchorPane.setLeftAnchor(canvas,0.0);
+   AnchorPane.setRightAnchor(canvas,0.0);
+   getChildren().add(canvas);
 }
 
 
@@ -194,81 +196,125 @@ private void augmentLineSegment(LinkedList<DiagramPoint> pts,
 
 
 
-
 /********************************************************************************/
 /*                                                                              */
-/*      Paint methods                                                           */
+/*      Diagram drawing methods                                                 */
 /*                                                                              */
 /********************************************************************************/
 
-@Override public void paintComponent(Graphics g0)
+private void drawDiagram(Canvas v)
 {
-   Graphics2D g2 = (Graphics2D) g0;
+   double w = v.getWidth();
+   double h = v.getHeight();
+   setupScaling(w,h);
+
+   GraphicsContext gx = v.getGraphicsContext2D();
+   gx.clearRect(0,0,w,h);
    
-   g2.setBackground(Color.YELLOW);
-   
-   setupScaling();
-   
-   Stroke rail = new BasicStroke(10f,BasicStroke.CAP_ROUND,
-         BasicStroke.JOIN_ROUND);
-   g2.setStroke(rail);
-   g2.setColor(Color.GRAY);
-   
-   for (List<DiagramPoint> seg : line_segments) {
-      Path2D.Double path = null;
-      for (DiagramPoint pt : seg) {
-         Point2D pt0 = getCoords(pt);
-         if (path == null) {
-            path = new Path2D.Double();
-            path.moveTo(pt0.getX(),pt0.getY());
-          }
-         else {
-            path.lineTo(pt0.getX(),pt0.getY());
-          }
-       }
-      g2.draw(path);
-    }
- 
-  
-   // next for each point, draw what should be there (gap,signal,switch,sensor,block,...)
-   
+   drawLines(gx);
 }
 
 
 
-private void setupScaling()
+
+private void setupScaling(double w,double h)
 {
-   Dimension sz = getSize();
-   double xpix = sz.getWidth() - 2 * BORDER_SPACE;
+   double xpix = w - 2 * BORDER_SPACE;
    double xval = display_bounds.getWidth() / xpix;
-   double ypix = sz.getHeight() - 2 * BORDER_SPACE;
+   double ypix = h - 2 * BORDER_SPACE;
    double yval = display_bounds.getHeight() / ypix;
    scale_value = Math.max(xval,yval);
 }
+
+
+private void drawLines(GraphicsContext gx)
+{
+   gx.save();
+   
+   gx.setLineWidth(10);
+   gx.setLineCap(StrokeLineCap.ROUND);
+   gx.setLineJoin(StrokeLineJoin.ROUND);
+   for (List<DiagramPoint> seq : line_segments) {
+      gx.beginPath();
+      int ct = 0;
+      for (DiagramPoint pt : seq) {
+         Point2D pt0 = getCoords(pt);
+         if (ct++ == 0) {
+            gx.moveTo(pt0.getX(),pt0.getY());
+          }
+         else {
+            gx.lineTo(pt0.getX(),pt0.getY());
+          }
+       }
+      gx.stroke();
+    }
+   
+   gx.restore();
+}
+
 
 
 private Point2D getCoords(DiagramPoint pt)
 {
    double x = pt.getX();
    double y = pt.getY();
-   x = x - display_bounds.getX();
+   x = x - display_bounds.getMinX();
    if (invert_y) {
-      double y0 = display_bounds.getY();
+      double y0 = display_bounds.getMinY();
       y = (display_bounds.getHeight() + y0) - y + y0;
     }
-   else y = y - display_bounds.getY();
+   else y = y - display_bounds.getMinY();
    
    x = BORDER_SPACE + (x) / scale_value;
    y = BORDER_SPACE + y / scale_value;
-   Point2D.Double rslt = new Point2D.Double(x,y);
+   Point2D rslt = new Point2D(x,y);
    return rslt;
 }
 
 
-}       // end of class ViewDiagram
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Drawing canvas (for resizing)                                           */
+/*                                                                              */
+/********************************************************************************/
+
+private class ResizableCanvas extends Canvas {
+   
+   ResizableCanvas() {
+      super();
+      
+      double ratio = display_bounds.getWidth() / display_bounds.getHeight();
+      double minw = MIN_WIDTH;
+      double minh = MIN_WIDTH / ratio;
+      
+      setMinSize(minw,minh);
+      setPrefSize(minw,minh);
+    }
+   
+   private void paint() {
+      GraphicsContext gx = getGraphicsContext2D();
+      gx.clearRect(0,0, getWidth(),getHeight());
+      drawDiagram(this);
+    }
+   
+   @Override public boolean isResizable()               { return true; }
+   
+   @Override public void resize(double w,double h) {
+      super.setWidth(w);
+      super.setHeight(h);
+      paint();
+    }
+   
+}       // end of inner class ResizableCanvas
+
+
+
+}       // end of class ViewDiagramFx
 
 
 
 
-/* end of ViewDiagram.java */
+/* end of ViewDiagramFx.java */
 

@@ -1,0 +1,293 @@
+/********************************************************************************/
+/*                                                                              */
+/*              ViewDisplayFx.java                                              */
+/*                                                                              */
+/*      JavaFx implementation of SHORE user interface                           */
+/*                                                                              */
+/********************************************************************************/
+/*      Copyright 2023 Brown University -- Steven P. Reiss                    */
+/*********************************************************************************
+ *  Copyright 2023, Brown University, Providence, RI.                            *
+ *                                                                               *
+ *                        All Rights Reserved                                    *
+ *                                                                               *
+ *  Permission to use, copy, modify, and distribute this software and its        *
+ *  documentation for any purpose other than its incorporation into a            *
+ *  commercial product is hereby granted without fee, provided that the          *
+ *  above copyright notice appear in all copies and that both that               *
+ *  copyright notice and this permission notice appear in supporting             *
+ *  documentation, and that the name of Brown University not be used in          *
+ *  advertising or publicity pertaining to distribution of the software          *
+ *  without specific, written prior permission.                                  *
+ *                                                                               *
+ *  BROWN UNIVERSITY DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS                *
+ *  SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND            *
+ *  FITNESS FOR ANY PARTICULAR PURPOSE.  IN NO EVENT SHALL BROWN UNIVERSITY      *
+ *  BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY          *
+ *  DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,              *
+ *  WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS               *
+ *  ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE          *
+ *  OF THIS SOFTWARE.                                                            *
+ *                                                                               *
+ ********************************************************************************/
+
+
+
+package edu.brown.cs.spr.shore.view;
+
+import java.util.Collection;
+import java.util.List;
+
+import edu.brown.cs.spr.shore.iface.IfaceDiagram;
+import edu.brown.cs.spr.shore.iface.IfaceEngine;
+import javafx.application.Application;
+import javafx.geometry.Orientation;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.SplitPane;
+import javafx.scene.control.TextArea;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
+import javafx.stage.Stage;
+
+
+public class ViewDisplayFx extends Application implements ViewConstants
+{
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Startup method                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+static void setupFx(ViewFactory fac)
+{
+   view_factory = fac;
+   launch();
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Private Storage                                                         */
+/*                                                                              */
+/********************************************************************************/
+
+private static ViewFactory      view_factory;
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Constructors                                                            */
+/*                                                                              */
+/********************************************************************************/
+
+public ViewDisplayFx()
+{
+   System.err.println("CONSTRUCT FX");
+ 
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Setup methods                                                           */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public void init()
+{ 
+   System.err.println("INIT FX");
+}
+
+@Override public void stop()
+{ 
+   System.err.println("STOP FX");
+}
+
+
+@Override public void start(Stage stage)
+{
+   System.err.println("START FX");
+   EngineerPanel epanel = new EngineerPanel();
+   LayoutPanel lpanel = new LayoutPanel();
+   SplitPane overall = new FullSplitPane(lpanel,epanel);
+   overall.setOrientation(Orientation.HORIZONTAL);
+   Scene scn = new Scene(overall);
+   lpanel.prefHeightProperty().bind(scn.heightProperty());
+   epanel.prefHeightProperty().bind(overall.heightProperty());
+   overall.prefHeightProperty().bind(scn.heightProperty());
+   
+   stage.setScene(scn);
+   stage.show();
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Engineer panel -- hold multiple engineers                               */
+/*                                                                              */
+/********************************************************************************/
+
+private class EngineerPanel extends Pane {
+
+   EngineerPanel() {
+      Collection<IfaceEngine> engs = view_factory.getTrainModel().getAllEngines(); 
+      Node [] engarr = new Node[engs.size()];
+      int i = 0;
+      for (IfaceEngine eng : engs) {
+         ViewEngineerFx n = new ViewEngineerFx(eng);
+         SplitPane.setResizableWithParent(n,true);
+         engarr[i++] = n;
+       }
+      if (engarr.length > 1) {
+         FullSplitPane spl = new FullSplitPane(engarr);
+         spl.setOrientation(Orientation.VERTICAL);
+         spl.setDefaultDividers();
+         getChildren().add(spl);
+       } 
+      else if (engarr.length == 1) {
+         getChildren().add(engarr[0]);
+       }
+    }
+   
+}       // end of inner class EngineerPanel
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Layout Panel                                                            */
+/*                                                                              */
+/********************************************************************************/
+
+private class LayoutPanel extends BorderPane {
+   
+   LayoutPanel() {
+      Collection<IfaceDiagram> dgms = view_factory.getLayoutModel().getDiagrams();
+      Node [] pnls = new Node[dgms.size()+1];
+      int i = 0;
+      for (IfaceDiagram dgm : dgms) {
+         DummyPanel vd = new DummyPanel("Diagram " + dgm.getId());
+         vd.setPrefSize(1200,400);
+         SplitPane.setResizableWithParent(vd,true);
+         pnls[i++] = vd;
+       }
+      ViewPlannerFx planenr = new ViewPlannerFx();
+      SplitPane.setResizableWithParent(planenr,true);
+      pnls[i++] = planenr;
+      FullSplitPane spl = new FullSplitPane(pnls);
+      spl.setOrientation(Orientation.VERTICAL);
+      spl.setDefaultDividers();
+      setTop(spl);
+    }
+   
+}       // end of inner class LayoutPanel
+
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Dummy Panel                                                             */
+/*                                                                              */
+/********************************************************************************/
+
+private class DummyPanel extends AnchorPane {
+   
+   DummyPanel(String txt) {
+      TextArea ta = new TextArea("Dummy Panel for " + txt);
+      AnchorPane.setTopAnchor(ta,0.0);
+      AnchorPane.setBottomAnchor(ta,0.0);
+      AnchorPane.setLeftAnchor(ta,0.0);
+      AnchorPane.setRightAnchor(ta,0.0);
+      getChildren().add(ta);
+    }
+}
+
+
+
+
+private class FullSplitPane extends SplitPane {
+   
+   FullSplitPane(Node ... nodes) {
+      super(nodes);
+    }
+   
+   void setDefaultDividers() {
+      boolean usex = getOrientation() == Orientation.HORIZONTAL;
+      double tot = 0;
+      List<Node> nodes = getChildren();
+      for (Node n : nodes) {
+         double v = 100;
+         if (n instanceof Region) {
+            Region r = (Region) n;
+            v = (usex ? r.getWidth() : r.getHeight());
+          }
+         tot += v;
+       }
+      double pos [] = new double[nodes.size()];
+      int i = 0;
+      int x = 0;
+      for (Node n : nodes) {
+         double v = 100;
+         if (n instanceof Region) {
+            Region r = (Region) n;
+            v = (usex ? r.getWidth() : r.getHeight());
+          }
+         x += v;
+         pos[i++] = x / tot;
+       }
+      
+      setDividerPositions(pos);
+    }
+   
+   
+   @Override protected void layoutChildren() {
+      Parent p = getParent();
+      Scene s = getScene();
+      double w0 = getWidth();
+      double h0 = getHeight();
+      double w = 0;
+      double h = 0;
+      if (p != null && p instanceof Pane) {
+         Pane ppp = (Pane) p;
+         w = ppp.getWidth();
+         h = ppp.getHeight();
+       }
+      else if (p == null) {
+         w = s.getWidth();
+         h = s.getHeight();
+       }
+      else {
+         System.err.println("CHECK HERE");
+       }
+      if (w != 0) {
+         if (w != w0 || h != h0) {
+            resize(w,h);
+          }
+       }
+      
+      super.layoutChildren();
+    }
+}
+
+
+
+
+}       // end of class ViewDisplayFx
+
+
+
+
+/* end of ViewDisplayFx.java */
+

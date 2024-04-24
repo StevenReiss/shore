@@ -35,7 +35,6 @@
 
 package edu.brown.cs.spr.shore.view;
 
-import java.awt.Dimension;
 import java.util.Collection;
 
 import javax.swing.JComponent;
@@ -138,10 +137,8 @@ private class DiagramPanel extends JPanel {
    DiagramPanel() {
       Collection<IfaceDiagram> dgms = view_factory.getLayoutModel().getDiagrams();
       JComponent comp = null;
-      Dimension d1;
       for (IfaceDiagram dgm : dgms) {
          ViewDiagram vd = new ViewDiagram(dgm); 
-         d1 = vd.getPreferredSize();
          if (comp == null) comp = vd;
          else {
             comp = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
@@ -149,8 +146,6 @@ private class DiagramPanel extends JPanel {
           }
        }
       add(comp);
-      Dimension d0 = comp.getPreferredSize();
-      
     }
    
 }       // end of inner class DiagramPanel
