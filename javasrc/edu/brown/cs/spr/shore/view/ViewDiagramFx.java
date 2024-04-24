@@ -41,16 +41,25 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceDiagram;
-import edu.brown.cs.spr.shore.iface.IfaceDiagram.DiagramPoint;
-
+import edu.brown.cs.spr.shore.iface.IfacePoint;
+import edu.brown.cs.spr.shore.iface.IfaceSwitch;
+import edu.brown.cs.spr.shore.iface.IfaceConstants.ShorePointType;
+import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
+import javafx.geometry.VPos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextAlignment;
 
 class ViewDiagramFx extends AnchorPane implements ViewConstants
 {
@@ -66,10 +75,13 @@ private IfaceDiagram for_diagram;
 private Rectangle2D display_bounds;
 private boolean invert_y;
 private double scale_value;
-private List<List<DiagramPoint>> line_segments;
+private List<List<IfacePoint>> line_segments;  
+
 
 private static final double BORDER_SPACE = 30;
 private static final double MIN_WIDTH = 1200;
+private static final double GAP_WIDTH = 5;
+private static final double TRACK_WIDTH = 10;
 
 
 
@@ -79,7 +91,7 @@ private static final double MIN_WIDTH = 1200;
 /*                                                                              */
 /********************************************************************************/
 
-ViewDiagramFx(IfaceDiagram dgm)
+ViewDiagramFx(ViewFactory fac,IfaceDiagram dgm)
 {
    for_diagram = dgm;
    invert_y = false;
@@ -87,7 +99,7 @@ ViewDiagramFx(IfaceDiagram dgm)
    double maxx = 0;
    double miny = Integer.MAX_VALUE;
    double maxy = 0;
-   for (DiagramPoint pt : for_diagram.getPoints()) {
+   for (IfacePoint pt : for_diagram.getPoints()) {
       minx = Math.min(minx,pt.getX());
       maxx = Math.max(maxx,pt.getX());
       miny = Math.min(miny,pt.getY());
@@ -122,10 +134,10 @@ ViewDiagramFx(IfaceDiagram dgm)
 private void setupLineSegments()
 {
    line_segments = new ArrayList<>();
-   Set<DiagramPoint> done = new HashSet<>();
-   for (DiagramPoint pt0 : for_diagram.getPoints()) {
+   Set<IfacePoint> done = new HashSet<>();
+   for (IfacePoint pt0 : for_diagram.getPoints()) {
       if (!done.contains(pt0)) {
-         List<DiagramPoint> seg = computeLineSegment(pt0,done);
+         List<IfacePoint> seg = computeLineSegment(pt0,done);
          if (seg != null) line_segments.add(seg);
        }
     }
@@ -133,17 +145,17 @@ private void setupLineSegments()
 
 
 
-private List<DiagramPoint> computeLineSegment(DiagramPoint pt,Set<DiagramPoint> done)
+private List<IfacePoint> computeLineSegment(IfacePoint pt,Set<IfacePoint> done)
 {
-   LinkedList<DiagramPoint> pts = new LinkedList<>();
+   LinkedList<IfacePoint> pts = new LinkedList<>();
    
    pts.add(pt);
    done.add(pt);
    
    boolean fwd = true;
-   DiagramPoint endpt = null;
-   DiagramPoint bendpt = null;
-   for (DiagramPoint nextpt : pt.getConnectedTo()) {
+   IfacePoint endpt = null;
+   IfacePoint bendpt = null;
+   for (IfacePoint nextpt : pt.getConnectedTo()) {
       if (nextpt.getDiagram() != pt.getDiagram()) continue;
       if (done.contains(nextpt)) {
          if (endpt == null) endpt = nextpt;
@@ -167,17 +179,17 @@ private List<DiagramPoint> computeLineSegment(DiagramPoint pt,Set<DiagramPoint> 
 }
 
 
-private void augmentLineSegment(LinkedList<DiagramPoint> pts,
-      DiagramPoint pt,DiagramPoint prev,boolean fwd,Set<DiagramPoint> done)
+private void augmentLineSegment(LinkedList<IfacePoint> pts,
+      IfacePoint pt,IfacePoint prev,boolean fwd,Set<IfacePoint> done)
 {
    if (done.contains(pt)) return;
    if (fwd) pts.addLast(pt);
    else pts.addFirst(pt);
    done.add(pt);
    
-   DiagramPoint endpt = null;
+   IfacePoint endpt = null;
    
-   for (DiagramPoint nextpt : pt.getConnectedTo()) {
+   for (IfacePoint nextpt : pt.getConnectedTo()) {
       if (nextpt == prev) continue;
       if (done.contains(nextpt)) {
          if (endpt == null) endpt = nextpt;
@@ -209,9 +221,19 @@ private void drawDiagram(Canvas v)
    setupScaling(w,h);
 
    GraphicsContext gx = v.getGraphicsContext2D();
+   gx.save();
    gx.clearRect(0,0,w,h);
+   gx.setFill(new Color(0.8,1.0,0.8,0.5));
+   gx.fillRect(0,0,w,h);
    
+   predrawTurntables(gx);
    drawLines(gx);
+   drawSwitches(gx);
+   drawGaps(gx);
+   // drawTurntables(); -- we need to know the state of the turntables
+   // drawSignals();
+   
+   // drawTrains();
 }
 
 
@@ -231,13 +253,16 @@ private void drawLines(GraphicsContext gx)
 {
    gx.save();
    
-   gx.setLineWidth(10);
+   gx.setLineWidth(TRACK_WIDTH);
    gx.setLineCap(StrokeLineCap.ROUND);
    gx.setLineJoin(StrokeLineJoin.ROUND);
-   for (List<DiagramPoint> seq : line_segments) {
+   Color c = Color.BROWN.darker().darker();
+   c = c.deriveColor(0,1.0,1.0,0.5);
+   gx.setStroke(c);
+   for (List<IfacePoint> seq : line_segments) {
       gx.beginPath();
       int ct = 0;
-      for (DiagramPoint pt : seq) {
+      for (IfacePoint pt : seq) {
          Point2D pt0 = getCoords(pt);
          if (ct++ == 0) {
             gx.moveTo(pt0.getX(),pt0.getY());
@@ -254,7 +279,116 @@ private void drawLines(GraphicsContext gx)
 
 
 
-private Point2D getCoords(DiagramPoint pt)
+private void drawSwitches(GraphicsContext gx)
+{
+   gx.save();
+   gx.setTextAlign(TextAlignment.CENTER);
+   gx.setTextBaseline(VPos.CENTER);
+   Font ft0 = gx.getFont();
+   Font ft = Font.font(ft0.getFamily(),FontWeight.BOLD,18);
+   gx.setFont(ft);
+   
+   gx.setStroke(Color.GREEN);
+   gx.setLineWidth(5);
+   for (IfaceSwitch sw : for_diagram.getSwitches()) {
+      IfacePoint tpt = null;
+      switch (sw.getSwitchState()) {
+         case UNKNOWN :
+            continue;
+         case N :
+            tpt = sw.getNSensor().getAtPoint();
+            break;
+         case R :
+            tpt = sw.getRSensor().getAtPoint();
+            break;
+       }
+      if (tpt == null) continue;
+      Point2D p0 = getCoords(sw.getPivotPoint());
+      Point2D p1 = getCoords(tpt);
+      gx.strokeLine(p0.getX(),p0.getY(),p1.getX(),p1.getY());
+    }
+   
+   for (IfaceSwitch sw : for_diagram.getSwitches()) {
+      IfacePoint pt = sw.getPivotPoint();
+      String txt = sw.getId();
+      Point2D cpt2 = getCoords(pt);
+      Text t = new Text(txt);
+      t.setFont(ft);
+      Bounds b = t.getBoundsInLocal();
+      gx.setFill(Color.WHITE);
+      gx.fillOval(cpt2.getX()-b.getWidth()/2,cpt2.getY()-b.getHeight()/2,
+           b.getWidth(),b.getHeight());
+      gx.setFill(Color.BLACK);
+      gx.fillText(txt,cpt2.getX(),cpt2.getY());
+    }
+   gx.restore();
+}
+
+
+
+private void drawGaps(GraphicsContext gx)
+{  
+   gx.save();
+   
+   gx.setStroke(Color.YELLOW);
+   gx.setLineWidth(TRACK_WIDTH);
+   
+   double g = GAP_WIDTH/2.0;
+   
+   for (IfacePoint pt : for_diagram.getPoints()) {
+      if (pt.getType() != ShorePointType.GAP) continue;
+      if (pt.getDiagram() != for_diagram) continue;
+      IfacePoint pt1 = null;
+      IfacePoint pt2 = null;
+      for (IfacePoint cpt : pt.getConnectedTo()) {
+         if (pt1 == null) pt1 = cpt;
+         else if (pt2 == null) pt2 = cpt;
+       }
+      if (pt2 == null) continue;
+      Point2D cpt1 = getCoords(pt1);
+      Point2D cpt2 = getCoords(pt2);
+      Point2D cpt = getCoords(pt);
+      double d1 = cpt.distance(cpt1);
+      double d2 = cpt.distance(cpt2);
+      double x1 = cpt.getX() + g/d1 * (cpt1.getX()-cpt.getX());
+      double y1 = cpt.getY() + g/d1  * (cpt1.getY()-cpt.getY());
+      gx.strokeLine(cpt.getX(),cpt.getY(),x1,y1);
+      double x2 = cpt.getX() + g/d2 * (cpt2.getX()-cpt.getX());
+      double y2 = cpt.getY() + g/d2 * (cpt2.getY()-cpt.getY());
+      gx.strokeLine(cpt.getX(),cpt.getY(),x2,y2);
+    }
+   
+   gx.restore();
+}
+
+
+
+
+private void predrawTurntables(GraphicsContext gx)
+{
+   gx.save();
+   
+   for (IfacePoint pt : for_diagram.getPoints()) {
+      if (pt.getType() != ShorePointType.TURNTABLE) continue;
+      Point2D cpt = getCoords(pt);
+      double radius = 0;
+      for (IfacePoint pt1 : pt.getConnectedTo()) {
+         Point2D cpt1 = getCoords(pt1);
+         double r = cpt.distance(cpt1);
+         if (radius == 0 || radius > r) radius = r;
+       }
+      if (radius == 0) continue;
+      gx.setFill(Color.LIGHTBLUE);
+      gx.fillOval(cpt.getX()-radius,cpt.getY()-radius,2*radius,2*radius);
+    }
+   
+   gx.restore();
+}
+
+
+      
+
+private Point2D getCoords(IfacePoint pt)
 {
    double x = pt.getX();
    double y = pt.getY();
@@ -288,7 +422,6 @@ private class ResizableCanvas extends Canvas {
       double ratio = display_bounds.getWidth() / display_bounds.getHeight();
       double minw = MIN_WIDTH;
       double minh = MIN_WIDTH / ratio;
-      
       setMinSize(minw,minh);
       setPrefSize(minw,minh);
     }
@@ -300,7 +433,7 @@ private class ResizableCanvas extends Canvas {
     }
    
    @Override public boolean isResizable()               { return true; }
-   
+    
    @Override public void resize(double w,double h) {
       super.setWidth(w);
       super.setHeight(h);

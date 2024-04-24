@@ -35,8 +35,6 @@
 
 package edu.brown.cs.spr.shore.view;
 
-import javax.swing.JFrame;
-
 import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
 
@@ -93,10 +91,6 @@ public void startDisplay()
 {
    JavaFxStarter starter = new JavaFxStarter();
    starter.start();
-   
-   ViewDisplay vd = new ViewDisplay(this); 
-   vd.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-   vd.setVisible(true);
 }
 
 

@@ -40,14 +40,13 @@ import java.util.List;
 
 import edu.brown.cs.spr.shore.iface.IfaceDiagram;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
+import edu.brown.cs.spr.shore.shore.ShoreLog;
 import javafx.application.Application;
 import javafx.geometry.Orientation;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.SplitPane;
-import javafx.scene.control.TextArea;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
@@ -92,7 +91,6 @@ private static ViewFactory      view_factory;
 public ViewDisplayFx()
 {
    System.err.println("CONSTRUCT FX");
- 
 }
 
 
@@ -111,6 +109,7 @@ public ViewDisplayFx()
 @Override public void stop()
 { 
    System.err.println("STOP FX");
+   System.exit(0);
 }
 
 
@@ -121,11 +120,12 @@ public ViewDisplayFx()
    LayoutPanel lpanel = new LayoutPanel();
    SplitPane overall = new FullSplitPane(lpanel,epanel);
    overall.setOrientation(Orientation.HORIZONTAL);
+   ShoreLog.logD("VIEW","Overall pref size " + overall.getPrefWidth() + " " +
+         overall.getPrefHeight());
    Scene scn = new Scene(overall);
-   lpanel.prefHeightProperty().bind(scn.heightProperty());
-   epanel.prefHeightProperty().bind(overall.heightProperty());
-   overall.prefHeightProperty().bind(scn.heightProperty());
-   
+// lpanel.prefHeightProperty().bind(scn.heightProperty());
+// epanel.prefHeightProperty().bind(overall.heightProperty());
+// overall.prefHeightProperty().bind(scn.heightProperty());
    stage.setScene(scn);
    stage.show();
 }
@@ -176,16 +176,23 @@ private class LayoutPanel extends BorderPane {
       Collection<IfaceDiagram> dgms = view_factory.getLayoutModel().getDiagrams();
       Node [] pnls = new Node[dgms.size()+1];
       int i = 0;
-      for (IfaceDiagram dgm : dgms) {
-         DummyPanel vd = new DummyPanel("Diagram " + dgm.getId());
-         vd.setPrefSize(1200,400);
+      double totx = 0;
+      double toty = 0;
+      for (IfaceDiagram dgm : dgms) { 
+         ViewDiagramFx vd = new ViewDiagramFx(view_factory,dgm);
          SplitPane.setResizableWithParent(vd,true);
+         totx = Math.max(totx,vd.getPrefWidth());
+         toty += vd.getPrefHeight();
          pnls[i++] = vd;
        }
-      ViewPlannerFx planenr = new ViewPlannerFx();
-      SplitPane.setResizableWithParent(planenr,true);
-      pnls[i++] = planenr;
+      ViewPlannerFx planner = new ViewPlannerFx();
+      SplitPane.setResizableWithParent(planner,true);
+      totx = Math.max(totx,planner.getPrefWidth());
+      toty += planner.getPrefHeight();
+      pnls[i++] = planner;
       FullSplitPane spl = new FullSplitPane(pnls);
+      ShoreLog.logD("Set split pane prefsize " + totx + " " + toty);
+      spl.setPrefSize(totx,toty+30);
       spl.setOrientation(Orientation.VERTICAL);
       spl.setDefaultDividers();
       setTop(spl);
@@ -198,24 +205,9 @@ private class LayoutPanel extends BorderPane {
 
 /********************************************************************************/
 /*                                                                              */
-/*      Dummy Panel                                                             */
+/*      Split pane that uses full size                                          */
 /*                                                                              */
 /********************************************************************************/
-
-private class DummyPanel extends AnchorPane {
-   
-   DummyPanel(String txt) {
-      TextArea ta = new TextArea("Dummy Panel for " + txt);
-      AnchorPane.setTopAnchor(ta,0.0);
-      AnchorPane.setBottomAnchor(ta,0.0);
-      AnchorPane.setLeftAnchor(ta,0.0);
-      AnchorPane.setRightAnchor(ta,0.0);
-      getChildren().add(ta);
-    }
-}
-
-
-
 
 private class FullSplitPane extends SplitPane {
    
@@ -226,12 +218,12 @@ private class FullSplitPane extends SplitPane {
    void setDefaultDividers() {
       boolean usex = getOrientation() == Orientation.HORIZONTAL;
       double tot = 0;
-      List<Node> nodes = getChildren();
+      List<Node> nodes = getItems();
       for (Node n : nodes) {
          double v = 100;
          if (n instanceof Region) {
             Region r = (Region) n;
-            v = (usex ? r.getWidth() : r.getHeight());
+            v = (usex ? r.getPrefWidth() : r.getPrefHeight());
           }
          tot += v;
        }
@@ -242,7 +234,7 @@ private class FullSplitPane extends SplitPane {
          double v = 100;
          if (n instanceof Region) {
             Region r = (Region) n;
-            v = (usex ? r.getWidth() : r.getHeight());
+            v = (usex ? r.getPrefWidth() : r.getPrefHeight());
           }
          x += v;
          pos[i++] = x / tot;
@@ -267,11 +259,14 @@ private class FullSplitPane extends SplitPane {
       else if (p == null) {
          w = s.getWidth();
          h = s.getHeight();
+         if (w < w0 || h < h0) {
+           return; 
+          }
        }
       else {
          System.err.println("CHECK HERE");
        }
-      if (w != 0) {
+      if (w > 1.0) {
          if (w != w0 || h != h0) {
             resize(w,h);
           }

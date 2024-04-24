@@ -64,7 +64,7 @@ ViewPlannerFx()
    AnchorPane.setLeftAnchor(ta,0.0);
    AnchorPane.setRightAnchor(ta,0.0);
    getChildren().add(ta);
-   setPrefSize(10240,200);
+   setPrefSize(1024,200);
 }
 
 

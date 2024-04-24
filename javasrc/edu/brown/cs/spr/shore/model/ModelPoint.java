@@ -43,10 +43,9 @@ import java.util.List;
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
-import edu.brown.cs.spr.shore.iface.IfaceDiagram;
-import edu.brown.cs.spr.shore.iface.IfaceDiagram.DiagramPoint;
+import edu.brown.cs.spr.shore.iface.IfacePoint;
 
-class ModelPoint implements ModelConstants, IfaceDiagram.DiagramPoint 
+class ModelPoint implements ModelConstants, IfacePoint 
 {
 
 
@@ -135,7 +134,7 @@ List<ModelPoint> getModelConnectedTo()
    return conn_points;
 }
 
-@Override public Collection<DiagramPoint> getConnectedTo()
+@Override public Collection<IfacePoint> getConnectedTo()
 {
    return new ArrayList<>(conn_points); 
 }

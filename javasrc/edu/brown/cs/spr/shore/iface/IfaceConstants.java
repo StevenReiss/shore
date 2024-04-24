@@ -52,6 +52,8 @@ enum ShorePointType {
    TURNTABLE, 
    DIAGRAM,
    LABEL,
+   X_CROSSING,
+   ROAD_CROSSING,
 };
 
 

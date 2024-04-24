@@ -44,12 +44,16 @@ enum SwitchState { N, R, UNKNOWN };
 SwitchState getSwitchState();
 void setSwitch(SwitchState n);
 
+String getId();
+
 IfaceBlock getEntryBlock();
 IfaceBlock getNBlock();
 IfaceBlock getRBlock();
 
 IfaceSensor getNSensor();
 IfaceSensor getRSensor();
+
+IfacePoint getPivotPoint();
 
 byte getTowerId();
 byte getTowerSwitch();

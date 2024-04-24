@@ -45,6 +45,7 @@ import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceDiagram;
+import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
@@ -119,7 +120,7 @@ Collection<ModelPoint> getModelPoints()
 }
 
 
-@Override public Collection<DiagramPoint> getPoints()
+@Override public Collection<IfacePoint> getPoints()
 {
    return new ArrayList<>(diagram_points.values());
 }

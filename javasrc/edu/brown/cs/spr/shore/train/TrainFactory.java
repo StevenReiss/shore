@@ -39,6 +39,7 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.w3c.dom.Element;
@@ -84,7 +85,7 @@ public TrainFactory(IfaceNetwork net,IfaceModel mdl)
 {
    network_model = net;
    layout_model = mdl;
-   known_trains = new HashMap<>();
+   known_trains = new LinkedHashMap<>();
    assigned_trains = new HashMap<>();
    train_locations = new HashMap<>();
    expected_trains = new HashMap<>();

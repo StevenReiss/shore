@@ -58,6 +58,8 @@ SensorState getSensorState();
 
 Collection<IfaceSignal> getSignals();
 
+IfacePoint getAtPoint();
+
 byte getTowerId();
 byte getTowerSensor();
 

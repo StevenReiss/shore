@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              ViewPlanner.java                                                */
+/*              IfacePoint.java                                                 */
 /*                                                                              */
-/*      Panel for high-level control of trains                                  */
+/*      description of class                                                    */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -33,45 +33,27 @@
 
 
 
-package edu.brown.cs.spr.shore.view;
+package edu.brown.cs.spr.shore.iface;
 
-import javax.swing.JTextArea;
+import java.util.Collection;
 
-import edu.brown.cs.ivy.swing.SwingGridPanel;
+import edu.brown.cs.spr.shore.iface.IfaceConstants.ShorePointType;
 
-class ViewPlanner extends SwingGridPanel implements ViewConstants
+public interface IfacePoint
 {
 
 
-/********************************************************************************/
-/*                                                                              */
-/*      Private Storage                                                         */
-/*                                                                              */
-/********************************************************************************/
-
-private static final long serialVersionUID = 1;
+double getX();
+double getY();
+ShorePointType getType();
+Collection<IfacePoint> getConnectedTo();
+IfaceDiagram getDiagram();
 
 
-
-/********************************************************************************/
-/*                                                                              */
-/*      Constructors                                                            */
-/*                                                                              */
-/********************************************************************************/
-
-ViewPlanner() 
-{
-   JTextArea t1 = new JTextArea(10,10);
-   t1.setText("Planner panel goes here");
-   add(t1);
-}
-
-
-
-}       // end of class ViewPlanner
+}       // end of interface IfacePoint
 
 
 
 
-/* end of ViewPlanner.java */
+/* end of IfacePoint.java */
 

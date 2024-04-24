@@ -109,7 +109,7 @@ ModelSensor(ModelBase mdl,Element xml)
 
 String getId()                                  { return sensor_id; }
 
-ModelPoint getAtPoint()                         { return sensor_point; }
+@Override public ModelPoint getAtPoint()                { return sensor_point; }
 
 @Override public IfaceSwitch getSwitchN()       { return n_switch; }
 

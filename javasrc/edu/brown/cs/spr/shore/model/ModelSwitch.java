@@ -116,9 +116,9 @@ ModelSwitch(ModelBase model,Element xml)
 /*                                                                              */
 /********************************************************************************/
 
-String getId()                                  { return switch_id; }
+@Override public String getId()                         { return switch_id; } 
 
-ModelPoint getPivotPoint()                      { return pivot_point; }
+@Override public ModelPoint getPivotPoint()     { return pivot_point; }  
 
 ModelPoint getNPoint()                          { return n_point; }
 

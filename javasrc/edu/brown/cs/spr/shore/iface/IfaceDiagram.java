@@ -42,7 +42,7 @@ public interface IfaceDiagram extends IfaceConstants
 
 String getId();
 
-Collection<DiagramPoint> getPoints();
+Collection<IfacePoint> getPoints();
 Collection<IfaceSensor> getSensors();
 Collection<IfaceSignal> getSignals();
 Collection<IfaceSwitch> getSwitches();
@@ -50,16 +50,7 @@ Collection<IfaceSwitch> getSwitches();
 boolean invertY();
 
 
-interface DiagramPoint {
-   
-   double getX();
-   double getY();
-   ShorePointType getType();
-   Collection<DiagramPoint> getConnectedTo();
-   IfaceDiagram getDiagram();
-  
-   
-}
+
 
 
 
