@@ -46,6 +46,7 @@ Collection<IfacePoint> getPoints();
 Collection<IfaceSensor> getSensors();
 Collection<IfaceSignal> getSignals();
 Collection<IfaceSwitch> getSwitches();
+Collection<IfaceBlock> getBlocks();
 
 boolean invertY();
 

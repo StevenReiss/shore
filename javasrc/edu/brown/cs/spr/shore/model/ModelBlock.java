@@ -93,8 +93,8 @@ ModelBlock(ModelBase model,Element xml)
 /*                                                                              */
 /********************************************************************************/
 
-String getId()                                  { return block_id; }
-ModelPoint getAtPoint()                         { return at_point; }
+@Override public String getId()                 { return block_id; } 
+@Override public ModelPoint getAtPoint()        { return at_point; }
 
 @Override public BlockState getBlockState()     { return block_state; }
 @Override public ModelBlock getPendingFrom()    { return pending_from; }
@@ -168,6 +168,18 @@ private void propagateBlock(ModelBase mdl,ModelPoint pt)
     }
 }
 
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Output methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public String toString()
+{
+   return "BLOCK[" + block_id + "=" + block_state + "]";
+}
 
 
 

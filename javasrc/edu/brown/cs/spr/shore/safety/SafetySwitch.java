@@ -131,7 +131,8 @@ private class SwitchData {
     }
    
    void trigger(SensorState sen,SwitchState state) {
-      ShoreLog.logD("SAFETY","Trigger switch " + for_switch + "=" + state);
+      ShoreLog.logD("SAFETY","Trigger switch " + for_switch + "=" + state + 
+            " @ " + current_mode);
       
       switch (current_mode) {
          case NORMAL :
@@ -165,6 +166,7 @@ private class SwitchData {
     }
    
    private void doTrigger(SwitchState state) {
+      for_switch.setSwitch(state);
       safety_factory.getNetworkModel().sendSetSwitch(for_switch,state);
       current_mode = SwitchMode.SET;
       last_trigger = 0;

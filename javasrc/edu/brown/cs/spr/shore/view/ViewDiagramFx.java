@@ -36,24 +36,50 @@
 package edu.brown.cs.spr.shore.view;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import edu.brown.cs.spr.shore.iface.IfaceConnection;
+import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceDiagram;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
+import edu.brown.cs.spr.shore.iface.IfaceSensor;
+import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
+import edu.brown.cs.spr.shore.iface.IfaceBlock.BlockState;
 import edu.brown.cs.spr.shore.iface.IfaceConstants.ShorePointType;
+import edu.brown.cs.spr.shore.iface.IfaceModel.ModelCallback;
+import edu.brown.cs.spr.shore.iface.IfaceSensor.SensorState;
+import edu.brown.cs.spr.shore.iface.IfaceSignal.SignalState;
+import edu.brown.cs.spr.shore.iface.IfaceSignal.SignalType;
+import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
+import edu.brown.cs.spr.shore.iface.IfaceTrains.TrainCallback;
+import javafx.application.Platform;
+import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
+import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.layout.AnchorPane;
+import javafx.scene.Node;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Ellipse;
+import javafx.scene.shape.Line;
+import javafx.scene.shape.LineTo;
+import javafx.scene.shape.MoveTo;
+import javafx.scene.shape.Path;
+import javafx.scene.shape.PathElement;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
 import javafx.scene.text.Font;
@@ -61,7 +87,7 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 
-class ViewDiagramFx extends AnchorPane implements ViewConstants
+class ViewDiagramFx extends Pane implements ViewConstants
 {
 
 
@@ -75,14 +101,54 @@ private IfaceDiagram for_diagram;
 private Rectangle2D display_bounds;
 private boolean invert_y;
 private double scale_value;
-private List<List<IfacePoint>> line_segments;  
+private List<List<IfacePoint>> line_segments;
+private Map<IfaceSwitch,SwitchDrawData> switch_map;
+private Map<IfaceSignal,SignalDrawData> signal_map;
+private Map<IfaceSensor,SensorDrawData> sensor_map;
+private Map<IfaceBlock,BlockDrawData> block_map;
 
 
 private static final double BORDER_SPACE = 30;
 private static final double MIN_WIDTH = 1200;
-private static final double GAP_WIDTH = 5;
+private static final double GAP_WIDTH = 8;
 private static final double TRACK_WIDTH = 10;
+private static final double SWITCH_ARROW_WIDTH = 6;
+private static final double SIGNAL_DISTANCE = 20;
+private static final double SIGNAL_LIGHT = 8;           
+private static final double SIGNAL_GAP = 2;
+private static final double SENSOR_RADIUS = 3;
 
+private static final Color BACKGROUND_COLOR = new Color(0.8,1.0,0.8,0.5);
+private static final Color TRACK_COLOR;
+private static final Color GAP_COLOR = Color.YELLOW;
+private static final Color SWITCH_ARROW_COLOR = Color.GREEN;
+private static final Color SWITCH_BACKGROUD_COLOR = Color.WHITE;
+private static final Color SWITCH_LABEL_COLOR = Color.BLACK;
+private static final Color SIGNAL_BACKGROUND = Color.WHITE;
+private static final Color SIGNAL_OFF = Color.LIGHTGRAY;
+private static final Color SIGNAL_STROKE = Color.BLACK;
+private static final Color SENSOR_OFF_COLOR = Color.LIGHTGRAY;
+private static final Color SENSOR_ON_COLOR = Color.RED;
+private static final Color BLOCK_BACKGROUD_COLOR = Color.BLACK;
+private static final Color BLOCK_BACKGROUD_INUSE_COLOR = Color.RED;
+private static final Color BLOCK_BACKGROUD_PENDING_COLOR = Color.YELLOW;
+private static final Color BLOCK_LABEL_COLOR = Color.WHITE;
+private static final Color BLOCK_LABEL_INUSE_COLOR = Color.RED;
+private static final Color BLOCK_LABEL_PENDING_COLOR = Color.YELLOW;
+
+private static final Font SWITCH_FONT;
+private static final Font BLOCK_FONT;
+
+static {
+   Color c = Color.BROWN.darker().darker();
+   TRACK_COLOR = c.deriveColor(0,1.0,1.0,0.5);
+   Font ft0 = Font.getDefault();
+   SWITCH_FONT = Font.font(ft0.getFamily(),FontWeight.BOLD,18);
+   BLOCK_FONT = SWITCH_FONT;
+   
+}
+
+      
 
 
 /********************************************************************************/
@@ -115,12 +181,14 @@ ViewDiagramFx(ViewFactory fac,IfaceDiagram dgm)
    
    setupLineSegments();
    
-   ResizableCanvas canvas = new ResizableCanvas();
-   AnchorPane.setTopAnchor(canvas,0.0);
-   AnchorPane.setBottomAnchor(canvas,0.0);
-   AnchorPane.setLeftAnchor(canvas,0.0);
-   AnchorPane.setRightAnchor(canvas,0.0);
-   getChildren().add(canvas);
+   switch_map = new HashMap<>();
+   signal_map = new HashMap<>();
+   sensor_map = new HashMap<>();
+   block_map = new HashMap<>();
+   
+   CallbackHandler hdlr = new CallbackHandler();
+   fac.getLayoutModel().addModelCallback(hdlr);
+   
 }
 
 
@@ -214,124 +282,90 @@ private void augmentLineSegment(LinkedList<IfacePoint> pts,
 /*                                                                              */
 /********************************************************************************/
 
-private void drawDiagram(Canvas v)
+private void drawDiagram()
 {
-   double w = v.getWidth();
-   double h = v.getHeight();
+   double w = getWidth();
+   double h = getHeight();
    setupScaling(w,h);
-
-   GraphicsContext gx = v.getGraphicsContext2D();
-   gx.save();
-   gx.clearRect(0,0,w,h);
-   gx.setFill(new Color(0.8,1.0,0.8,0.5));
-   gx.fillRect(0,0,w,h);
    
-   predrawTurntables(gx);
-   drawLines(gx);
-   drawSwitches(gx);
-   drawGaps(gx);
+   getChildren().clear();
+   
+   BackgroundFill fill = new BackgroundFill(BACKGROUND_COLOR,
+         CornerRadii.EMPTY,Insets.EMPTY);
+   Background bkg = new Background(fill);
+   setBackground(bkg);
+   
+   predrawTurntables();
+   drawTracks();
+   drawGaps();
+   
+   drawSwitches();
+   drawSignals();
+   drawSensors();
+   drawBlocks();
+   
    // drawTurntables(); -- we need to know the state of the turntables
-   // drawSignals();
    
    // drawTrains();
 }
 
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      Track drwaing                                                           */
+/*                                                                              */
+/********************************************************************************/
 
-private void setupScaling(double w,double h)
+private void predrawTurntables()
 {
-   double xpix = w - 2 * BORDER_SPACE;
-   double xval = display_bounds.getWidth() / xpix;
-   double ypix = h - 2 * BORDER_SPACE;
-   double yval = display_bounds.getHeight() / ypix;
-   scale_value = Math.max(xval,yval);
+   for (IfacePoint pt : for_diagram.getPoints()) {
+      if (pt.getType() != ShorePointType.TURNTABLE) continue;
+      Point2D cpt = getCoords(pt);
+      double radius = 0;
+      for (IfacePoint pt1 : pt.getConnectedTo()) {
+         Point2D cpt1 = getCoords(pt1);
+         double r = cpt.distance(cpt1);
+         if (radius == 0 || radius > r) radius = r;
+       }
+      if (radius == 0) continue;
+      Circle c = new Circle(cpt.getX(),cpt.getY(),radius,
+            Color.LIGHTBLUE);
+      getChildren().add(c);
+    }
 }
 
 
-private void drawLines(GraphicsContext gx)
+
+private void drawTracks()
 {
-   gx.save();
+   Path path = new Path();
+   path.setStrokeWidth(TRACK_WIDTH);
+   path.setStrokeLineCap(StrokeLineCap.ROUND);
+   path.setStrokeLineJoin(StrokeLineJoin.ROUND);
+   path.setStroke(TRACK_COLOR);
    
-   gx.setLineWidth(TRACK_WIDTH);
-   gx.setLineCap(StrokeLineCap.ROUND);
-   gx.setLineJoin(StrokeLineJoin.ROUND);
-   Color c = Color.BROWN.darker().darker();
-   c = c.deriveColor(0,1.0,1.0,0.5);
-   gx.setStroke(c);
-   for (List<IfacePoint> seq : line_segments) {
-      gx.beginPath();
+   for (List<IfacePoint> seg : line_segments) {
       int ct = 0;
-      for (IfacePoint pt : seq) {
+      for (IfacePoint pt : seg) {
          Point2D pt0 = getCoords(pt);
+         PathElement e = null;
          if (ct++ == 0) {
-            gx.moveTo(pt0.getX(),pt0.getY());
+            e = new MoveTo(pt0.getX(),pt0.getY());
           }
          else {
-            gx.lineTo(pt0.getX(),pt0.getY());
+            e = new LineTo(pt0.getX(),pt0.getY());
           }
+         path.getElements().add(e);
        }
-      gx.stroke();
     }
    
-   gx.restore();
+   getChildren().add(path);
 }
 
 
-
-private void drawSwitches(GraphicsContext gx)
-{
-   gx.save();
-   gx.setTextAlign(TextAlignment.CENTER);
-   gx.setTextBaseline(VPos.CENTER);
-   Font ft0 = gx.getFont();
-   Font ft = Font.font(ft0.getFamily(),FontWeight.BOLD,18);
-   gx.setFont(ft);
-   
-   gx.setStroke(Color.GREEN);
-   gx.setLineWidth(5);
-   for (IfaceSwitch sw : for_diagram.getSwitches()) {
-      IfacePoint tpt = null;
-      switch (sw.getSwitchState()) {
-         case UNKNOWN :
-            continue;
-         case N :
-            tpt = sw.getNSensor().getAtPoint();
-            break;
-         case R :
-            tpt = sw.getRSensor().getAtPoint();
-            break;
-       }
-      if (tpt == null) continue;
-      Point2D p0 = getCoords(sw.getPivotPoint());
-      Point2D p1 = getCoords(tpt);
-      gx.strokeLine(p0.getX(),p0.getY(),p1.getX(),p1.getY());
-    }
-   
-   for (IfaceSwitch sw : for_diagram.getSwitches()) {
-      IfacePoint pt = sw.getPivotPoint();
-      String txt = sw.getId();
-      Point2D cpt2 = getCoords(pt);
-      Text t = new Text(txt);
-      t.setFont(ft);
-      Bounds b = t.getBoundsInLocal();
-      gx.setFill(Color.WHITE);
-      gx.fillOval(cpt2.getX()-b.getWidth()/2,cpt2.getY()-b.getHeight()/2,
-           b.getWidth(),b.getHeight());
-      gx.setFill(Color.BLACK);
-      gx.fillText(txt,cpt2.getX(),cpt2.getY());
-    }
-   gx.restore();
-}
-
-
-
-private void drawGaps(GraphicsContext gx)
+private void drawGaps()
 {  
-   gx.save();
-   
-   gx.setStroke(Color.YELLOW);
-   gx.setLineWidth(TRACK_WIDTH);
    
    double g = GAP_WIDTH/2.0;
    
@@ -352,41 +386,540 @@ private void drawGaps(GraphicsContext gx)
       double d2 = cpt.distance(cpt2);
       double x1 = cpt.getX() + g/d1 * (cpt1.getX()-cpt.getX());
       double y1 = cpt.getY() + g/d1  * (cpt1.getY()-cpt.getY());
-      gx.strokeLine(cpt.getX(),cpt.getY(),x1,y1);
       double x2 = cpt.getX() + g/d2 * (cpt2.getX()-cpt.getX());
       double y2 = cpt.getY() + g/d2 * (cpt2.getY()-cpt.getY());
-      gx.strokeLine(cpt.getX(),cpt.getY(),x2,y2);
+      Line line = new Line(x1,y1,x2,y2);
+      line.setStroke(GAP_COLOR);
+      line.setStrokeWidth(TRACK_WIDTH);
+      line.setStrokeLineCap(StrokeLineCap.BUTT);
+      getChildren().add(line);
     }
-   
-   gx.restore();
 }
 
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      Switch information                                                      */
+/*                                                                              */
+/********************************************************************************/
 
-private void predrawTurntables(GraphicsContext gx)
+private void drawSwitches()
 {
-   gx.save();
+   switch_map.clear();
    
-   for (IfacePoint pt : for_diagram.getPoints()) {
-      if (pt.getType() != ShorePointType.TURNTABLE) continue;
-      Point2D cpt = getCoords(pt);
-      double radius = 0;
-      for (IfacePoint pt1 : pt.getConnectedTo()) {
-         Point2D cpt1 = getCoords(pt1);
-         double r = cpt.distance(cpt1);
-         if (radius == 0 || radius > r) radius = r;
-       }
-      if (radius == 0) continue;
-      gx.setFill(Color.LIGHTBLUE);
-      gx.fillOval(cpt.getX()-radius,cpt.getY()-radius,2*radius,2*radius);
+   for (IfaceSwitch sw : for_diagram.getSwitches()) {
+      IfacePoint pt = sw.getPivotPoint();
+      Point2D cpt2 = getCoords(pt);
+      Line arrow = new Line(cpt2.getX(),cpt2.getY(),cpt2.getX(),cpt2.getY());
+      arrow.setStroke(SWITCH_ARROW_COLOR);
+      arrow.setStrokeWidth(SWITCH_ARROW_WIDTH);
+      arrow.setVisible(false);
+      getChildren().add(arrow);
+      
+      String txt = sw.getId();
+      Text t = new Text(txt);
+      t.setFont(SWITCH_FONT);
+      t.setFill(SWITCH_LABEL_COLOR);  
+      t.setStroke(SWITCH_LABEL_COLOR);
+      Bounds b = t.getBoundsInLocal();
+      double w0 = b.getWidth();
+      double w = w0 + 8;
+      double h = b.getHeight();
+      t.setTextAlignment(TextAlignment.CENTER);
+      t.setTextOrigin(VPos.CENTER);
+      t.setX(cpt2.getX() - w0/2);
+      t.setY(cpt2.getY());
+      
+      Ellipse bkg = new Ellipse(cpt2.getX(),cpt2.getY(),w/2,h/2);
+      bkg.setFill(SWITCH_BACKGROUD_COLOR);
+      
+      getChildren().add(bkg);
+      getChildren().add(t);
+      
+      SwitchDrawData sdd = new SwitchDrawData(sw,arrow,bkg,t);
+      switch_map.put(sw,sdd);
     }
-   
-   gx.restore();
 }
 
+
+
+
+private class SwitchDrawData {
+   
+   private Line switch_arrow;
+   private IfaceSwitch for_switch;
+   
+   SwitchDrawData(IfaceSwitch sw,Line arrow,Node bkg,Node lbl) {
+      for_switch = sw;
+      switch_arrow = arrow;
+      doSetArrow();
+      SwitchHandler hdlr = new SwitchHandler(for_switch);
+      bkg.setOnMouseClicked(hdlr);
+      bkg.setOnMousePressed(hdlr);
+      lbl.setOnMouseClicked(hdlr);
+      lbl.setOnMousePressed(hdlr);
+    }
+   
+   void setArrow() {
+      if (Platform.isFxApplicationThread()) {
+         doSetArrow();
+       }
+      else {
+         Platform.runLater(new SwitchSetter(this));
+       }
+    }
+   
+   void doSetArrow() {
+      IfacePoint tpt = null;
+      switch (for_switch.getSwitchState()) {
+         case UNKNOWN :
+            break;
+         case N :
+            tpt = for_switch.getNSensor().getAtPoint();
+            break;
+         case R :
+            tpt = for_switch.getRSensor().getAtPoint();
+            break;
+       }
+      if (tpt == null) {
+         switch_arrow.setVisible(false);
+       }
+      else {
+         Point2D p1 = getCoords(tpt);
+         // might want to restrict the line to a fixed length from pivot point
+         switch_arrow.endXProperty().set(p1.getX());
+         switch_arrow.endYProperty().set(p1.getY());
+         switch_arrow.setVisible(true);
+       }
+    }
+}
+
+
+
+private static class SwitchHandler implements EventHandler<MouseEvent> {
+  
+   private IfaceSwitch for_switch;
+   
+   SwitchHandler(IfaceSwitch sw) {
+      for_switch = sw;
+    }
+   
+   @Override public void handle(MouseEvent evt) { 
+      SwitchState ss = for_switch.getSwitchState();
+      if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
+         switch (ss) {
+            case UNKNOWN :
+            case R :
+               for_switch.setSwitch(SwitchState.N);
+               break;
+            case N :
+               for_switch.setSwitch(SwitchState.R);
+               break;
+          }
+       }
+    }
+   
+}       // end of inner class SwitchHandler
+
+
+
+private static class SwitchSetter implements Runnable {
+   
+   private SwitchDrawData draw_data;
+   
+   SwitchSetter(SwitchDrawData dd) {
+      draw_data = dd;
+    }
+   
+   @Override public void run() {
+      draw_data.setArrow();
+    }
+   
+}       // end of inner class SwitchSetter
 
       
+
+/********************************************************************************/
+/*                                                                              */
+/*      Signal management                                                       */
+/*                                                                              */
+/********************************************************************************/
+
+private void drawSignals()
+{
+   signal_map.clear();
+   
+   for (IfaceSignal sig : for_diagram.getSignals()) {
+      IfacePoint pt = sig.getAtPoint();
+      IfacePoint npt = sig.getNextPoint();
+      Point2D cpt = getCoords(pt);
+      Point2D cnpt = getCoords(npt);
+      double d = cpt.distance(cnpt);
+      double dx = (cnpt.getY() - cpt.getY())/d;
+      double dy = - (cnpt.getX() - cpt.getX())/d;
+      double mx = cpt.getX() + SIGNAL_DISTANCE * dx;
+      double my = cpt.getY() + SIGNAL_DISTANCE * dy;
+      
+      int nlight = 2;
+      switch (sig.getSignalType()) {
+         case ENGINE :
+         case RG :
+            nlight = 2;
+            break;
+         case RGY :
+            nlight = 3;
+            break;
+       }
+      
+      double ht = nlight * SIGNAL_LIGHT + (nlight+2) * SIGNAL_GAP;
+      double wd = SIGNAL_LIGHT + 2 * SIGNAL_GAP;
+      double y0 = my - ht/2;
+      
+      Rectangle box = new Rectangle(mx,y0,wd,ht);
+      box.setFill(SIGNAL_BACKGROUND);
+      getChildren().add(box);
+      
+      Shape light[] = new Shape[nlight];
+      for (int i = 0; i < nlight; ++i) {
+         y0 = y0 + SIGNAL_GAP;
+         Circle c = new Circle(mx + SIGNAL_GAP + SIGNAL_LIGHT/2,
+               y0 + SIGNAL_LIGHT/2,
+               SIGNAL_LIGHT/2);
+         c.setFill(SIGNAL_OFF);
+         c.setStroke(SIGNAL_STROKE);
+         light[i] = c;
+         y0 += SIGNAL_LIGHT;
+         getChildren().add(c);
+       }
+     
+      SignalDrawData sdd = new SignalDrawData(sig,box,light);
+      signal_map.put(sig,sdd);
+    }
+}
+
+
+private class SignalDrawData {
+   
+   private IfaceSignal for_signal;
+   private Shape [] signal_lights;
+   
+   SignalDrawData(IfaceSignal sig,Shape bkg,Shape [] lights) {
+      for_signal = sig;
+      signal_lights = lights;
+      SignalHandler hdlr = new SignalHandler(for_signal);
+      bkg.setOnMouseClicked(hdlr);
+      bkg.setOnMousePressed(hdlr);
+      for (Shape s : lights) {
+         s.setOnMouseClicked(hdlr);
+         s.setOnMousePressed(hdlr);
+       }
+      doSetSignal();
+    }
+   
+   void setSignal() {
+      if (Platform.isFxApplicationThread()) {
+         doSetSignal();
+       }
+      else {
+         Platform.runLater(new SignalSetter(this));
+       }
+    }
+   
+   void doSetSignal() {
+      SignalState st = for_signal.getSignalState();
+      for (Shape s : signal_lights) {
+         s.setFill(SIGNAL_OFF);
+       }
+      switch (st) {
+         case OFF :
+            break;
+         case GREEN :
+            signal_lights[signal_lights.length-1].setFill(Color.GREEN);
+            break;
+         case RED :
+            signal_lights[0].setFill(Color.RED);
+            break;
+         case YELLOW :
+            if (signal_lights.length == 2) {
+               signal_lights[0].setFill(Color.RED);
+               signal_lights[1].setFill(Color.GREEN);
+             }
+            else {
+               signal_lights[1].setFill(Color.YELLOW);
+             }
+            break;
+       }
+    }
+   
+}       // end of inner class SignalDrawData
+
+
+
+private static class SignalSetter implements Runnable {
+
+   private SignalDrawData draw_data;
+   
+   SignalSetter(SignalDrawData dd) {
+      draw_data = dd;
+    }
+   
+   @Override public void run() {
+      draw_data.setSignal();
+    }
+   
+}       // end of inner class SignalSetter
+
+
+
+private static class SignalHandler implements EventHandler<MouseEvent> {
+   
+   private IfaceSignal for_signal;
+   
+   SignalHandler(IfaceSignal sig) {
+      for_signal = sig;
+    }
+   
+   @Override public void handle(MouseEvent evt) {
+      if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
+         SignalState st = for_signal.getSignalState();
+         SignalType typ = for_signal.getSignalType();
+         SignalState next = SignalState.RED;
+         switch (typ) {
+            case ENGINE :
+            case RG :
+               next = (st == SignalState.RED ? SignalState.GREEN : SignalState.RED);
+               break;
+            case RGY :
+               switch (st) {
+                  case RED :
+                     next = SignalState.GREEN;
+                     break;
+                  case YELLOW :
+                     next = SignalState.RED;
+                     break;
+                  case GREEN :
+                  case OFF :
+                     next = SignalState.GREEN;
+                }
+               break; 
+          }
+         for_signal.setSignalState(next);
+       }
+    }
+   
+}       // end of inner class SignalHandler
+
+
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Sensor drawing                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+private void drawSensors()
+{
+   sensor_map.clear();
+   
+   for (IfaceSensor sen : for_diagram.getSensors()) {
+      IfacePoint pt = sen.getAtPoint();
+      Point2D cpt = getCoords(pt);
+      Circle c = new Circle(cpt.getX(),cpt.getY(),SENSOR_RADIUS,
+            SENSOR_OFF_COLOR);
+      getChildren().add(c);
+      SensorDrawData sdd = new SensorDrawData(sen,c);
+      sensor_map.put(sen,sdd);
+    }
+}
+
+
+private static class SensorDrawData {
+  
+   private IfaceSensor for_sensor;
+   private Shape sensor_node;
+   
+   SensorDrawData(IfaceSensor s,Shape sh) {
+      for_sensor = s;
+      sensor_node = sh;
+      SensorHandler hdlr = new SensorHandler(for_sensor);
+      sh.setOnMouseClicked(hdlr);
+      sh.setOnMousePressed(hdlr);
+      doSetSensor();
+    }
+   
+   void setSensor() {
+      if (Platform.isFxApplicationThread()) {
+         doSetSensor();
+       }
+      else {
+         Platform.runLater(new SensorSetter(this));
+       }
+    }
+   
+   void doSetSensor() {
+      SensorState st = for_sensor.getSensorState();
+      Color fill = SENSOR_OFF_COLOR;
+      switch (st) {
+         case ON :
+            fill = SENSOR_ON_COLOR;
+            break;
+       }
+      sensor_node.setFill(fill);
+    }
+   
+}       // end of inner class SensorDrawData
+
+
+private static class SensorSetter implements Runnable {
+   
+   private SensorDrawData draw_data;
+   
+   SensorSetter(SensorDrawData dd) {
+      draw_data = dd;
+    }
+   
+   @Override public void run() {
+      draw_data.setSensor();
+    }
+   
+}       // end of inner class SensorSetter
+
+
+private static class SensorHandler implements EventHandler<MouseEvent> {
+   
+   private IfaceSensor for_sensor;
+   
+   SensorHandler(IfaceSensor sen) {
+      for_sensor = sen;
+    }
+   
+   @Override public void handle(MouseEvent evt) {
+      if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
+         SensorState st = for_sensor.getSensorState();
+         SensorState next = st;
+         switch (st) {
+            case OFF :
+            case UNKNOWN :
+               next = SensorState.ON;
+               break;
+            case ON :
+               next = SensorState.OFF;
+               break;
+          }
+         for_sensor.setSensorState(next);
+       }
+    }
+   
+}       // end of inner class SensorHandler
+
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Handle blocks                                                           */
+/*                                                                              */
+/********************************************************************************/
+
+private void drawBlocks()
+{
+   block_map.clear();
+   
+   for (IfaceBlock blk : for_diagram.getBlocks()) {
+      IfacePoint pt = blk.getAtPoint();
+      Point2D cpt = getCoords(pt);
+      String txt = blk.getId();
+      Text t = new Text(txt);
+      t.setFont(BLOCK_FONT);
+      t.setFill(BLOCK_LABEL_COLOR);
+      t.setStroke(BLOCK_LABEL_COLOR);
+      Bounds b = t.getBoundsInLocal();
+      double w0 = b.getWidth();
+      double w = w0 + 8;
+      double h = b.getHeight();
+      t.setTextAlignment(TextAlignment.CENTER);
+      t.setTextOrigin(VPos.CENTER);
+      t.setX(cpt.getX() - w0/2);
+      t.setY(cpt.getY());
+      
+      Ellipse bkg = new Ellipse(cpt.getX(),cpt.getY(),w/2,h/2);
+      bkg.setFill(BLOCK_BACKGROUD_COLOR);
+      
+      getChildren().add(bkg);
+      getChildren().add(t);
+      
+      BlockDrawData bdd = new BlockDrawData(blk,bkg,t);
+      block_map.put(blk,bdd);
+    }
+}
+
+
+
+private class BlockDrawData {
+
+   private IfaceBlock for_block;
+   private Shape label_shape;
+   private Shape background_shape;
+   
+   BlockDrawData(IfaceBlock blk,Shape bkg,Shape lbl) {
+      for_block = blk;
+      background_shape = bkg;
+      label_shape = lbl;
+      setBlock();
+    }
+   
+   void setBlock() {
+      if (Platform.isFxApplicationThread()) {
+         doSetBlock();
+       }
+      else {
+         Platform.runLater(() -> doSetBlock());
+       }
+    }
+   
+   private void doSetBlock() {
+      BlockState st = for_block.getBlockState();
+      Color lcolor = BLOCK_LABEL_COLOR;
+      Color bcolor = BLOCK_BACKGROUD_COLOR;
+      System.err.println("UPDATE BLOCK " + for_block.getId() + " " + st);
+      switch (st) {
+         default :
+         case EMPTY :
+         case UNKNOWN :
+            break;
+         case INUSE :
+            lcolor = BLOCK_LABEL_INUSE_COLOR;
+            bcolor = BLOCK_BACKGROUD_INUSE_COLOR;
+            break;
+         case PENDING :
+            lcolor = BLOCK_LABEL_PENDING_COLOR;
+            bcolor = BLOCK_BACKGROUD_PENDING_COLOR;
+            break;
+       }
+      label_shape.setFill(lcolor);
+      label_shape.setStroke(lcolor);
+      background_shape.setFill(bcolor);
+    }
+   
+}       // end of inner class BlockDrawData
+/********************************************************************************/
+/*                                                                              */
+/*      Handle point scaling based on size                                      */
+/*                                                                              */
+/********************************************************************************/
+
+private void setupScaling(double w,double h)
+{
+   double xpix = w - 2 * BORDER_SPACE;
+   double xval = display_bounds.getWidth() / xpix;
+   double ypix = h - 2 * BORDER_SPACE;
+   double yval = display_bounds.getHeight() / ypix;
+   scale_value = Math.max(xval,yval);
+}
+
 
 private Point2D getCoords(IfacePoint pt)
 {
@@ -408,39 +941,59 @@ private Point2D getCoords(IfacePoint pt)
 
 
 
+
 /********************************************************************************/
 /*                                                                              */
-/*      Drawing canvas (for resizing)                                           */
+/*      Handle resizing                                                         */
 /*                                                                              */
 /********************************************************************************/
 
-private class ResizableCanvas extends Canvas {
-   
-   ResizableCanvas() {
-      super();
-      
-      double ratio = display_bounds.getWidth() / display_bounds.getHeight();
-      double minw = MIN_WIDTH;
-      double minh = MIN_WIDTH / ratio;
-      setMinSize(minw,minh);
-      setPrefSize(minw,minh);
-    }
-   
-   private void paint() {
-      GraphicsContext gx = getGraphicsContext2D();
-      gx.clearRect(0,0, getWidth(),getHeight());
-      drawDiagram(this);
-    }
-   
-   @Override public boolean isResizable()               { return true; }
-    
-   @Override public void resize(double w,double h) {
+@Override public boolean isResizable()               { return true; }
+
+@Override public void resize(double w,double h) {
       super.setWidth(w);
       super.setHeight(h);
-      paint();
+      drawDiagram();
+}
+   
+
+
+/********************************************************************************/
+/*                                                                              */
+/*     Handle model and train updates                                           */
+/*                                                                              */
+/********************************************************************************/
+
+private class CallbackHandler implements ModelCallback, TrainCallback {
+   
+   CallbackHandler() { }
+   
+   @Override public void switchChanged(IfaceSwitch sw) {
+      SwitchDrawData dd = switch_map.get(sw);
+      if (dd == null) return;
+      dd.setArrow();
+    } 
+   
+   @Override public void signalChanged(IfaceSignal sig) {
+      SignalDrawData dd = signal_map.get(sig);
+      if (dd == null) return;
+      dd.setSignal();
     }
    
-}       // end of inner class ResizableCanvas
+   @Override public void sensorChanged(IfaceSensor sen) {
+      SensorDrawData dd = sensor_map.get(sen);
+      if (dd == null) return;
+      dd.setSensor();
+    }
+   
+   @Override public void blockChanged(IfaceBlock blk) {
+      BlockDrawData dd = block_map.get(blk);
+      if (dd == null) return;
+      dd.setBlock();
+    } 
+   
+  
+}
 
 
 

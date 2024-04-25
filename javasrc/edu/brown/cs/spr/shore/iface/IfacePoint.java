@@ -48,6 +48,7 @@ double getY();
 ShorePointType getType();
 Collection<IfacePoint> getConnectedTo();
 IfaceDiagram getDiagram();
+IfaceBlock getBlock();
 
 
 }       // end of interface IfacePoint

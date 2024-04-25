@@ -141,7 +141,7 @@ List<ModelPoint> getModelConnectedTo()
 
 
 
-ModelBlock getBlock()                           { return in_block; }
+@Override public ModelBlock getBlock()                  { return in_block; }
 void setBlock(ModelBlock blk)                   { in_block = blk; }
 
 

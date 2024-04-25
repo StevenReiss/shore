@@ -49,6 +49,9 @@ IfaceBlock getPendingFrom();
 boolean setPendingFrom(IfaceBlock blk);
 Collection<IfaceConnection> getConnections();
 
+String getId();
+IfacePoint getAtPoint();
+
 
 
 

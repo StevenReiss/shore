@@ -44,6 +44,7 @@ import java.util.StringTokenizer;
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
+import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceDiagram;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
@@ -136,9 +137,14 @@ Collection<ModelSwitch> getModelSwitches()
    return new ArrayList<>(diagram_switches.values());
 }
 
-Collection<ModelBlock> getBlocks()
+Collection<ModelBlock> getModelBlocks()
 {
    return diagram_blocks.values();
+}
+
+@Override public Collection<IfaceBlock> getBlocks() 
+{
+   return new ArrayList<>(diagram_blocks.values());
 }
 
 Collection<ModelSignal> getModelSignals()

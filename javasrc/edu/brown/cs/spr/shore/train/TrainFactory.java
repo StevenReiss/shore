@@ -239,7 +239,8 @@ private class TrainModelUpdater implements IfaceModel.ModelCallback {
                for (IfaceConnection conn : blk.getConnections()) {
                   IfaceSensor xsen = conn.getExitSensor(blk);
                   IfaceSensor esen = conn.getEntrySensor(blk);
-                  if (xsen != null && xsen.getSensorState() == SensorState.ON &&
+                  if (xsen != null && esen != null && 
+                        xsen.getSensorState() == SensorState.ON &&
                         esen.getSensorState() == SensorState.ON) {
                      IfaceBlock prev = xsen.getBlock();
                      eng = train_locations.get(prev);

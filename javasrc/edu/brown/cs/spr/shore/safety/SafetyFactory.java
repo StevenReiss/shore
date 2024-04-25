@@ -148,12 +148,14 @@ private void handleActualSensorChange(IfaceSensor s)
 private void handleBlockChange(IfaceBlock blk)
 {
    safety_signal.handleBlockChange(blk);
+   safety_block.handleBlockChange(blk);  
 }
 
 
 private void handleSwitchChange(IfaceSwitch sw)
 {
-   safety_signal.handleSwitchChange(sw); 
+   safety_signal.handleSwitchChange(sw);
+   safety_block.handleSwitchChange(sw); 
 }
 
 

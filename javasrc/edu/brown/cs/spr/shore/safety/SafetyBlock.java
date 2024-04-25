@@ -45,6 +45,7 @@ import java.util.TimerTask;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
+import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceBlock.BlockState;
 import edu.brown.cs.spr.shore.iface.IfaceSensor.SensorState;
 
@@ -109,12 +110,13 @@ boolean checkPriorSensors(Collection<IfaceSensor> prior)
 
 void handleSensorChange(IfaceSensor s)
 {
-   IfaceBlock blk = s.getBlock();
+   IfaceBlock blk = s.getAtPoint().getBlock(); 
    BlockData bd = active_blocks.get(blk);
    if (bd == null && s.getSensorState() == SensorState.ON) {
       bd = new BlockData(blk,s);
       active_blocks.put(blk,bd);
       blk.setBlockState(BlockState.INUSE);
+      checkPendingBlocks(blk);
     }
    else if (s.getSensorState() == SensorState.ON) {
       if (bd.noteSensor(s)) {
@@ -145,6 +147,38 @@ void handleSensorChange(IfaceSensor s)
 }
 
 
+void handleSwitchChange(IfaceSwitch sw)
+{
+   // check pending blocks
+}
+
+
+void handleBlockChange(IfaceBlock blk)
+{
+   // check pending blocks that might be affected
+}
+
+
+private void checkPendingBlocks(IfaceBlock blk)
+{
+   // check other blocks in the direction we are going -- if they are pending for us,
+   // remove that.  Then check switch directions along path and find the next block
+   // then set that block to pending with us unless it is in use.
+   Set<IfaceBlock> next = new HashSet<>();
+   Set<IfaceBlock> curpend = new HashSet<>();
+   Set<IfaceBlock> active = new HashSet<>();
+   for (IfaceConnection conn : blk.getConnections()) {
+      IfaceBlock nblk = conn.getOtherBlock(blk);
+      if (nblk.getPendingFrom() == blk) curpend.add(nblk);
+      // determine if this block is the right direction, ignore if not
+      // determine if switch setting goes to this block, ignore if not
+      next.add(nblk);
+      active.add(nblk); // if switches are such we would get there
+    }
+}
+
+
+
 
 /********************************************************************************/
 /*                                                                              */
@@ -155,6 +189,7 @@ void handleSensorChange(IfaceSensor s)
 private class BlockData {
    
    private IfaceBlock for_block;
+   private IfaceSensor first_sensor;
    private IfaceSensor exit_sensor;
    private IfaceSensor exit_check;
    private Set<IfaceSensor> hit_sensors;
@@ -162,6 +197,7 @@ private class BlockData {
    
    BlockData(IfaceBlock blk,IfaceSensor s) {
       for_block = blk;
+      first_sensor = null;
       exit_sensor = null;
       exit_check = null;
       hit_sensors = new HashSet<>();
@@ -170,12 +206,16 @@ private class BlockData {
     }
    
    boolean noteSensor(IfaceSensor s) {
+      if (s.getSensorState() == SensorState.ON && first_sensor == null) {
+         first_sensor = s;
+       }
       exit_time = 0;
       return hit_sensors.add(s);
     }
    
    IfaceSensor getExitSensor()                  { return exit_sensor; }
    IfaceSensor getExitCheck()                   { return exit_check; }
+   IfaceSensor getFirstSensor()                 { return first_sensor; }
    
    void setExitSensor(IfaceSensor s,IfaceSensor check) {
       exit_sensor = s;

@@ -120,8 +120,6 @@ public ViewDisplayFx()
    LayoutPanel lpanel = new LayoutPanel();
    SplitPane overall = new FullSplitPane(lpanel,epanel);
    overall.setOrientation(Orientation.HORIZONTAL);
-   ShoreLog.logD("VIEW","Overall pref size " + overall.getPrefWidth() + " " +
-         overall.getPrefHeight());
    Scene scn = new Scene(overall);
 // lpanel.prefHeightProperty().bind(scn.heightProperty());
 // epanel.prefHeightProperty().bind(overall.heightProperty());

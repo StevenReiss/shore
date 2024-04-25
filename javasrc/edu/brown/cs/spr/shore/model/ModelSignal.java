@@ -62,6 +62,7 @@ private ModelBase for_model;
 private String  signal_id;
 private ModelPoint at_point;
 private ModelPoint gap_point;
+private ModelPoint next_point;
 private Set<ModelConnection> for_connections;
 private SignalState signal_state;
 private SignalType signal_type; 
@@ -83,6 +84,7 @@ ModelSignal(ModelBase model,Element xml)
    for_model = model;
    signal_id = IvyXml.getAttrString(xml,"ID");
    at_point = model.getPointById(IvyXml.getAttrString(xml,"POINT"));
+   next_point = null;
    gap_point = model.getPointById(IvyXml.getAttrString(xml,"TO"));
    for_connections = new HashSet<>(); 
    tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
@@ -102,7 +104,8 @@ ModelSignal(ModelBase model,Element xml)
 
 String getId()                                  { return signal_id; } 
 
-ModelPoint getAtPoint()                         { return at_point; }
+@Override public ModelPoint getAtPoint()        { return at_point; } 
+@Override public ModelPoint getNextPoint()      { return next_point; }
 
 @Override public ModelBlock getFromBlock()      
 {
@@ -166,7 +169,9 @@ void normalizeSignal(ModelBase mdl)
     }
    
    for (ModelPoint pt : at_point.getModelConnectedTo()) {
-      if (goesTo(at_point,pt,gap_point)) ;
+      if (goesTo(at_point,pt,gap_point)) {
+         next_point = pt;
+       }
       else addPriorSensors(at_point,pt);
     }
    

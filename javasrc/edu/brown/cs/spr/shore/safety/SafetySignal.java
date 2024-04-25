@@ -166,6 +166,7 @@ private void updateSignal(IfaceSignal sig)
     }
    
    sig.setSignalState(rslt);
+   safety_factory.getNetworkModel().sendSetSignal(sig,rslt);
 }
 
 

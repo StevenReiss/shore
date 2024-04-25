@@ -55,6 +55,10 @@ Collection<IfaceConnection> getConnections();
 IfaceSensor getStopSensor();
 Collection<IfaceSensor> getPriorSensors();
 
+IfacePoint getAtPoint();
+IfacePoint getNextPoint();
+
+
 byte getTowerId();
 byte getTowerSignal();
 

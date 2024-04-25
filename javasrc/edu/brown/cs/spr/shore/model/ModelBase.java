@@ -414,7 +414,7 @@ private void loadDiagramData(ModelDiagram md)
          noteError("Switch " + ms.getId() + " defined twice");
        } 
     }
-   for (ModelBlock mb : md.getBlocks()) { 
+   for (ModelBlock mb : md.getModelBlocks()) { 
       if (model_blocks.put(mb.getId(),mb) != null) {
          noteError("Block " + mb.getId() + " defined twice");
        }
