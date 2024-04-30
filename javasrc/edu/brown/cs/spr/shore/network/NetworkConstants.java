@@ -37,7 +37,9 @@ package edu.brown.cs.spr.shore.network;
 
 import java.net.DatagramPacket;
 
-public interface NetworkConstants
+import edu.brown.cs.spr.shore.iface.IfaceConstants;
+
+public interface NetworkConstants extends IfaceConstants
 {
 
 

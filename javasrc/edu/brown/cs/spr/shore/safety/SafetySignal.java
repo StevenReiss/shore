@@ -47,9 +47,6 @@ import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfaceBlock.BlockState;
-import edu.brown.cs.spr.shore.iface.IfaceSensor.SensorState;
-import edu.brown.cs.spr.shore.iface.IfaceSignal.SignalState;
-import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
 
 class SafetySignal implements SafetyConstants
 {
@@ -91,10 +88,10 @@ void handleSensorChange(IfaceSensor s)
    for (IfaceSignal sig : s.getSignals()) { 
       Collection<IfaceSensor> pset = sig.getPriorSensors();
       if (safety_factory.checkPriorSensors(pset)) {  
-         if (s.getSensorState() == SensorState.ON && sig != null) {
+         if (s.getSensorState() == ShoreSensorState.ON && sig != null) {
             SignalData sd = active_signals.get(sig);
             if (sd == null) {
-               if (sig.getSignalState() != SignalState.GREEN) {
+               if (sig.getSignalState() != ShoreSignalState.GREEN) {
                   // get train for block
                   SignalData si = new SignalData(sig,null);
                   active_signals.put(sig,si);
@@ -102,7 +99,7 @@ void handleSensorChange(IfaceSensor s)
                 }
                else {
                   active_signals.put(sig,new SignalData(sig,null));
-                  sig.setSignalState(SignalState.RED);
+                  sig.setSignalState(ShoreSignalState.RED);
                 }
              }
           }
@@ -156,11 +153,11 @@ private void updateSignals()
 private void updateSignal(IfaceSignal sig)
 {
    IfaceBlock from = sig.getFromBlock();
-   SignalState rslt = SignalState.GREEN;
+   ShoreSignalState rslt = ShoreSignalState.GREEN;
    
    for (IfaceConnection conn : safety_factory.getLayoutModel().getConnections()) {
       if (conn.getStopSignal(from) == sig) {
-         SignalState nst = updateSignal(sig,conn);
+         ShoreSignalState nst = updateSignal(sig,conn);
          if (nst.ordinal() > rslt.ordinal()) rslt = nst;
        }   
     }
@@ -170,29 +167,29 @@ private void updateSignal(IfaceSignal sig)
 }
 
 
-private SignalState updateSignal(IfaceSignal sig,IfaceConnection conn)
+private ShoreSignalState updateSignal(IfaceSignal sig,IfaceConnection conn)
 {
    IfaceBlock from = sig.getFromBlock();
    IfaceSwitch sw = conn.getExitSwitch(from);
-   SwitchState st = conn.getExitSwitchState(from);
+   ShoreSwitchState st = conn.getExitSwitchState(from);  
    if (sw != null && st != null && sw.getSwitchState() != st) {
       // this connection is not relevant due to switch state
-      return SignalState.GREEN;                         
+      return ShoreSignalState.GREEN;                         
     } 
    IfaceBlock to = conn.getOtherBlock(from);
    switch (to.getBlockState()) {
       case INUSE :
-         return SignalState.RED;
+         return ShoreSignalState.RED;
       case EMPTY :
          break;
       case PENDING :
-         if (to.getPendingFrom() != from) return SignalState.RED;
+         if (to.getPendingFrom() != from) return ShoreSignalState.RED;
          break;
       case UNKNOWN :
          break;
     }
    
-   return SignalState.GREEN;
+   return ShoreSignalState.GREEN;
 }
 
 

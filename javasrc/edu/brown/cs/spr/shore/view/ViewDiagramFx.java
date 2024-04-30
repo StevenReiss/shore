@@ -50,12 +50,7 @@ import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceBlock.BlockState;
-import edu.brown.cs.spr.shore.iface.IfaceConstants.ShorePointType;
 import edu.brown.cs.spr.shore.iface.IfaceModel.ModelCallback;
-import edu.brown.cs.spr.shore.iface.IfaceSensor.SensorState;
-import edu.brown.cs.spr.shore.iface.IfaceSignal.SignalState;
-import edu.brown.cs.spr.shore.iface.IfaceSignal.SignalType;
-import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
 import edu.brown.cs.spr.shore.iface.IfaceTrains.TrainCallback;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
@@ -466,7 +461,7 @@ private class SwitchDrawData {
          doSetArrow();
        }
       else {
-         Platform.runLater(new SwitchSetter(this));
+         Platform.runLater( () -> doSetArrow() );
        }
     }
    
@@ -506,15 +501,15 @@ private static class SwitchHandler implements EventHandler<MouseEvent> {
     }
    
    @Override public void handle(MouseEvent evt) { 
-      SwitchState ss = for_switch.getSwitchState();
+      ShoreSwitchState ss = for_switch.getSwitchState();
       if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
          switch (ss) {
             case UNKNOWN :
             case R :
-               for_switch.setSwitch(SwitchState.N);
+               for_switch.setSwitch(ShoreSwitchState.N);
                break;
             case N :
-               for_switch.setSwitch(SwitchState.R);
+               for_switch.setSwitch(ShoreSwitchState.R);
                break;
           }
        }
@@ -523,22 +518,6 @@ private static class SwitchHandler implements EventHandler<MouseEvent> {
 }       // end of inner class SwitchHandler
 
 
-
-private static class SwitchSetter implements Runnable {
-   
-   private SwitchDrawData draw_data;
-   
-   SwitchSetter(SwitchDrawData dd) {
-      draw_data = dd;
-    }
-   
-   @Override public void run() {
-      draw_data.setArrow();
-    }
-   
-}       // end of inner class SwitchSetter
-
-      
 
 /********************************************************************************/
 /*                                                                              */
@@ -622,12 +601,12 @@ private class SignalDrawData {
          doSetSignal();
        }
       else {
-         Platform.runLater(new SignalSetter(this));
+         Platform.runLater( () -> doSetSignal() );
        }
     }
    
    void doSetSignal() {
-      SignalState st = for_signal.getSignalState();
+      ShoreSignalState st = for_signal.getSignalState();
       for (Shape s : signal_lights) {
          s.setFill(SIGNAL_OFF);
        }
@@ -656,21 +635,6 @@ private class SignalDrawData {
 
 
 
-private static class SignalSetter implements Runnable {
-
-   private SignalDrawData draw_data;
-   
-   SignalSetter(SignalDrawData dd) {
-      draw_data = dd;
-    }
-   
-   @Override public void run() {
-      draw_data.setSignal();
-    }
-   
-}       // end of inner class SignalSetter
-
-
 
 private static class SignalHandler implements EventHandler<MouseEvent> {
    
@@ -682,25 +646,25 @@ private static class SignalHandler implements EventHandler<MouseEvent> {
    
    @Override public void handle(MouseEvent evt) {
       if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
-         SignalState st = for_signal.getSignalState();
-         SignalType typ = for_signal.getSignalType();
-         SignalState next = SignalState.RED;
+         ShoreSignalState st = for_signal.getSignalState();
+         ShoreSignalType typ = for_signal.getSignalType();
+         ShoreSignalState next = ShoreSignalState.RED;
          switch (typ) {
             case ENGINE :
             case RG :
-               next = (st == SignalState.RED ? SignalState.GREEN : SignalState.RED);
+               next = (st == ShoreSignalState.RED ? ShoreSignalState.GREEN : ShoreSignalState.RED);
                break;
             case RGY :
                switch (st) {
                   case RED :
-                     next = SignalState.GREEN;
+                     next = ShoreSignalState.GREEN;
                      break;
                   case YELLOW :
-                     next = SignalState.RED;
+                     next = ShoreSignalState.RED;
                      break;
                   case GREEN :
                   case OFF :
-                     next = SignalState.GREEN;
+                     next = ShoreSignalState.GREEN;
                 }
                break; 
           }
@@ -755,12 +719,12 @@ private static class SensorDrawData {
          doSetSensor();
        }
       else {
-         Platform.runLater(new SensorSetter(this));
+         Platform.runLater( () -> doSetSensor() );
        }
     }
    
    void doSetSensor() {
-      SensorState st = for_sensor.getSensorState();
+      ShoreSensorState st = for_sensor.getSensorState();
       Color fill = SENSOR_OFF_COLOR;
       switch (st) {
          case ON :
@@ -773,20 +737,6 @@ private static class SensorDrawData {
 }       // end of inner class SensorDrawData
 
 
-private static class SensorSetter implements Runnable {
-   
-   private SensorDrawData draw_data;
-   
-   SensorSetter(SensorDrawData dd) {
-      draw_data = dd;
-    }
-   
-   @Override public void run() {
-      draw_data.setSensor();
-    }
-   
-}       // end of inner class SensorSetter
-
 
 private static class SensorHandler implements EventHandler<MouseEvent> {
    
@@ -798,15 +748,15 @@ private static class SensorHandler implements EventHandler<MouseEvent> {
    
    @Override public void handle(MouseEvent evt) {
       if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
-         SensorState st = for_sensor.getSensorState();
-         SensorState next = st;
+         ShoreSensorState st = for_sensor.getSensorState();
+         ShoreSensorState next = st;
          switch (st) {
             case OFF :
             case UNKNOWN :
-               next = SensorState.ON;
+               next = ShoreSensorState.ON;
                break;
             case ON :
-               next = SensorState.OFF;
+               next = ShoreSensorState.OFF;
                break;
           }
          for_sensor.setSensorState(next);
@@ -905,6 +855,9 @@ private class BlockDrawData {
     }
    
 }       // end of inner class BlockDrawData
+
+
+
 /********************************************************************************/
 /*                                                                              */
 /*      Handle point scaling based on size                                      */

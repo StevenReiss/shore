@@ -36,13 +36,13 @@
 package edu.brown.cs.spr.shore.iface;
 
 
-public interface IfaceSwitch
+public interface IfaceSwitch extends IfaceConstants
 {
 
-enum SwitchState { N, R, UNKNOWN };
 
-SwitchState getSwitchState();
-void setSwitch(SwitchState n);
+
+ShoreSwitchState getSwitchState(); 
+void setSwitch(ShoreSwitchState n);
 
 String getId();
 

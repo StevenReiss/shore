@@ -51,6 +51,9 @@ Collection<IfaceBlock> getBlocks();
 
 Collection<IfaceDiagram> getDiagrams();
 
+boolean goesTo(IfacePoint prev,IfacePoint pt,IfacePoint tgt);
+IfaceBlock findNextBlock(IfacePoint prev,IfacePoint at);
+
 Element getModelXml();
 
 

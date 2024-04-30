@@ -41,8 +41,6 @@ import java.util.TimerTask;
 
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
-import edu.brown.cs.spr.shore.iface.IfaceSensor.SensorState;
-import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 class SafetySwitch implements SafetyConstants
@@ -92,15 +90,15 @@ void handleSensorChange(IfaceSensor s)
    IfaceSwitch swn = s.getSwitchN();
    IfaceSwitch swr = s.getSwitchR();
    if (swn != null) {
-      triggerSwitch(swn,s.getSensorState(),SwitchState.N);
+      triggerSwitch(swn,s.getSensorState(),ShoreSwitchState.N);
     }
    else if (swr != null) {
-      triggerSwitch(swr,s.getSensorState(),SwitchState.R);
+      triggerSwitch(swr,s.getSensorState(),ShoreSwitchState.R);
     }
 }
 
 
-private void triggerSwitch(IfaceSwitch sw,SensorState senst,SwitchState state)
+private void triggerSwitch(IfaceSwitch sw,ShoreSensorState senst,ShoreSwitchState state)
 {
    SwitchData sd = switch_map.get(sw);
    if (sd == null) {
@@ -121,7 +119,7 @@ private class SwitchData {
    
    private IfaceSwitch for_switch;
    private SwitchMode  current_mode;
-   private SwitchState last_state;
+   private ShoreSwitchState last_state;
    private long last_trigger;
    
    SwitchData(IfaceSwitch sw) {
@@ -130,17 +128,17 @@ private class SwitchData {
       last_trigger = 0;
     }
    
-   void trigger(SensorState sen,SwitchState state) {
+   void trigger(ShoreSensorState sen,ShoreSwitchState state) {
       ShoreLog.logD("SAFETY","Trigger switch " + for_switch + "=" + state + 
             " @ " + current_mode);
       
       switch (current_mode) {
          case NORMAL :
-            if (sen != SensorState.ON) return;
+            if (sen != ShoreSensorState.ON) return;
             doTrigger(state);
             break;
          case SET :
-            if (sen == SensorState.ON) {
+            if (sen == ShoreSensorState.ON) {
                if (last_state == state) return;
                doTrigger(state);
              }
@@ -151,7 +149,7 @@ private class SwitchData {
              }
             break;
          case DONE :
-            if (sen == SensorState.ON) {
+            if (sen == ShoreSensorState.ON) {
                if (last_state == state) return;
                doTrigger(state);
              }
@@ -165,7 +163,7 @@ private class SwitchData {
       last_trigger = 0;
     }
    
-   private void doTrigger(SwitchState state) {
+   private void doTrigger(ShoreSwitchState state) {
       for_switch.setSwitch(state);
       safety_factory.getNetworkModel().sendSetSwitch(for_switch,state);
       current_mode = SwitchMode.SET;

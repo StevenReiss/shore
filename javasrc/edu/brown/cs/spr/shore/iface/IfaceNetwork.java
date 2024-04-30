@@ -39,10 +39,10 @@ package edu.brown.cs.spr.shore.iface;
 public interface IfaceNetwork
 {
 
-void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.SwitchState set);
-void sendSetSignal(IfaceSignal sig,IfaceSignal.SignalState set);
-void sendSetSensor(IfaceSensor sen,IfaceSensor.SensorState set);
-void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,IfaceSwitch.SwitchState state);
+void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.ShoreSwitchState set);
+void sendSetSignal(IfaceSignal sig,IfaceSignal.ShoreSignalState set);
+void sendSetSensor(IfaceSensor sen,IfaceSensor.ShoreSensorState set);
+void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,IfaceSwitch.ShoreSwitchState state);
 
 void sendStopTrain(IfaceEngine train,boolean emergency);
 void sendStartTrain(IfaceEngine train);

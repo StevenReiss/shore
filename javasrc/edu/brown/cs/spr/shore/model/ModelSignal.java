@@ -64,8 +64,8 @@ private ModelPoint at_point;
 private ModelPoint gap_point;
 private ModelPoint next_point;
 private Set<ModelConnection> for_connections;
-private SignalState signal_state;
-private SignalType signal_type; 
+private ShoreSignalState signal_state;
+private ShoreSignalType signal_type; 
 private ModelSensor stop_sensor;
 private Set<ModelSensor> prior_sensors;
 private byte tower_id;
@@ -89,10 +89,10 @@ ModelSignal(ModelBase model,Element xml)
    for_connections = new HashSet<>(); 
    tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
    tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
-   signal_type = IvyXml.getAttrEnum(xml,"TYPE",SignalType.RG);
+   signal_type = IvyXml.getAttrEnum(xml,"TYPE",ShoreSignalType.RG);
    stop_sensor = null;
    prior_sensors = new HashSet<>();
-   signal_state = SignalState.OFF;
+   signal_state = ShoreSignalState.OFF;
 }
 
 
@@ -123,13 +123,13 @@ void addConnection(ModelConnection conn)
 }
 
 
-@Override public SignalType getSignalType()     { return signal_type; } 
+@Override public ShoreSignalType getSignalType()     { return signal_type; } 
 
 @Override public byte getTowerId()              { return tower_id; } 
 
 @Override public byte getTowerSignal()          { return tower_index; }
 
-@Override public SignalState getSignalState()   { return signal_state; }
+@Override public ShoreSignalState getSignalState()   { return signal_state; }
 
 @Override public ModelSensor getStopSensor()    { return stop_sensor; } 
 
@@ -139,7 +139,7 @@ void addConnection(ModelConnection conn)
 }
 
 
-@Override public void setSignalState(SignalState state)
+@Override public void setSignalState(ShoreSignalState state)
 {
    if (signal_state == state) return;
    

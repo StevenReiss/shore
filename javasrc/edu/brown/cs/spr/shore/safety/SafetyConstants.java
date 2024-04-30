@@ -35,9 +35,9 @@
 
 package edu.brown.cs.spr.shore.safety;
 
+import edu.brown.cs.spr.shore.iface.IfaceConstants;
 
-
-public interface SafetyConstants
+public interface SafetyConstants extends IfaceConstants
 {
 
 

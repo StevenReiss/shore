@@ -48,7 +48,6 @@ import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
 import edu.brown.cs.spr.shore.iface.IfaceModel.ModelCallback;
-import edu.brown.cs.spr.shore.iface.IfaceSensor.SensorState;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 public class SafetyFactory implements SafetyConstants
@@ -193,7 +192,7 @@ private class SensorStatus {
 
    private IfaceSensor for_sensor;
    private long off_time;
-   private SensorState last_state;
+   private ShoreSensorState last_state;
    
    SensorStatus(IfaceSensor sensor) {
       for_sensor = sensor;
@@ -203,7 +202,7 @@ private class SensorStatus {
     }
    
    private void setState() {
-      SensorState newstate = for_sensor.getSensorState();
+      ShoreSensorState newstate = for_sensor.getSensorState();
       switch (newstate) {
          case ON :
             if (last_state != newstate && off_time == 0) {

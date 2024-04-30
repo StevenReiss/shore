@@ -48,7 +48,6 @@ import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
-import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 class ModelSensor implements IfaceSensor, ModelConstants
@@ -65,7 +64,7 @@ private ModelBase for_model;
 private String sensor_id;
 private ModelPoint sensor_point;
 private ModelBlock sensor_block;
-private SensorState sensor_state;
+private ShoreSensorState sensor_state;
 private ModelSwitch n_switch;
 private ModelSwitch r_switch;
 private ModelSwitch entry_switch;
@@ -93,7 +92,7 @@ ModelSensor(ModelBase mdl,Element xml)
    r_switch = null;
    entry_switch = null;
    sensor_block = sensor_point.getBlock();
-   sensor_state = SensorState.UNKNOWN;
+   sensor_state = ShoreSensorState.UNKNOWN;
    for_signals = new HashSet<>();
    in_connection = null;
 }
@@ -134,7 +133,7 @@ void setConnection(ModelConnection conn)
 
 
 
-void assignSwitch(ModelSwitch sw,SwitchState state)
+void assignSwitch(ModelSwitch sw,ShoreSwitchState state)
 {
    switch (state) {
       case N :
@@ -152,9 +151,9 @@ void assignSwitch(ModelSwitch sw,SwitchState state)
 
 @Override  public IfaceBlock getBlock()         { return sensor_block; }
 
-@Override public SensorState getSensorState()   { return sensor_state; }
+@Override public ShoreSensorState getSensorState()   { return sensor_state; }
 
-@Override public void setSensorState(SensorState st)
+@Override public void setSensorState(ShoreSensorState st)
 {
    if (st == sensor_state) return;
    

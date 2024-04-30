@@ -35,9 +35,9 @@
 
 package edu.brown.cs.spr.shore.view;
 
+import edu.brown.cs.spr.shore.iface.IfaceConstants;
 
-
-public interface ViewConstants
+public interface ViewConstants extends IfaceConstants 
 {
 
 

@@ -53,6 +53,7 @@ import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceDiagram;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
+import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
@@ -238,7 +239,7 @@ ModelSignal findSignalForPoint(ModelPoint pt)
 }
 
 
-ModelSwitch findSwitchForPoint(ModelPoint pt)
+ModelSwitch findSwitchForPoint(IfacePoint pt)
 {
    if (pt == null) return null;
    
@@ -299,6 +300,111 @@ boolean hasErrors()
    return !model_errors.isEmpty();
 }
 
+
+/********************************************************************************/
+/*                                                                              */
+/*       Path methods                                                           */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public boolean goesTo(IfacePoint prev,IfacePoint pt,IfacePoint tgt)
+{
+   Set<IfacePoint> done = new HashSet<>();
+   return goesTo(prev,pt,tgt,done);
+   
+}
+
+
+
+private boolean goesTo(IfacePoint prev,IfacePoint pt,IfacePoint tgt,Set<IfacePoint> done)
+{
+   if (pt == tgt) return true;
+   if (!done.add(pt)) return false;
+   Collection<IfacePoint> next = pt.getConnectedTo();
+   if (pt.getType() == ShorePointType.SWITCH) {
+      ModelSwitch sw = findSwitchForPoint(pt);
+      IfacePoint xpt = findSwitchPoint(prev,sw);
+      if (xpt == sw.getNPoint()) done.add(sw.getRPoint());
+    }
+   for (IfacePoint npt : next) {
+      if (goesTo(pt,npt,tgt,done)) return true;
+    }
+   return false;
+}
+
+
+
+@Override public IfaceBlock findNextBlock(IfacePoint prev,IfacePoint pt)
+{
+   Set<IfacePoint> done = new HashSet<>();
+   IfaceBlock blk = pt.getBlock();
+   return findNextBlock(prev,pt,blk,done);
+}
+
+
+private IfaceBlock findNextBlock(IfacePoint prev,IfacePoint pt,IfaceBlock blk,Set<IfacePoint> done)
+{
+   while (pt != null) {
+      if (pt.getBlock() != blk) {
+         if (pt.getBlock() == null) {
+            for (IfacePoint npt : pt.getConnectedTo()) {
+               if (npt == prev) continue;
+               if (npt.getBlock() == blk) return null;
+               return npt.getBlock();
+             }
+          }
+         else return pt.getBlock();
+       }
+      
+      IfacePoint nextpt = null;
+      for (IfacePoint npt : pt.getConnectedTo()) {
+         if (npt == prev) continue;
+         if (nextpt == null) nextpt = npt;
+         else {
+            ModelSwitch sw = findSwitchForPoint(pt);
+            IfacePoint xpt = findSwitchPoint(prev,sw);
+            IfacePoint tpt = findSwitchPoint(npt,sw);
+            if (xpt == sw.getNPoint() || xpt == sw.getRPoint()) {
+               if (tpt == sw.getEntryPoint()) nextpt = npt;
+             }
+            else {
+               switch (sw.getSwitchState()) {
+                  case R :
+                     if (tpt == sw.getRPoint()) nextpt = npt;
+                     break;
+                  case N :
+                     if (tpt == sw.getNPoint()) nextpt = npt;
+                     break;
+                }
+             }
+          }
+       }
+      prev = pt;
+      pt = nextpt;
+    }
+   
+   return null;
+}
+
+
+private IfacePoint findSwitchPoint(IfacePoint pt,ModelSwitch sw)
+{
+   IfacePoint prev = sw.getPivotPoint();
+   while (pt != null) {
+      if (sw.getNPoint() == pt) return pt;
+      if (sw.getRPoint() == pt) return pt;
+      if (sw.getEntryPoint() == pt) return pt;
+      for (IfacePoint npt : pt.getConnectedTo()) {
+         if (npt == prev) continue;
+         if (npt.getType() == ShorePointType.SWITCH) continue;
+         prev = pt;
+         pt = npt;
+         break;
+       }
+    }
+   
+   return null;
+}
 
 
 

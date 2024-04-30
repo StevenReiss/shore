@@ -40,8 +40,6 @@ import java.util.Set;
 
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
-import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
-
 
 class ModelConnection implements IfaceConnection, ModelConstants
 {
@@ -62,8 +60,8 @@ private ModelSignal     from_signal;
 private ModelSignal     to_signal;
 private ModelSwitch     from_switch;
 private ModelSwitch     to_switch;
-private SwitchState     from_switch_state;
-private SwitchState     to_switch_state;
+private ShoreSwitchState     from_switch_state;
+private ShoreSwitchState     to_switch_state;
 
 
 /********************************************************************************/
@@ -83,8 +81,8 @@ ModelConnection(ModelPoint gap,ModelBlock from,ModelBlock to)
    to_signal = null;
    from_switch = null;
    to_switch = null;
-   from_switch_state = SwitchState.UNKNOWN;
-   to_switch_state = SwitchState.UNKNOWN;
+   from_switch_state = ShoreSwitchState.UNKNOWN;
+   to_switch_state = ShoreSwitchState.UNKNOWN;
 }
 
 
@@ -152,14 +150,14 @@ ModelConnection(ModelPoint gap,ModelBlock from,ModelBlock to)
    return null;
 }
 
-@Override public SwitchState getExitSwitchState(IfaceBlock inblock)
+@Override public ShoreSwitchState getExitSwitchState(IfaceBlock inblock)
 {
    if (inblock == from_block) return from_switch_state;
    else if (inblock == to_block) return to_switch_state;
    return null;
 }
 
-@Override public SwitchState getEntrySwitchState(IfaceBlock inblock)
+@Override public ShoreSwitchState getEntrySwitchState(IfaceBlock inblock)
 {
    if (inblock == from_block) return to_switch_state;
    else if (inblock == to_block) return from_switch_state;
@@ -237,19 +235,19 @@ private void followPath(ModelBase mdl,ModelPoint pt,Set<ModelPoint> done)
             if (b0 == from_block && from_switch == null) {
                from_switch = sw;
                if (done.contains(sw.getNPoint())) {
-                  from_switch_state = SwitchState.N;
+                  from_switch_state = ShoreSwitchState.N;
                 }
                else if (done.contains(sw.getRPoint())) {
-                  from_switch_state = SwitchState.R;
+                  from_switch_state = ShoreSwitchState.R;
                 }
              }
             else if (b0 == to_block && to_switch == null) {
                to_switch = sw;
                if (done.contains(sw.getNPoint())) {
-                  to_switch_state = SwitchState.N;
+                  to_switch_state = ShoreSwitchState.N;
                 }
                else if (done.contains(sw.getRPoint())) {
-                  to_switch_state = SwitchState.R;
+                  to_switch_state = ShoreSwitchState.R;
                 }
              }
             if (done.contains(sw.getEntryPoint())) return;

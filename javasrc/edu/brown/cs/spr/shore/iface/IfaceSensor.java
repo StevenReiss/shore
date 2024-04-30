@@ -37,10 +37,10 @@ package edu.brown.cs.spr.shore.iface;
 
 import java.util.Collection;
 
-public interface IfaceSensor
+public interface IfaceSensor extends IfaceConstants
 {
 
-enum SensorState { OFF, ON, UNKNOWN };
+
 /**
  *      Return switch if on N path to switch; null otherwise
  **/
@@ -53,8 +53,8 @@ IfaceConnection getConnection();
 
 IfaceBlock getBlock();
 
-void setSensorState(SensorState state);
-SensorState getSensorState();
+void setSensorState(ShoreSensorState state);
+ShoreSensorState getSensorState();
 
 Collection<IfaceSignal> getSignals();
 

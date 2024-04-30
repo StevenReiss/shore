@@ -53,7 +53,6 @@ import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceNetwork;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
-import edu.brown.cs.spr.shore.iface.IfaceSensor.SensorState;
 
 public class TrainFactory implements TrainConstants, IfaceTrains 
 {
@@ -232,7 +231,7 @@ private class TrainModelUpdater implements IfaceModel.ModelCallback {
             expected_trains.remove(blk);
             break;
          case INUSE :
-            eng = train_locations.get(blk);
+            eng = train_locations.get(blk); 
             if (eng != null) break;
             eng = expected_trains.remove(blk);
             if (eng == null) {
@@ -240,8 +239,8 @@ private class TrainModelUpdater implements IfaceModel.ModelCallback {
                   IfaceSensor xsen = conn.getExitSensor(blk);
                   IfaceSensor esen = conn.getEntrySensor(blk);
                   if (xsen != null && esen != null && 
-                        xsen.getSensorState() == SensorState.ON &&
-                        esen.getSensorState() == SensorState.ON) {
+                        xsen.getSensorState() == ShoreSensorState.ON &&
+                        esen.getSensorState() == ShoreSensorState.ON) {
                      IfaceBlock prev = xsen.getBlock();
                      eng = train_locations.get(prev);
                      if (eng != null) {

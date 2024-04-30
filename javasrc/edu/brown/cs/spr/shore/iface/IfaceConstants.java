@@ -57,6 +57,17 @@ enum ShorePointType {
 };
 
 
+enum ShoreSensorState { OFF, ON, UNKNOWN };
+
+
+enum ShoreSignalState { OFF, GREEN, YELLOW, RED };
+
+enum ShoreSignalType { RG, RGY, ENGINE };
+
+enum ShoreSwitchState { N, R, UNKNOWN };
+
+
+
 }       // end of interface IfaceConstants
 
 

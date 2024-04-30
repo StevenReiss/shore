@@ -35,9 +35,8 @@
 
 package edu.brown.cs.spr.shore.iface;
 
-import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
 
-public interface IfaceConnection
+public interface IfaceConnection extends IfaceConstants
 {
 
 IfaceBlock getOtherBlock(IfaceBlock inblock);
@@ -48,8 +47,8 @@ IfaceSignal getEntryStopSignal(IfaceBlock inblock);
 IfaceSensor getStopSensor(IfaceBlock inblock);
 IfaceSwitch getExitSwitch(IfaceBlock inblock);
 IfaceSwitch getEntrySwitch(IfaceBlock inblock);
-SwitchState getExitSwitchState(IfaceBlock inblock);
-SwitchState getEntrySwitchState(IfaceBlock inblock);
+ShoreSwitchState getExitSwitchState(IfaceBlock inblock);
+ShoreSwitchState getEntrySwitchState(IfaceBlock inblock);
 
 
 

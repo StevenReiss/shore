@@ -35,9 +35,9 @@
 
 package edu.brown.cs.spr.shore.train;
 
+import edu.brown.cs.spr.shore.iface.IfaceConstants;
 
-
-public interface TrainConstants
+public interface TrainConstants extends IfaceConstants
 {
 
 

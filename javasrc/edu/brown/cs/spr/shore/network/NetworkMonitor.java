@@ -61,9 +61,6 @@ import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
-import edu.brown.cs.spr.shore.iface.IfaceSensor.SensorState;
-import edu.brown.cs.spr.shore.iface.IfaceSignal.SignalState;
-import edu.brown.cs.spr.shore.iface.IfaceSwitch.SwitchState;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 public class NetworkMonitor implements NetworkConstants, NetworkControlMessages,
@@ -229,7 +226,7 @@ public void start()
 /********************************************************************************/
 
 @Override 
-public void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.SwitchState set)
+public void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.ShoreSwitchState set)
 {
    if (sw == null) return;
    int id = sw.getTowerId();
@@ -240,7 +237,7 @@ public void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.SwitchState set)
  
 
 @Override
-public void sendSetSignal(IfaceSignal sig,IfaceSignal.SignalState set)
+public void sendSetSignal(IfaceSignal sig,IfaceSignal.ShoreSignalState set)
 {
    if (sig == null) return;
    
@@ -253,7 +250,7 @@ public void sendSetSignal(IfaceSignal sig,IfaceSignal.SignalState set)
 
 
 @Override
-public void sendSetSensor(IfaceSensor sig,IfaceSensor.SensorState set) 
+public void sendSetSensor(IfaceSensor sig,IfaceSensor.ShoreSensorState set) 
 {
    if (sig == null) return;
    
@@ -265,7 +262,7 @@ public void sendSetSensor(IfaceSensor sig,IfaceSensor.SensorState set)
 
 
 @Override
-public void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,IfaceSwitch.SwitchState set)
+public void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,IfaceSwitch.ShoreSwitchState set)
 {
    if (sen == null) return;
    int id = sen.getTowerId();
@@ -321,18 +318,18 @@ private void sendSetupMessages(byte controller)
    
    for (IfaceSensor sen : layout_model.getSensors()) {
       if (sen.getTowerId() == controller) {
-         SwitchState state = SwitchState.UNKNOWN;
+         ShoreSwitchState state = ShoreSwitchState.UNKNOWN;
          IfaceSwitch stsw = null;
          for (IfaceSwitch sw : layout_model.getSwitches()) {
             if (sw.getTowerId() == controller) {
                if (sw.getNSensor() == sen) {
                   stsw = sw;
-                  state = SwitchState.N;
+                  state = ShoreSwitchState.N;
                   break;
                 }
                else if (sw.getRSensor() == sen) {
                   stsw = null;
-                  state = SwitchState.R;
+                  state = ShoreSwitchState.R;
                   break;
                 }
              }
@@ -460,21 +457,21 @@ private class NotificationHandler implements MessageHandler {
          case CONTROL_SENSOR :
             if (layout_model != null) {
                IfaceSensor s = layout_model.findSensor(id,which);
-               SensorState sst = getState(value,SensorState.UNKNOWN);
+               ShoreSensorState sst = getState(value,ShoreSensorState.UNKNOWN); 
                s.setSensorState(sst);
              }
             break;
          case CONTROL_SWITCH :
             if (layout_model != null) {
                IfaceSwitch s = layout_model.findSwitch(id,which);
-               SwitchState sst = getState(value,SwitchState.UNKNOWN);
+               ShoreSwitchState sst = getState(value,ShoreSwitchState.UNKNOWN);
                s.setSwitch(sst);
              }
             break;
          case CONTROL_SIGNAL :
             if (layout_model != null) {
                IfaceSignal s = layout_model.findSignal(id,which);
-               SignalState sst = getState(value,SignalState.OFF);
+               ShoreSignalState sst = getState(value,ShoreSignalState.OFF);
                s.setSignalState(sst);
              }
             break;
@@ -638,18 +635,18 @@ private class ControllerInfo {
       sendSetupMessages(controller_id);
     }
    
-   void sendSwitchMessage(byte sid,IfaceSwitch.SwitchState state) {
+   void sendSwitchMessage(byte sid,IfaceSwitch.ShoreSwitchState state) {
       byte msg [] = { CONTROL_SETSWTICH, controller_id, sid,(byte) state.ordinal()};
       sendMessage(net_address,msg,0,4);
     }
    
-   void sendSignalMessage(byte sid,IfaceSignal.SignalState state) {
+   void sendSignalMessage(byte sid,IfaceSignal.ShoreSignalState state) {
       byte msg [] = { CONTROL_SETSIGNAL, controller_id, sid,(byte) state.ordinal()};
       sendMessage(net_address,msg,0,4);
     }
    
    
-   void sendSensorMessage(byte sid,IfaceSensor.SensorState state) {
+   void sendSensorMessage(byte sid,IfaceSensor.ShoreSensorState state) {
       byte msg [] = { CONTROL_SETSENSOR, controller_id, sid,(byte) state.ordinal()}; 
       sendMessage(net_address,msg,0,4);
    }

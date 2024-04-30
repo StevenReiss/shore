@@ -60,7 +60,7 @@ private String switch_id;
 private ModelBlock entry_block;
 private ModelBlock n_block;
 private ModelBlock r_block;
-private SwitchState switch_state;
+private ShoreSwitchState switch_state;
 private byte tower_id;
 private byte tower_index;
 private ModelPoint pivot_point;
@@ -93,7 +93,7 @@ ModelSwitch(ModelBase model,Element xml)
    entry_block = null;
    n_block = null;
    r_block = null;
-   switch_state = SwitchState.UNKNOWN;
+   switch_state = ShoreSwitchState.UNKNOWN;
    associated_switch = null;
    n_sensor = null;
    r_sensor = null;
@@ -145,9 +145,9 @@ ModelSwitch getAssociatedSwitch()
 
 @Override public IfaceSensor getRSensor()       { return r_sensor; }
 
-@Override public SwitchState getSwitchState()   { return switch_state; }
+@Override public ShoreSwitchState getSwitchState()   { return switch_state; }
 
-@Override public void setSwitch(SwitchState st)
+@Override public void setSwitch(ShoreSwitchState st)
 {
    if (switch_state == st) return;
    
@@ -181,8 +181,8 @@ void normalizeSwitch(ModelBase mdl)
    
    n_sensor = findSensor(mdl,n_point);
    r_sensor = findSensor(mdl,r_point);
-   if (n_sensor != null) n_sensor.assignSwitch(this,SwitchState.N);
-   if (r_sensor != null) r_sensor.assignSwitch(this,SwitchState.R); 
+   if (n_sensor != null) n_sensor.assignSwitch(this,ShoreSwitchState.N);
+   if (r_sensor != null) r_sensor.assignSwitch(this,ShoreSwitchState.R); 
    
    entry_block = pivot_point.getBlock();
    n_block = n_point.getBlock();
