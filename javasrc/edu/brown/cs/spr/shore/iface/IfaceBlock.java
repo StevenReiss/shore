@@ -37,22 +37,63 @@ package edu.brown.cs.spr.shore.iface;
 
 import java.util.Collection;
 
-public interface IfaceBlock
+/**
+ *      Represents a track block.  This is a connected section of the track that
+ *      should only contain one train at a time.
+ **/ 
+
+public interface IfaceBlock extends IfaceConstants
 {
 
-enum BlockState { EMPTY, INUSE, PENDING, UNKNOWN };
+
+/**
+ *      return the state of the block
+ **/
+ShoreBlockState getBlockState();
+ 
+
+/**
+ *      Set the state of the block
+ **/
+void setBlockState(ShoreBlockState state);
 
 
-BlockState getBlockState();
-void setBlockState(BlockState state);
+/**
+ *      If the state is PENDING, get the block it is pending from,
+ *      return null if not pending or block not known.
+ **/
 IfaceBlock getPendingFrom();
+
+/**
+ *      Set the pending from block.  The current state of the
+ *      block must be EMPTY.  Sets the state to PENDING.
+ *      Returns true if the state was set.
+ **/
+
 boolean setPendingFrom(IfaceBlock blk);
+
+
+/**
+ *      Return the set of connections associated with this block
+ **/
+
 Collection<IfaceConnection> getConnections();
 
+
+/**
+ *      Return the name/id of this block
+ **/
 String getId();
+
+
+/**
+ *      Get the point in the block to display the block id if that
+ *      is desired as part of the user interface.  Also identifies
+ *      a point known to be in the block.
+ **/
 IfacePoint getAtPoint();
 
-
+ 
 
 
 }       // end of interface IfaceBlock

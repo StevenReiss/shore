@@ -60,7 +60,7 @@ class ModelBlock implements ModelConstants, IfaceBlock
 private ModelBase for_model;
 private String block_id;
 private ModelPoint at_point;
-private BlockState block_state;
+private ShoreBlockState block_state;
 private ModelBlock pending_from;
 private Set<ModelConnection> block_connects;
 
@@ -81,7 +81,7 @@ ModelBlock(ModelBase model,Element xml)
    if (at_point == null) {
       model.noteError("Point " + ptname + " not found for block " + block_id);
     }
-   block_state = BlockState.UNKNOWN;
+   block_state = ShoreBlockState.UNKNOWN;
    block_connects = new HashSet<>();
    pending_from = null;
 } 
@@ -96,10 +96,15 @@ ModelBlock(ModelBase model,Element xml)
 @Override public String getId()                 { return block_id; } 
 @Override public ModelPoint getAtPoint()        { return at_point; }
 
-@Override public BlockState getBlockState()     { return block_state; }
-@Override public ModelBlock getPendingFrom()    { return pending_from; }
+@Override public ShoreBlockState getBlockState()     { return block_state; }
+@Override public ModelBlock getPendingFrom()    
+{
+   if (block_state != ShoreBlockState.PENDING) return null;
+    
+   return pending_from;
+}
 
-@Override public void setBlockState(BlockState st)
+@Override public void setBlockState(ShoreBlockState st)
 {
    if (block_state == st) return;
    
@@ -110,9 +115,10 @@ ModelBlock(ModelBase model,Element xml)
 
 @Override public boolean setPendingFrom(IfaceBlock blk)  
 {
-   if (block_state != BlockState.EMPTY) return false;
+   if (block_state != ShoreBlockState.EMPTY &&
+         block_state != ShoreBlockState.UNKNOWN) return false;
    pending_from = (ModelBlock) blk;
-   setBlockState(BlockState.PENDING);
+   setBlockState(ShoreBlockState.PENDING);
    return true;
 }
 

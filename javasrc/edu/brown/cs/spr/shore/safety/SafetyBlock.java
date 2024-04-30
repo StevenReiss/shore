@@ -47,7 +47,6 @@ import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
-import edu.brown.cs.spr.shore.iface.IfaceBlock.BlockState;
 
 class SafetyBlock implements SafetyConstants
 {
@@ -115,7 +114,7 @@ void handleSensorChange(IfaceSensor s)
    if (bd == null && s.getSensorState() == ShoreSensorState.ON) {
       bd = new BlockData(blk,s);
       active_blocks.put(blk,bd);
-      blk.setBlockState(BlockState.INUSE);
+      blk.setBlockState(ShoreBlockState.INUSE);
       checkPendingBlocks(blk);
     }
    else if (s.getSensorState() == ShoreSensorState.ON) {
@@ -203,7 +202,7 @@ private class BlockData {
       exit_sensor = null;
       exit_check = null;
       hit_sensors = new HashSet<>();
-      hit_sensors.add(s);
+      noteSensor(s);
       exit_time = 0;
     }
    
@@ -251,7 +250,7 @@ private class BlockData {
    void noteDone(long time) {
       if (exit_time != time) return;
       active_blocks.remove(for_block);
-      for_block.setBlockState(BlockState.EMPTY);
+      for_block.setBlockState(ShoreBlockState.EMPTY);
     }
    
    private void findPriorPoint(IfacePoint at) {

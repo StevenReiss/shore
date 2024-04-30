@@ -40,7 +40,6 @@ import java.awt.geom.Point2D;
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
-import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
@@ -57,9 +56,6 @@ class ModelSwitch implements IfaceSwitch, ModelConstants
 
 private ModelBase for_model;
 private String switch_id;
-private ModelBlock entry_block;
-private ModelBlock n_block;
-private ModelBlock r_block;
 private ShoreSwitchState switch_state;
 private byte tower_id;
 private byte tower_index;
@@ -90,9 +86,6 @@ ModelSwitch(ModelBase model,Element xml)
    tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
    tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
    associated_name = IvyXml.getAttrString(xml,"ASSOCIATE");
-   entry_block = null;
-   n_block = null;
-   r_block = null;
    switch_state = ShoreSwitchState.UNKNOWN;
    associated_switch = null;
    n_sensor = null;
@@ -134,12 +127,12 @@ ModelSwitch getAssociatedSwitch()
    return associated_switch;
 }
 
-@Override public IfaceBlock getEntryBlock()     { return entry_block; }
 
-@Override public IfaceBlock getNBlock()         { return n_block; }
+
+
  
 
-@Override public IfaceBlock getRBlock()         { return r_block; }
+
 
 @Override public IfaceSensor getNSensor()       { return n_sensor; }
 
@@ -184,9 +177,9 @@ void normalizeSwitch(ModelBase mdl)
    if (n_sensor != null) n_sensor.assignSwitch(this,ShoreSwitchState.N);
    if (r_sensor != null) r_sensor.assignSwitch(this,ShoreSwitchState.R); 
    
-   entry_block = pivot_point.getBlock();
-   n_block = n_point.getBlock();
-   r_block = r_point.getBlock();
+// entry_block = pivot_point.getBlock();
+// n_block = n_point.getBlock();
+// r_block = r_point.getBlock();
 }
 
 

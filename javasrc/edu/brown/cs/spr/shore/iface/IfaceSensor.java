@@ -37,6 +37,15 @@ package edu.brown.cs.spr.shore.iface;
 
 import java.util.Collection;
 
+/**
+ *      Represents a sensor embedded in the track.  Sensors are used by the system 
+ *      to detect train locations, implement safety constraints, and plan what should
+ *      happen.  A sensor can be associated with a switch N or R direction (to force the
+ *      switch to go that way and avoid derailment).  They can also be associated with
+ *      a connection when they represent two sides of a gap between blocks.  They can
+ *      also be associated with a signal in which case they represent where a train should
+ *      be stopped if the signal is red.  These are all setup from the layout.xml file.
+ **/
 public interface IfaceSensor extends IfaceConstants
 {
 
@@ -44,23 +53,59 @@ public interface IfaceSensor extends IfaceConstants
 /**
  *      Return switch if on N path to switch; null otherwise
  **/
-
 IfaceSwitch getSwitchN();
 
+
+/**
+ *      Return switch if on R path to switch; null otherwise
+ **/
 IfaceSwitch getSwitchR();
 
+
+/**
+ *      Return the connection if sensor is on either side of a gap, null otherwise
+ **/
 IfaceConnection getConnection();
 
+
+/**
+ *      Return the block this sensor is in.
+ **/
 IfaceBlock getBlock();
 
-void setSensorState(ShoreSensorState state);
+/**
+ *      Return the current state (ON/OFF) of the sensor
+ **/
 ShoreSensorState getSensorState();
 
+
+/**
+ *      Set the state of the sensor
+ **/
+void setSensorState(ShoreSensorState state);
+
+
+/**
+ *      Get the signals associated with the sensor.  This can be more than one if the
+ *      sensor is used for stopping trains from both directions
+ **/
 Collection<IfaceSignal> getSignals();
 
+
+/**
+ *      Get the location point for this sensor.
+ **/
 IfacePoint getAtPoint();
 
+
+/**
+ *      Get the id of the tower connected to this sensor.  
+ **/
 byte getTowerId();
+
+/**
+ *      Get the index number of this sensor in the tower
+ **/
 byte getTowerSensor();
 
 }       // end of interface IfaceSensor

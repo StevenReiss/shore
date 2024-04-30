@@ -46,7 +46,6 @@ import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
-import edu.brown.cs.spr.shore.iface.IfaceBlock.BlockState;
 
 class SafetySignal implements SafetyConstants
 {
@@ -110,7 +109,7 @@ void handleSensorChange(IfaceSensor s)
 
 void handleBlockChange(IfaceBlock b)
 {
-   if (b.getBlockState() == BlockState.EMPTY) {
+   if (b.getBlockState() == ShoreBlockState.EMPTY) {
       for (Iterator<SignalData> it = active_signals.values().iterator(); it.hasNext(); ) {
          SignalData sd = it.next();
          if (sd.getBlock() == b) it.remove();

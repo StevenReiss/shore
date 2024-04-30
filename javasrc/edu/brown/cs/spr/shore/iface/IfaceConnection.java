@@ -36,19 +36,64 @@
 package edu.brown.cs.spr.shore.iface;
 
 
+/**
+ *      An IfaceConnection represents a gap/connection between two 
+ *      blocks.  There are sensors on either side of the gap to detect
+ *      When a train goes between blocks.  There are also signals to
+ *      stop a train from entering a block that is otherwise occupied
+ *      or reserved.  There can also be a switch and switch state which
+ *      need to be set to enter the given block.
+ **/
+
 public interface IfaceConnection extends IfaceConstants
 {
 
+/**
+ *      Given the current block, find the other block associated with this
+ *      connection.  If the given block is not part of the connections, return
+ *      null.
+ **/
 IfaceBlock getOtherBlock(IfaceBlock inblock);
+
+
+/**
+ *      Get the sensor that exits from the current block to the next using this 
+ *      connection
+ **/
 IfaceSensor getExitSensor(IfaceBlock inblock);
+
+
+/**
+ *      Get the sensor for entry into the next block for this connection.
+ **/
 IfaceSensor getEntrySensor(IfaceBlock inblock);
+
+
+/**
+ *      Return the signal associated with this connection if there is one.
+ **/
 IfaceSignal getStopSignal(IfaceBlock inblock);
-IfaceSignal getEntryStopSignal(IfaceBlock inblock);
+
+
+/**
+ *      Get the sensor associated with the stop signal if there is one.
+ **/
 IfaceSensor getStopSensor(IfaceBlock inblock);
+
+
+/**
+ *      If there is a switch needed for the connection to take place in the
+ *      exited block, return that switch.
+ **/
 IfaceSwitch getExitSwitch(IfaceBlock inblock);
-IfaceSwitch getEntrySwitch(IfaceBlock inblock);
+
+
+/**
+ *      If there is a switch needed for the connection to take place in the
+ *      exited block, return the switch state needed for the connection to occur.
+ **/
 ShoreSwitchState getExitSwitchState(IfaceBlock inblock);
-ShoreSwitchState getEntrySwitchState(IfaceBlock inblock);
+
 
 
 

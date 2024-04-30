@@ -121,12 +121,7 @@ ModelConnection(ModelPoint gap,ModelBlock from,ModelBlock to)
    return null;
 }
 
-@Override public ModelSignal getEntryStopSignal(IfaceBlock inblock) 
-{
-   if (inblock == from_block) return to_signal;
-   else if (inblock == to_block) return from_signal;
-   return null;
-}
+
 
 
 @Override public ModelSensor getStopSensor(IfaceBlock inblock) 
@@ -143,12 +138,7 @@ ModelConnection(ModelPoint gap,ModelBlock from,ModelBlock to)
    return null;
 }
 
-@Override public ModelSwitch getEntrySwitch(IfaceBlock inblock)
-{
-   if (inblock == from_block) return to_switch;
-   else if (inblock == to_block) return from_switch;
-   return null;
-}
+
 
 @Override public ShoreSwitchState getExitSwitchState(IfaceBlock inblock)
 {
@@ -157,12 +147,7 @@ ModelConnection(ModelPoint gap,ModelBlock from,ModelBlock to)
    return null;
 }
 
-@Override public ShoreSwitchState getEntrySwitchState(IfaceBlock inblock)
-{
-   if (inblock == from_block) return to_switch_state;
-   else if (inblock == to_block) return from_switch_state;
-   return null;
-}
+
 
 
 

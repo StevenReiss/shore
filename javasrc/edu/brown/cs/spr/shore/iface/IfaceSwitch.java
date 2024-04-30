@@ -36,26 +36,63 @@
 package edu.brown.cs.spr.shore.iface;
 
 
+/**
+ *      Represent a switch in the train layout.  Each switch is associated with a sensor
+ *      for N and for R to ensure the switch is set correctly as a train approaches it.
+ *      Switches
+ **/
 public interface IfaceSwitch extends IfaceConstants
 {
 
 
-
+/**
+ *      Return the current state of the switch (N/R)
+ **/
 ShoreSwitchState getSwitchState(); 
+
+
+/**
+ *      Set the current state of the switch internally.  Does not directly change
+ *      the switch externally.
+ **/
 void setSwitch(ShoreSwitchState n);
 
+
+
+/**
+ *      Return the name/id of the switch
+ **/
 String getId();
 
-IfaceBlock getEntryBlock();
-IfaceBlock getNBlock();
-IfaceBlock getRBlock();
 
+/**
+ *      Return the sensor associated with the N branch of the switch.
+ **/
 IfaceSensor getNSensor();
+
+
+/**
+ *      Return the sensor associated with the R branch of the switch
+ **/
 IfaceSensor getRSensor();
 
+
+/**
+ *      Return the point where the N and R branches diverge in the layout.
+ **/
 IfacePoint getPivotPoint();
 
+
+
+/**
+ *      Return the id of the tower controlling the switch
+ **/
 byte getTowerId();
+
+
+/**
+ *      Return the index of the switch in the tower.
+ **/
 byte getTowerSwitch();
 
 

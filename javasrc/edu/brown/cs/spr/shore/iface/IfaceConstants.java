@@ -66,6 +66,9 @@ enum ShoreSignalType { RG, RGY, ENGINE };
 
 enum ShoreSwitchState { N, R, UNKNOWN };
 
+enum ShoreBlockState { EMPTY, INUSE, PENDING, UNKNOWN };
+
+
 
 
 }       // end of interface IfaceConstants

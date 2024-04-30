@@ -320,11 +320,15 @@ private boolean goesTo(IfacePoint prev,IfacePoint pt,IfacePoint tgt,Set<IfacePoi
 {
    if (pt == tgt) return true;
    if (!done.add(pt)) return false;
+   
    Collection<IfacePoint> next = pt.getConnectedTo();
    if (pt.getType() == ShorePointType.SWITCH) {
       ModelSwitch sw = findSwitchForPoint(pt);
       IfacePoint xpt = findSwitchPoint(prev,sw);
       if (xpt == sw.getNPoint()) done.add(sw.getRPoint());
+    }
+   else if (pt.getType() == ShorePointType.GAP) { 
+      return false;
     }
    for (IfacePoint npt : next) {
       if (goesTo(pt,npt,tgt,done)) return true;

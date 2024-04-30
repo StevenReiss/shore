@@ -37,17 +37,54 @@ package edu.brown.cs.spr.shore.iface;
 
 import java.util.Collection;
 
+/**
+ *      Represents a diagram showing a portion (or all) of the train layout.  A layout
+ *      consists of multiple diagrams, each of which is displayed separately.
+ **/
+
 public interface IfaceDiagram extends IfaceConstants
 {
 
+/**
+ *      Returns the name/id of this diagram.
+ **/
 String getId();
 
+
+/**
+ *      Returns the set of all points in this diagram
+ **/
 Collection<IfacePoint> getPoints();
+
+
+/**
+ *      Returns the set of all sensors in this diagram
+ **/
 Collection<IfaceSensor> getSensors();
+
+
+/**
+ *      Returns the set of all signals in this diagram
+ **/
 Collection<IfaceSignal> getSignals();
+
+
+/**
+ *      Returns the set of all switches in this diagram
+ **/
 Collection<IfaceSwitch> getSwitches();
+
+
+/**
+ *      Returns the set of all track blocks in this diagram
+ **/
 Collection<IfaceBlock> getBlocks();
 
+
+
+/**
+ *      Indicates that low y is at the bottom if true, top if false.  
+ **/
 boolean invertY();
 
 

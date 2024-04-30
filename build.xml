@@ -72,68 +72,12 @@
       </java>
    </target>
 
+   <taskdef resource="com/puppycrawl/tools/checkstyle/ant/checkstyle-ant-task.properties"
+	  classpath="/pro/checkstyle/target/checkstyle-10.16.1-SNAPSHOT-all.jar"/>
+<!--
+   <checkstyle config="/pro/checkstyle/target/classes/sun_checks.xml">
+	<fileset dir='javasrc' includes='**/*.java' />
+   </checkstyle>
+-->
+
 </project>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

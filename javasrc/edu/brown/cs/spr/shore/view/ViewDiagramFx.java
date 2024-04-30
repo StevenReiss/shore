@@ -49,7 +49,6 @@ import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
-import edu.brown.cs.spr.shore.iface.IfaceBlock.BlockState;
 import edu.brown.cs.spr.shore.iface.IfaceModel.ModelCallback;
 import edu.brown.cs.spr.shore.iface.IfaceTrains.TrainCallback;
 import javafx.application.Platform;
@@ -128,8 +127,8 @@ private static final Color BLOCK_BACKGROUD_COLOR = Color.BLACK;
 private static final Color BLOCK_BACKGROUD_INUSE_COLOR = Color.RED;
 private static final Color BLOCK_BACKGROUD_PENDING_COLOR = Color.YELLOW;
 private static final Color BLOCK_LABEL_COLOR = Color.WHITE;
-private static final Color BLOCK_LABEL_INUSE_COLOR = Color.RED;
-private static final Color BLOCK_LABEL_PENDING_COLOR = Color.YELLOW;
+private static final Color BLOCK_LABEL_INUSE_COLOR = Color.WHITE;
+private static final Color BLOCK_LABEL_PENDING_COLOR = Color.BLACK;
 
 private static final Font SWITCH_FONT;
 private static final Font BLOCK_FONT;
@@ -831,7 +830,7 @@ private class BlockDrawData {
     }
    
    private void doSetBlock() {
-      BlockState st = for_block.getBlockState();
+      ShoreBlockState st = for_block.getBlockState();
       Color lcolor = BLOCK_LABEL_COLOR;
       Color bcolor = BLOCK_BACKGROUD_COLOR;
       System.err.println("UPDATE BLOCK " + for_block.getId() + " " + st);
