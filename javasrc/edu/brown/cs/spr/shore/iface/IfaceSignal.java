@@ -53,7 +53,8 @@ ShoreSignalType getSignalType();
 
 
 /**
- *      Set the current state of the signal
+ *      Set the current state of the signal interally.  This does not set
+ *      the physical signal.
  **/
 void setSignalState(ShoreSignalState state);
 

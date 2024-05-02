@@ -164,8 +164,7 @@ private class SwitchData {
     }
    
    private void doTrigger(ShoreSwitchState state) {
-      for_switch.setSwitch(state);
-      safety_factory.getNetworkModel().sendSetSwitch(for_switch,state);
+      safety_factory.getNetworkModel().setSwitch(for_switch,state);
       current_mode = SwitchMode.SET;
       last_trigger = 0;
       last_state = state;

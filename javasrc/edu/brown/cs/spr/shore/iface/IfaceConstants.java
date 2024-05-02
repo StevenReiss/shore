@@ -40,33 +40,76 @@ package edu.brown.cs.spr.shore.iface;
 public interface IfaceConstants
 {
 
+
+/**
+ *      Characterization of a point
+ **/
 enum ShorePointType { 
-   TURNING, 
-   STRAIGHT, 
-   BLOCK, 
-   SENSOR, 
-   SWITCH,
-   SIGNAL,
-   GAP, 
-   END, 
-   TURNTABLE, 
-   DIAGRAM,
-   LABEL,
-   X_CROSSING,
-   ROAD_CROSSING,
+   TURNING,                     // track inflection point
+   BLOCK,                       // location for block label
+   SENSOR,                      // location of a sensor
+   SWITCH,                      // pivot point of a switch
+   SIGNAL,                      // location of a signal stopping point
+   GAP,                         // gap between two blocks
+   END,                         // dead end 
+   TURNTABLE,                   // middle of a turntable
+   DIAGRAM,                     // reference to another diagram
+   LABEL,                       // label location (not part of track)
+   X_CROSSING,                  // middle of an X crossing
+   OTHER,                       // point on track, no other use  
 };
 
 
-enum ShoreSensorState { OFF, ON, UNKNOWN };
+/**
+ *      State of an embedded sensor
+ **/
+enum ShoreSensorState {
+   OFF,                         // off -- no train at this location
+   ON,                          // on-- train at this location
+   UNKNOWN                      // unknown -- initial value
+};
 
 
-enum ShoreSignalState { OFF, GREEN, YELLOW, RED };
+/**
+ *      State of a signal
+ **/
+enum ShoreSignalState { 
+   OFF,                         // all lights off (initial state)
+   GREEN,                       // green light on
+   YELLOW,                      // yellow (or red and green) on
+   RED                          // red on
+};
 
-enum ShoreSignalType { RG, RGY, ENGINE };
 
-enum ShoreSwitchState { N, R, UNKNOWN };
+/**
+ *      Type of a signal
+ **/
+enum ShoreSignalType { 
+   RG,                          // red and green lights only; signal for blocking
+   RGY,                         // reg, green and yellow lights; signal for blocking
+   ENGINE                       // red/green but there to wait to identify an engine,
+};
 
-enum ShoreBlockState { EMPTY, INUSE, PENDING, UNKNOWN };
+
+/**
+ *      State of a switch
+ **/
+enum ShoreSwitchState { 
+   N,                           // N-state (straight)
+   R,                           // R-state (curve)
+   UNKNOWN                      // state is not known (initial)
+};
+
+
+/**
+ *      State of track block
+ **/
+enum ShoreBlockState { 
+   EMPTY,                       // block is empty -- no trains present
+   INUSE,                       // block has a train actively inside it
+   PENDING,                     // block is reserved for a train coming from another block
+   UNKNOWN                      // state is unknown (initial)
+};
 
 
 

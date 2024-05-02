@@ -107,6 +107,7 @@ private static final double MIN_WIDTH = 1200;
 private static final double GAP_WIDTH = 8;
 private static final double TRACK_WIDTH = 10;
 private static final double SWITCH_ARROW_WIDTH = 6;
+private static final double SWITCH_ARROW_LENGTH = 40;
 private static final double SIGNAL_DISTANCE = 20;
 private static final double SIGNAL_LIGHT = 8;           
 private static final double SIGNAL_GAP = 2;
@@ -432,6 +433,7 @@ private void drawSwitches()
       getChildren().add(t);
       
       SwitchDrawData sdd = new SwitchDrawData(sw,arrow,bkg,t);
+      sdd.doSetArrow();
       switch_map.put(sw,sdd);
     }
 }
@@ -447,7 +449,6 @@ private class SwitchDrawData {
    SwitchDrawData(IfaceSwitch sw,Line arrow,Node bkg,Node lbl) {
       for_switch = sw;
       switch_arrow = arrow;
-      doSetArrow();
       SwitchHandler hdlr = new SwitchHandler(for_switch);
       bkg.setOnMouseClicked(hdlr);
       bkg.setOnMousePressed(hdlr);
@@ -480,10 +481,13 @@ private class SwitchDrawData {
          switch_arrow.setVisible(false);
        }
       else {
+         Point2D p0 = getCoords(for_switch.getPivotPoint());
          Point2D p1 = getCoords(tpt);
-         // might want to restrict the line to a fixed length from pivot point
-         switch_arrow.endXProperty().set(p1.getX());
-         switch_arrow.endYProperty().set(p1.getY());
+         double d = p0.distance(p1);
+         double x0 = p0.getX() + (p1.getX()-p0.getX())/d*SWITCH_ARROW_LENGTH;
+         double y0 = p0.getY() + (p1.getY()-p0.getY())/d*SWITCH_ARROW_LENGTH;
+         switch_arrow.endXProperty().set(x0);
+         switch_arrow.endYProperty().set(y0);
          switch_arrow.setVisible(true);
        }
     }

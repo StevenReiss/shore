@@ -38,6 +38,11 @@ package edu.brown.cs.spr.shore.iface;
 import java.net.SocketAddress;
 import java.util.Collection;
 
+/**
+ *      representation of an engine, possibly pulling a train.  This tracks the
+ *      current location of thr train and provides hooks for controlling the
+ *      behavior of the train.
+ **/
 public interface IfaceEngine
 {
 

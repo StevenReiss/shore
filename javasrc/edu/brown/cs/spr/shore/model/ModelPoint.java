@@ -78,7 +78,7 @@ ModelPoint(ModelDiagram dgm,Element xml)
    point_id = IvyXml.getAttrString(xml,"ID");
    point_x = IvyXml.getAttrDouble(xml,"X",0);
    point_y = IvyXml.getAttrDouble(xml,"Y",0);
-   point_type = IvyXml.getAttrEnum(xml,"TYPE",ShorePointType.STRAIGHT);
+   point_type = IvyXml.getAttrEnum(xml,"TYPE",ShorePointType.OTHER); 
    ref_id = IvyXml.getAttrString(xml,"REF");
    
    conn_points = new ArrayList<>();

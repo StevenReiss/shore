@@ -202,13 +202,7 @@ Collection<ModelSwitch> getModelSwitches()
 
 
 
-@Override public IfaceSensor findSensor(int tower,int id)
-{
-   for (ModelSensor ms : model_sensors.values()) {
-      if (ms.getTowerId() == tower && ms.getTowerSensor() == id) return ms;
-    }
-   return null;
-}
+
 
 
 ModelSensor findSensorForPoint(ModelPoint pt)
@@ -252,21 +246,9 @@ ModelSwitch findSwitchForPoint(IfacePoint pt)
    return null;
 }
 
-@Override public IfaceSignal findSignal(int tower,int id)
-{
-   for (ModelSignal ms : model_signals.values()) {
-      if (ms.getTowerId() == tower && ms.getTowerSignal() == id) return ms;
-    }
-   return null;
-}
 
-@Override public IfaceSwitch findSwitch(int tower,int id)
-{
-   for (ModelSwitch ms : model_switches.values()) {
-      if (ms.getTowerId() == tower && ms.getTowerSwitch() == id) return ms;
-    }
-   return null;
-}
+
+
 
 ModelDiagram findDiagram(String id)
 {

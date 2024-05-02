@@ -36,15 +36,57 @@
 package edu.brown.cs.spr.shore.iface;
 
 
-public interface IfaceNetwork
+/**
+ *      This class represents the wifi network connections.  It provides calls to
+ *      send signals to change the actual physical devices on the train table.
+ **/
+public interface IfaceNetwork extends IfaceConstants
 {
 
-void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.ShoreSwitchState set);
-void sendSetSignal(IfaceSignal sig,IfaceSignal.ShoreSignalState set);
-void sendSetSensor(IfaceSensor sen,IfaceSensor.ShoreSensorState set);
-void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,IfaceSwitch.ShoreSwitchState state);
+/**
+ *      This method sets the switch both internally and externally to the
+ *      gvien state.  It differs from IfaceSwitch.setSwitch which only sets
+ *      the switch internally.
+ **/
+void setSwitch(IfaceSwitch sw,ShoreSwitchState set);
 
+
+/**
+ *      Set the signal state both internally and externally.  This differs
+ *      From IfaceSignal.setSignalState which only sets the signal internally.
+ **/
+void setSignal(IfaceSignal sig,ShoreSignalState set);
+
+
+/**
+ *      Set the sensor state both internally and externally.  This differs
+ *      From IfaceSensor.setSensorState which only sets the sensor internally.
+ *      Note that it is not clear what setting the sensor extermally actually
+ *      means, but the appropriate message is sent.
+ **/
+void setSensor(IfaceSensor sen,ShoreSensorState set);
+
+
+
+/**
+ *      Configures the remote tower to automatically set a switch based
+ *      on N and R sensors for that switch.
+ **/
+void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,ShoreSwitchState state);
+
+
+
+/**
+ *      Sends a message to stop the given engine, either with a normal
+ *      stop or with an emergency stop.
+ **/
 void sendStopTrain(IfaceEngine train,boolean emergency);
+
+
+/**
+ *      Sends a message to restart the given engine.  This remembers whether
+ *      the last stop was an emergency or normal stop.
+ **/
 void sendStartTrain(IfaceEngine train);
 
 

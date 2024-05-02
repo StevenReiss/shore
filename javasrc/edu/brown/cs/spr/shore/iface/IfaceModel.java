@@ -40,41 +40,97 @@ import java.util.EventListener;
 
 import org.w3c.dom.Element;
 
+/**
+ *      Representation of the complete layout model.  This includes
+ *      all the diagrams, sensors, switches, blocks, signals, and
+ *      connections.  This class provides some utility methods and
+ *      the ability to get callbacks when items change.  The class
+ *      is set up from a layout.xml file.
+ **/
 public interface IfaceModel
 {
 
+/**
+ *      Return the set of all switches in the model
+ **/
 Collection<IfaceSwitch> getSwitches();
+
+
+/**
+ *      Return the set of all block connections in the model
+ **/
 Collection<IfaceConnection> getConnections(); 
+
+
+/**
+ *      Return the set of all signals in the model
+ **/
 Collection<IfaceSignal> getSignals();
+
+
+/**
+ *      Return the set of all sensors in the model
+ **/
 Collection<IfaceSensor> getSensors();
+
+
+/**
+ *      Return the set of all blocks in the model
+ **/
 Collection<IfaceBlock> getBlocks();
 
+
+/**
+ *      Return the set of all diagrams in the model
+ **/
 Collection<IfaceDiagram> getDiagrams();
 
+/**
+ *      Determine if a path from prev through pt goes to the
+ *      point tgt without leaving the current block
+ **/
 boolean goesTo(IfacePoint prev,IfacePoint pt,IfacePoint tgt);
+
+
+/**
+ *      Find the next block on a patch from prev through pt.  This
+ *      takes into account the current state of any switches along
+ *      the way.
+ **/
 IfaceBlock findNextBlock(IfacePoint prev,IfacePoint at);
 
+
+/**
+ *      Return the XML used to load the model.  This is provided
+ *      so that the XML can include additional information for 
+ *      other modules (e.g. loops for planning, engine names).
+ **/
 Element getModelXml();
 
 
 
-
-
-
+/**
+ *      Add a callback for the model
+ **/
 void addModelCallback(ModelCallback cb);
+
+
+/**
+ *      Remove a callback for the model
+ **/
 void removeModelCallback(ModelCallback cb);
 
+
+
+/**
+ *      Callback interface for any changes to model componetns
+ **/
 interface ModelCallback extends EventListener {
    default void sensorChanged(IfaceSensor sensor)       { }
    default void switchChanged(IfaceSwitch sw)           { }
    default void signalChanged(IfaceSignal sig)          { }
    default void blockChanged(IfaceBlock blk)            { }
 }
-
-IfaceSensor findSensor(int tower,int id);
-IfaceSwitch findSwitch(int tower,int id);
-IfaceSignal findSignal(int tower,int id);
-
 
 
 

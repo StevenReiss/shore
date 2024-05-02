@@ -193,12 +193,12 @@ private void loadTrains()
 /*                                                                              */
 /********************************************************************************/
 
-public void addTrainCallback(TrainCallback cb)
+@Override public void addTrainCallback(TrainCallback cb)
 {
    train_listeners.add(cb);
 }
-
-public void removeTrainCallback(TrainCallback cb)
+ 
+@Override public void removeTrainCallback(TrainCallback cb)
 {
    train_listeners.remove(cb);
 }

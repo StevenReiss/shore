@@ -39,17 +39,68 @@ import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.EventListener;
 
+/**
+ *      This ineterface represents the manager for the active
+ *      trains on the table.  It lets one create and find trains,
+ *      get the set of all trains, and communicate with the
+ *      engines.  It also provides a callback for when information
+ *      about a train changes.
+ **/
 public interface IfaceTrains 
 {
 
+
+/**
+ *      Create a new train with the given name if it doesn't exist.
+ *      Returns the train with that name if it does.
+ **/
 IfaceEngine createTrain(String name);
+
+
+/**
+ *      Find the train with the given name.  Returns null if the
+ *      train does not exist
+ **/
 IfaceEngine findTrain(String name);
 
-Collection<IfaceEngine> getAllEngines();
 
-IfaceEngine setEngineSocket(IfaceEngine engine,SocketAddress sa);
+/*
+ *      Find the train given a socket address. Returns null if the
+ *      train is not known.
+ **/
 IfaceEngine findTrain(SocketAddress sa);
 
+/**
+ *      Return the set of all entines that are known
+ **/
+Collection<IfaceEngine> getAllEngines();
+
+
+/**
+ *      Set up the communication with an engine by providing its
+ *      UDP socket addess for communication.
+ **/
+IfaceEngine setEngineSocket(IfaceEngine engine,SocketAddress sa);
+
+
+/**
+ *      Add a callback to listen for train changes
+ **/
+void addTrainCallback(TrainCallback cb);
+
+
+/**
+ *      Remove a callback.  Has no effect if the callback has not
+ *      been added or has been previously removed.
+ **/
+void removeTrainCallback(TrainCallback cb);
+
+
+
+/**
+ *      Callback that is invoked when information about an engine
+ *      or train is changed.
+ **/
 interface TrainCallback extends EventListener {
    
    default void trainChanged(IfaceEngine engine)        { }

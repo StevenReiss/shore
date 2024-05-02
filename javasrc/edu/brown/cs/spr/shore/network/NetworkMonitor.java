@@ -226,43 +226,46 @@ public void start()
 /********************************************************************************/
 
 @Override 
-public void sendSetSwitch(IfaceSwitch sw,IfaceSwitch.ShoreSwitchState set)
+public void setSwitch(IfaceSwitch sw,ShoreSwitchState set)  
 {
    if (sw == null) return;
    int id = sw.getTowerId();
    ControllerInfo ci = id_map.get(id);
    if (ci == null) return;
+   sw.setSwitch(set);
    ci.sendSwitchMessage(sw.getTowerSwitch(),set);
 }
  
 
 @Override
-public void sendSetSignal(IfaceSignal sig,IfaceSignal.ShoreSignalState set)
+public void setSignal(IfaceSignal sig,ShoreSignalState set) 
 {
    if (sig == null) return;
    
    int id = sig.getTowerId();
    ControllerInfo ci = id_map.get(id);
    if (ci == null) return;
+   sig.setSignalState(set);
    ci.sendSignalMessage(sig.getTowerSignal(),set);
 }
 
 
 
 @Override
-public void sendSetSensor(IfaceSensor sig,IfaceSensor.ShoreSensorState set) 
+public void setSensor(IfaceSensor sig,ShoreSensorState set)  
 {
    if (sig == null) return;
    
    int id = sig.getTowerId();
    ControllerInfo ci = id_map.get(id);
    if (ci == null) return;
+   sig.setSensorState(set);
    ci.sendSensorMessage(sig.getTowerSensor(),set);
 }
 
 
 @Override
-public void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,IfaceSwitch.ShoreSwitchState set)
+public void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,ShoreSwitchState set)
 {
    if (sen == null) return;
    int id = sen.getTowerId();
@@ -340,13 +343,13 @@ private void sendSetupMessages(byte controller)
    
    for (IfaceSignal sig : layout_model.getSignals()) {
       if (sig.getTowerId() == controller) {
-         sendSetSignal(sig,sig.getSignalState());
+         setSignal(sig,sig.getSignalState());
        }
     }
    
    for (IfaceSwitch sw : layout_model.getSwitches()) {
       if (sw.getTowerId() == controller) {
-         sendSetSwitch(sw,sw.getSwitchState());
+         setSwitch(sw,sw.getSwitchState());
        }
     }
 }
@@ -395,6 +398,42 @@ public void sendMessage(SocketAddress who,byte [] msg,int off,int len)
       ShoreLog.logE("Problem sending packet " + who,e);
     }
 }
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Model finding methods                                                   */
+/*                                                                              */
+/********************************************************************************/
+
+private IfaceSensor findSensor(int tower,int id)
+{
+   for (IfaceSensor ms : layout_model.getSensors()) {
+      if (ms.getTowerId() == tower && ms.getTowerSensor() == id) return ms;
+    }
+   return null;
+}
+
+
+private IfaceSwitch findSwitch(int tower,int id)
+{
+   for (IfaceSwitch ms : layout_model.getSwitches()) {
+      if (ms.getTowerId() == tower && ms.getTowerSwitch() == id) return ms;
+    }
+   return null;
+}
+
+
+
+private IfaceSignal findSignal(int tower,int id)
+{
+   for (IfaceSignal ms : layout_model.getSignals()) {
+      if (ms.getTowerId() == tower && ms.getTowerSignal() == id) return ms;
+    }
+   return null;
+}
+
 
 
 
@@ -456,21 +495,21 @@ private class NotificationHandler implements MessageHandler {
             break;
          case CONTROL_SENSOR :
             if (layout_model != null) {
-               IfaceSensor s = layout_model.findSensor(id,which);
+               IfaceSensor s = findSensor(id,which);
                ShoreSensorState sst = getState(value,ShoreSensorState.UNKNOWN); 
                s.setSensorState(sst);
              }
             break;
          case CONTROL_SWITCH :
             if (layout_model != null) {
-               IfaceSwitch s = layout_model.findSwitch(id,which);
+               IfaceSwitch s = findSwitch(id,which);
                ShoreSwitchState sst = getState(value,ShoreSwitchState.UNKNOWN);
                s.setSwitch(sst);
              }
             break;
          case CONTROL_SIGNAL :
             if (layout_model != null) {
-               IfaceSignal s = layout_model.findSignal(id,which);
+               IfaceSignal s = findSignal(id,which);
                ShoreSignalState sst = getState(value,ShoreSignalState.OFF);
                s.setSignalState(sst);
              }
