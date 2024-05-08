@@ -44,6 +44,7 @@ import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Enumeration;
 import java.util.Map;
@@ -647,6 +648,29 @@ private EngineInfo setupEngine(SocketAddress sa)
 }
 
 
+private String getMacAddress(SocketAddress sa)
+{
+   if (sa instanceof InetSocketAddress) {
+      InetSocketAddress inet = (InetSocketAddress) sa;
+      InetAddress iadd = inet.getAddress();
+      try {
+         NetworkInterface ni = NetworkInterface.getByInetAddress(iadd);
+         byte [] mac = ni.getHardwareAddress();
+         StringBuffer buf = new StringBuffer();
+         for (int i = 0; i < mac.length; ++i) {
+            if (i > 0) buf.append("-");
+            int v = mac[i] & 0xff;
+            String s = Integer.toString(v,16);
+            if (s.length() == 1) buf.append("0");
+            buf.append(s);
+          }
+         return buf.toString();
+       }
+      catch (SocketException e) {}
+    }
+   
+   return null;
+}
 
 private class ControllerInfo {
    
@@ -656,6 +680,10 @@ private class ControllerInfo {
    ControllerInfo(SocketAddress net) {
       net_address = net;
       controller_id = -1;
+      String mac = getMacAddress(net);
+      if (mac != null) {
+         ShoreLog.logD("NETWORK","Controller mac address: " + mac);
+       }
     }
    
    SocketAddress getSocketAddress()                     { return net_address; }
@@ -705,6 +733,10 @@ private class EngineInfo {
    
    EngineInfo(SocketAddress net) {
       net_address = net;
+      String mac = getMacAddress(net);
+      if (mac != null) {
+         ShoreLog.logD("NETWORK","Found engine with mac address " + mac);
+       }
     }
    
 // SocketAddress getSocketAddress()                     { return net_address; }
