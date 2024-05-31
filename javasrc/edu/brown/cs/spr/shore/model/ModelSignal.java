@@ -38,12 +38,14 @@ package edu.brown.cs.spr.shore.model;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
+import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
@@ -60,13 +62,13 @@ class ModelSignal implements IfaceSignal, ModelConstants
 
 private ModelBase for_model;
 private String  signal_id;
-private ModelPoint at_point;
+private List<ModelPoint> at_points;
 private ModelPoint gap_point;
 private ModelPoint next_point;
 private Set<ModelConnection> for_connections;
 private ShoreSignalState signal_state;
 private ShoreSignalType signal_type; 
-private ModelSensor stop_sensor;
+private List<ModelSensor> stop_sensors;
 private Set<ModelSensor> prior_sensors;
 private byte tower_id;
 private byte tower_index;
@@ -83,14 +85,14 @@ ModelSignal(ModelBase model,Element xml)
 {
    for_model = model;
    signal_id = IvyXml.getAttrString(xml,"ID");
-   at_point = model.getPointById(IvyXml.getAttrString(xml,"POINT"));
+   at_points = model.getPointListById(IvyXml.getAttrString(xml,"POINT")); 
    next_point = null;
    gap_point = model.getPointById(IvyXml.getAttrString(xml,"TO"));
    for_connections = new HashSet<>(); 
    tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
    tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
    signal_type = IvyXml.getAttrEnum(xml,"TYPE",ShoreSignalType.RG);
-   stop_sensor = null;
+   stop_sensors = null;
    prior_sensors = new HashSet<>();
    signal_state = ShoreSignalState.OFF;
 }
@@ -104,12 +106,16 @@ ModelSignal(ModelBase model,Element xml)
 
 String getId()                                  { return signal_id; } 
 
-@Override public ModelPoint getAtPoint()        { return at_point; } 
+@Override public List<IfacePoint> getAtPoints() 
+{
+   return new ArrayList<>(at_points); 
+}  
+
 @Override public ModelPoint getNextPoint()      { return next_point; }
 
 @Override public ModelBlock getFromBlock()      
 {
-   return at_point.getBlock();
+   return at_points.get(0).getBlock();
 }
 
 @Override public Collection<IfaceConnection> getConnections() 
@@ -131,7 +137,15 @@ void addConnection(ModelConnection conn)
 
 @Override public ShoreSignalState getSignalState()   { return signal_state; }
 
-@Override public ModelSensor getStopSensor()    { return stop_sensor; } 
+@Override public List<IfaceSensor> getStopSensors()    
+{
+   return new ArrayList<>(stop_sensors);
+} 
+
+List<ModelSensor> getModelStopSensors()
+{
+   return stop_sensors;
+}
 
 @Override public Collection<IfaceSensor> getPriorSensors()
 {
@@ -159,7 +173,7 @@ void addConnection(ModelConnection conn)
 
 void normalizeSignal(ModelBase mdl)
 {
-   if (at_point == null) {
+   if (at_points.isEmpty()) {
       mdl.noteError("Missing POINT for signal " + getId());
       return;
     }
@@ -168,18 +182,24 @@ void normalizeSignal(ModelBase mdl)
       return;
     }
    
-   for (ModelPoint pt : at_point.getModelConnectedTo()) {
-      if (goesTo(at_point,pt,gap_point)) {
-         next_point = pt;
+   for (ModelPoint pt0 : at_points) {
+      for (ModelPoint pt : pt0.getModelConnectedTo()) {
+         if (goesTo(pt0,pt,gap_point)) {
+            next_point = pt;
+          }
+         else addPriorSensors(pt0,pt);
        }
-      else addPriorSensors(at_point,pt);
     }
    
-   stop_sensor = mdl.findSensorForPoint(at_point);
-   if (stop_sensor == null) {
-      mdl.noteError("No sensor found for signal " + signal_id);
+   stop_sensors = new ArrayList<>();
+   for (ModelPoint pt0 : at_points) {
+      ModelSensor ms = mdl.findSensorForPoint(pt0);
+      if (ms == null) {
+         mdl.noteError("No sensor found for signal " + signal_id);
+       }
+      stop_sensors.add(ms);
+      ms.addSignal(this);
     }
-   stop_sensor.addSignal(this); 
 }
 
 

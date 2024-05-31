@@ -36,6 +36,7 @@
 package edu.brown.cs.spr.shore.iface;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  *      Represent a train control signal.  Each signal can be in one of 3 state (Red/Green/Yellow), 
@@ -84,7 +85,7 @@ Collection<IfaceConnection> getConnections();
 /**
  *      Get the sensor indicating the stopping position for this signal
  **/
-IfaceSensor getStopSensor();
+List<IfaceSensor> getStopSensors();
 
 
 /**
@@ -98,7 +99,7 @@ Collection<IfaceSensor> getPriorSensors();
 /**
  *      Return the point at thich the signal/stop sensor is located
  **/
-IfacePoint getAtPoint();
+List<IfacePoint> getAtPoints();
 
 
 /**

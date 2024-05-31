@@ -44,6 +44,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import org.w3c.dom.Element;
 
@@ -224,7 +225,7 @@ ModelSignal findSignalForPoint(ModelPoint pt)
    if (pt == null) return null;
    
    for (ModelSignal ms : getModelSignals()) { 
-      if (ms.getAtPoint() == pt) {
+      if (ms.getAtPoints().contains(pt)) {
          return ms;
        }
     }
@@ -261,6 +262,20 @@ ModelPoint getPointById(String id)
    if (id == null) return null;
    
    return model_points.get(id);
+}
+
+List<ModelPoint> getPointListById(String ids)
+{
+   List<ModelPoint> rslt = new ArrayList<>();
+   if (ids != null) {
+      StringTokenizer tok = new StringTokenizer(ids," \t,;");
+      while (tok.hasMoreTokens()) {
+         String pid = tok.nextToken();
+         ModelPoint pt = getPointById(pid);
+         if (pt != null) rslt.add(pt);
+       }
+    }
+   return rslt;
 }
 
 ModelSwitch getSwitchById(String id)

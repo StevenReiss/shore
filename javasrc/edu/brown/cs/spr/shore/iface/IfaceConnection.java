@@ -35,6 +35,7 @@
 
 package edu.brown.cs.spr.shore.iface;
 
+import java.util.List;
 
 /**
  *      An IfaceConnection represents a gap/connection between two 
@@ -78,7 +79,7 @@ IfaceSignal getStopSignal(IfaceBlock inblock);
 /**
  *      Get the sensor associated with the stop signal if there is one.
  **/
-IfaceSensor getStopSensor(IfaceBlock inblock);
+List<IfaceSensor> getStopSensors(IfaceBlock inblock);
 
 
 /**

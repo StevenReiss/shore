@@ -36,10 +36,12 @@
 package edu.brown.cs.spr.shore.model;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
+import edu.brown.cs.spr.shore.iface.IfaceSensor;
 
 class ModelConnection implements IfaceConnection, ModelConstants
 {
@@ -124,11 +126,11 @@ ModelConnection(ModelPoint gap,ModelBlock from,ModelBlock to)
 
 
 
-@Override public ModelSensor getStopSensor(IfaceBlock inblock) 
+@Override public List<IfaceSensor> getStopSensors(IfaceBlock inblock)  
 {
    ModelSignal sig = getStopSignal(inblock);
    if (sig == null) return null;
-   return sig.getStopSensor();
+   return sig.getStopSensors();
 }
 
 @Override public ModelSwitch getExitSwitch(IfaceBlock inblock)
@@ -169,11 +171,15 @@ void normalizeConnection(ModelBase mdl)
     }
    if (from_sensor != null) from_sensor.setConnection(this); 
    if (to_sensor != null) to_sensor.setConnection(this);
-   if (from_signal != null && from_signal.getStopSensor() != null) {
-      from_signal.getStopSensor().setConnection(this);
+   if (from_signal != null) {
+      for (ModelSensor ss: from_signal.getModelStopSensors()) {
+         ss.setConnection(this);
+       }
     }
-   if (to_signal != null && to_signal.getStopSensor() != null) {
-      to_signal.getStopSensor().setConnection(this);
+   if (to_signal != null) {
+      for (ModelSensor ss : to_signal.getModelStopSensors()) {
+         ss.setConnection(this);
+       }
     }
    
    from_block.addConnection(this);

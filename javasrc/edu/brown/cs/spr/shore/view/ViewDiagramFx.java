@@ -533,7 +533,7 @@ private void drawSignals()
    signal_map.clear();
    
    for (IfaceSignal sig : for_diagram.getSignals()) {
-      IfacePoint pt = sig.getAtPoint();
+      IfacePoint pt = sig.getAtPoints().get(0);
       IfacePoint npt = sig.getNextPoint();
       Point2D cpt = getCoords(pt);
       Point2D cnpt = getCoords(npt);
