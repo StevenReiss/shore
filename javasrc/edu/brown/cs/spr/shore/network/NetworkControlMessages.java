@@ -32,6 +32,7 @@ byte CONTROL_SETSWTICH  = (byte) 0x43;          // set switch to state
 byte CONTROL_SETSIGNAL  = (byte) 0x44;          // set signal to stat
 byte CONTROL_DEFSENSOR  = (byte) 0x45;          // assoc sensor with switch state
 byte CONTROL_SETSENSOR  = (byte) 0x46;          // note sensor state
+byte CONTROL_DEFSIGNAL  = (byte) 0x47;          // set type of signal
 
 
 
@@ -65,6 +66,11 @@ byte MESSAGE_R          = 0x1;
 byte MESSAGE_RED        = 0x1;
 byte MESSAGE_GREEN      = 0x2;
 byte MESSAGE_YELLOW     = 0x3;
+
+byte MESSAGE_SIG_RG     = 0x0;
+byte MESSAGE_SIG_RGY    = 0x1;
+byte MESSAGE_SIG_RG_ANODE = 0x2;
+byte MESSAGE_SIG_RGY_ANODE = 0x3;
 
 //
 //      Standard messages consist of 4 bytes
