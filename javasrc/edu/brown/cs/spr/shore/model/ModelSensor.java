@@ -85,13 +85,20 @@ ModelSensor(ModelBase mdl,Element xml)
 {
    for_model = mdl;
    sensor_id = IvyXml.getAttrString(xml,"ID");
-   sensor_point = mdl.getPointById(IvyXml.getAttrString(xml,"POINT"));
+   String pt = IvyXml.getAttrString(xml,"POINT");
+   sensor_point = mdl.getPointById(pt);
    tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
    tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
    n_switch = null;
    r_switch = null;
    entry_switch = null;
-   sensor_block = sensor_point.getBlock();
+   if (sensor_point != null) {
+      sensor_block = sensor_point.getBlock();
+    }
+   else {
+      mdl.noteError("Sensor point " + pt + " not found for " + sensor_id);
+      sensor_block = null;
+    }
    sensor_state = ShoreSensorState.UNKNOWN;
    for_signals = new HashSet<>();
    in_connection = null;

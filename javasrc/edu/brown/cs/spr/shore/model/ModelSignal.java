@@ -197,24 +197,29 @@ void normalizeSignal(ModelBase mdl)
       if (ms == null) {
          mdl.noteError("No sensor found for signal " + signal_id);
        }
-      stop_sensors.add(ms);
-      ms.addSignal(this);
+      else {
+         stop_sensors.add(ms);
+         ms.addSignal(this);
+       }
     }
 }
 
 
-private boolean goesTo(ModelPoint prev,ModelPoint pt,ModelPoint tgt)
+private boolean goesTo(ModelPoint prev,ModelPoint pt0,ModelPoint tgt)
 {
+   ModelPoint pt = pt0;
    if (pt == null) return false;
    if (pt == tgt) return true;
    while (pt != null) {
       if (pt == tgt) return true;
       Collection<ModelPoint> next = pt.getModelConnectedTo();
       if (next.size() != 2) break;
+      ModelPoint cur = pt;
       pt = null;
       for (ModelPoint npt : next) {
          if (npt != prev) {
             pt = npt;
+            prev = cur;
             break;
           }
        }
