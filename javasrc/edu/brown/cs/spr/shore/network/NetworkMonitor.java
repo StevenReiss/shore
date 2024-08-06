@@ -161,9 +161,10 @@ public NetworkMonitor(IfaceModel model)
       multi_socket.joinGroup(new InetSocketAddress(mcastaddr,0),netif);
     }
    catch (IOException e) {
-      ShoreLog.logE("NETWORK","Can't create Datagram Socket",e);
-      System.err.println("Problem with network connection: " + e);
-      System.exit(1);
+      ShoreLog.logE("NETWORK","Can't create Datagram Socket: " + e);
+      System.err.println("Problem with multicast connection: " + e);
+      multi_group = null;
+//    System.exit(1);
     }
    
    try {
@@ -377,16 +378,20 @@ public void sendMessage(SocketAddress who,byte [] msg,int off,int len)
    if (our_socket == null) return;
    
    if (who == null) {
-      try {
-         DatagramPacket dp = new DatagramPacket(msg,len,multi_group);
-         multi_socket.send(dp);
-         ShoreLog.logD("NETWORK","MULTI SEND");
+      if (multi_group != null) {
+         try {
+            DatagramPacket dp = new DatagramPacket(msg,len,multi_group);
+            multi_socket.send(dp);
+            ShoreLog.logD("NETWORK","MULTI SEND");
+          }
+         catch (IOException e) {
+            ShoreLog.logE("NETWORK","Problem with multicast: ",e);
+          }
        }
-      catch (IOException e) {
-         ShoreLog.logE("NETWORK","Problem with multicast: ",e);
-       }
-      for (ControllerInfo ci : controller_map.values()) {
-         sendMessage(ci.getSocketAddress(),msg,off,len);
+      else {
+         for (ControllerInfo ci : controller_map.values()) {
+            sendMessage(ci.getSocketAddress(),msg,off,len);
+          }
        }
       return;
     }
@@ -655,6 +660,7 @@ private String getMacAddress(SocketAddress sa)
       InetAddress iadd = inet.getAddress();
       try {
          NetworkInterface ni = NetworkInterface.getByInetAddress(iadd);
+         if (ni == null) return null;
          byte [] mac = ni.getHardwareAddress();
          StringBuffer buf = new StringBuffer();
          for (int i = 0; i < mac.length; ++i) {
@@ -805,7 +811,7 @@ public class ServiceFinder implements ServiceListener, ServiceTypeListener {
       ServiceInfo si = event.getInfo();
       String nm = si.getName();
       if (nm.startsWith("controller") || nm.startsWith("tower")) {
-         ShoreLog.logD("NETWORK","Found controller: " + finder_id + "> " + si);
+         ShoreLog.logD("NETWORK","Found controller: " + finder_id);
          setupController(si);
        }    
       else if (nm.equals("loco") || nm.equals("consist")) {

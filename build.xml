@@ -4,7 +4,7 @@
 
    <available file="./build.properties" type='file' property='setup.done' />
    <path id='setuppath'>
-      <pathelement location='../..' />
+      <pathelement location='..' />
    </path>
    <path id='shorepath'>
       <pathelement location='.' />
@@ -13,16 +13,19 @@
    <property name='shorefile' refid='shorepath' />
    <property name='PRO' value='${setupfile}' />
    <property name='SHORE' value='${shorefile}' />
-   <property name='JAVAFX' value='/usr/share/openjfx/lib' />
+   <property name='JAVAFX' value='${PRO}/javafx/lib' />
+   <property name='OPENCV' value='/usr/share/java' />
 
    <target name='setup' unless='setup.done'>
       <echo file='./build.properties' message="PRO=${setupfile}${line.separator}" />
       <echo file='./build.properties' message='SHORE=${shorefile}${line.separator}' append='true' />
-      <echo file='./build.properties' message='JAVAFX=/usr/share/openjfx/lib${line.separator}' append='true' />
+      <echo file='./build.properties' message='JAVAFX=${PRO}/javafx/lib${line.separator}' append='true' />
+      <echo file='./build.properties' message='OPENCV=${OPENCV}${line.separator}' append='true' />
       <mkdir dir='./java/edu/brown/cs/shore' />
       <property name='PRO' value='${setupfile}' />
       <property name='SHORE' value='${shorefile}' />
-      <property name='JAVAFX' value='/usr/share/openjfx/lib' />
+      <property name='JAVAFX' value='${PRO}/javafx/lib' />
+      <property name='OPENCV' value='/usr/share/java' />
    </target>
 
 
@@ -42,8 +45,7 @@
      <fileset dir='${SHORELIB}' includes='googleapi.jar' />
      <fileset dir='${SHORELIB}' includes='karma.jar' />
      <fileset dir='${SHORELIB}' includes='jmdns.jar' />
-     <fileset dir='/usr/share/java/' includes='opencv.jar' />
-     <fileset dir='/usr/share/java/' includes='opencv.jar' />
+     <fileset dir='${OPENCV}' includes='opencv.jar' />
      <fileset dir='${JAVAFX}' includes='javafx.*.jar' />
   </path>
 

@@ -113,7 +113,7 @@ private void process()
    // set up vision module here
    // set up user interface module here
    // set up control module here
-   ShoreLog.logD("SHORE","ALL MOUDLES SET UP: " + safety_base);
+   ShoreLog.logD("SHORE","ALL MODULES SET UP: " + safety_base);
    
    network_monitor.start(); 
    view_base.startDisplay(); 

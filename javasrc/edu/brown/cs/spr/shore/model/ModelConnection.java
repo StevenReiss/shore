@@ -223,6 +223,10 @@ private void followPath(ModelBase mdl,ModelPoint pt,Set<ModelPoint> done)
             return;
          case SWITCH :
             ModelSwitch sw = mdl.findSwitchForPoint(pt);
+            if (sw == null) {
+               mdl.noteError("No switch for point " + pt);
+               return;
+            }
             if (b0 == from_block && from_switch == null) {
                from_switch = sw;
                if (done.contains(sw.getNPoint())) {
