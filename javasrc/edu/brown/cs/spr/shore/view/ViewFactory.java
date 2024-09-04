@@ -1,34 +1,34 @@
 /********************************************************************************/
-/*                                                                              */
-/*              ViewFactory.java                                                */
-/*                                                                              */
-/*      Main access point for the user interface for SHORE                      */
-/*                                                                              */
+/*										*/
+/*		ViewFactory.java						*/
+/*										*/
+/*	Main access point for the user interface for SHORE			*/
+/*										*/
 /********************************************************************************/
-/*      Copyright 2023 Brown University -- Steven P. Reiss                    */
+/*	Copyright 2023 Brown University -- Steven P. Reiss		      */
 /*********************************************************************************
- *  Copyright 2023, Brown University, Providence, RI.                            *
- *                                                                               *
- *                        All Rights Reserved                                    *
- *                                                                               *
- *  Permission to use, copy, modify, and distribute this software and its        *
- *  documentation for any purpose other than its incorporation into a            *
- *  commercial product is hereby granted without fee, provided that the          *
- *  above copyright notice appear in all copies and that both that               *
- *  copyright notice and this permission notice appear in supporting             *
- *  documentation, and that the name of Brown University not be used in          *
- *  advertising or publicity pertaining to distribution of the software          *
- *  without specific, written prior permission.                                  *
- *                                                                               *
- *  BROWN UNIVERSITY DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS                *
- *  SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND            *
- *  FITNESS FOR ANY PARTICULAR PURPOSE.  IN NO EVENT SHALL BROWN UNIVERSITY      *
- *  BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY          *
- *  DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,              *
- *  WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS               *
- *  ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE          *
- *  OF THIS SOFTWARE.                                                            *
- *                                                                               *
+ *  Copyright 2023, Brown University, Providence, RI.				 *
+ *										 *
+ *			  All Rights Reserved					 *
+ *										 *
+ *  Permission to use, copy, modify, and distribute this software and its	 *
+ *  documentation for any purpose other than its incorporation into a		 *
+ *  commercial product is hereby granted without fee, provided that the 	 *
+ *  above copyright notice appear in all copies and that both that		 *
+ *  copyright notice and this permission notice appear in supporting		 *
+ *  documentation, and that the name of Brown University not be used in 	 *
+ *  advertising or publicity pertaining to distribution of the software 	 *
+ *  without specific, written prior permission. 				 *
+ *										 *
+ *  BROWN UNIVERSITY DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS		 *
+ *  SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND		 *
+ *  FITNESS FOR ANY PARTICULAR PURPOSE.  IN NO EVENT SHALL BROWN UNIVERSITY	 *
+ *  BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY 	 *
+ *  DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,		 *
+ *  WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS		 *
+ *  ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE 	 *
+ *  OF THIS SOFTWARE.								 *
+ *										 *
  ********************************************************************************/
 
 
@@ -43,24 +43,24 @@ public class ViewFactory implements ViewConstants
 
 
 /********************************************************************************/
-/*                                                                              */
-/*      Private Storage                                                         */
-/*                                                                              */
+/*										*/
+/*	Private Storage 							*/
+/*										*/
 /********************************************************************************/
 
-private IfaceModel      layout_model;
-private IfaceTrains     train_model;
+private IfaceModel	layout_model;
+private IfaceTrains	train_model;
 
 
 
 /********************************************************************************/
-/*                                                                              */
-/*      Constructors                                                            */
-/*                                                                              */
+/*										*/
+/*	Constructors								*/
+/*										*/
 /********************************************************************************/
 
 public ViewFactory(IfaceModel mdl,IfaceTrains trns)
-{ 
+{
    layout_model = mdl;
    train_model = trns;
 }
@@ -69,22 +69,22 @@ public ViewFactory(IfaceModel mdl,IfaceTrains trns)
 
 
 /********************************************************************************/
-/*                                                                              */
-/*      Access methods                                                          */
-/*                                                                              */
+/*										*/
+/*	Access methods								*/
+/*										*/
 /********************************************************************************/
 
-IfaceModel getLayoutModel()                     { return layout_model; }
+IfaceModel getLayoutModel()			{ return layout_model; }
 
 
-IfaceTrains getTrainModel()                     { return train_model; }
+IfaceTrains getTrainModel()			{ return train_model; }
 
 
 
 /********************************************************************************/
-/*                                                                              */
-/*      Processing methods                                                      */
-/*                                                                              */
+/*										*/
+/*	Processing methods							*/
+/*										*/
 /********************************************************************************/
 
 public void startDisplay()
@@ -96,27 +96,26 @@ public void startDisplay()
 
 
 /********************************************************************************/
-/*                                                                              */
-/*      JavaFx starter                                                          */
-/*                                                                              */
+/*										*/
+/*	JavaFx starter								*/
+/*										*/
 /********************************************************************************/
 
 private class JavaFxStarter extends Thread {
-   
+
    JavaFxStarter() {
       super("JavaFxStarter");
     }
-   
+
    @Override public void run() {
       ViewDisplayFx.setupFx(ViewFactory.this);
     }
 }
 
 
-}       // end of class ViewFactory
+}	// end of class ViewFactory
 
 
 
 
 /* end of ViewFactory.java */
-
