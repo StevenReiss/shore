@@ -44,7 +44,6 @@ import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Enumeration;
 import java.util.Map;
@@ -156,15 +155,15 @@ public NetworkMonitor(IfaceModel model)
       our_socket.setSendBufferSize(BUFFER_SIZE);
       our_socket.setSoTimeout(0);
       InetAddress mcastaddr = InetAddress.getByName("239.1.2.3");
-      multi_group = new InetSocketAddress(mcastaddr,6879);
+      multi_group = null;               // Don't try to multicast for now
+//    multi_group = new InetSocketAddress(mcastaddr,6879);
       multi_socket = new MulticastSocket(6879);
       multi_socket.joinGroup(new InetSocketAddress(mcastaddr,0),netif);
     }
    catch (IOException e) {
-      ShoreLog.logE("NETWORK","Can't create Datagram Socket: " + e);
-      System.err.println("Problem with multicast connection: " + e);
-      multi_group = null;
-//    System.exit(1);
+      ShoreLog.logE("NETWORK","Can't create Datagram Socket",e);
+      System.err.println("Problem with network connection: " + e);
+      System.exit(1);
     }
    
    try {
@@ -382,20 +381,23 @@ public void sendMessage(SocketAddress who,byte [] msg,int off,int len)
          try {
             DatagramPacket dp = new DatagramPacket(msg,len,multi_group);
             multi_socket.send(dp);
-            ShoreLog.logD("NETWORK","MULTI SEND");
+            ShoreLog.logD("NETWORK","MULTI SEND " + len);
+            return;
           }
          catch (IOException e) {
             ShoreLog.logE("NETWORK","Problem with multicast: ",e);
           }
        }
-      else {
-         for (ControllerInfo ci : controller_map.values()) {
-            sendMessage(ci.getSocketAddress(),msg,off,len);
-          }
+      for (ControllerInfo ci : controller_map.values()) {
+         sendMessage(ci.getSocketAddress(),msg,off,len);
        }
       return;
     }
+   
+   String msgtxt = decodeMessage(msg,off,len);
+   ShoreLog.logD("NETWORK","Send " + msgtxt + " >> " + who);
 
+   
    DatagramPacket packet = new DatagramPacket(msg,off,len,who);
    try {
       our_socket.send(packet);
@@ -462,24 +464,29 @@ private <T extends Enum<T>> T getState(int v,T dflt)
    return dflt;
 }
 
+static String decodeMessage(byte [] msg,int off,int len)
+{
+   StringBuffer buf = new StringBuffer();
+   for (int i = 0; i <len; ++i) {
+      int v = msg[off+i];
+      String vs = Integer.toHexString(v);
+      if (vs.length() == 1) vs = "0" + vs;
+      buf.append(vs);
+      buf.append(" ");
+    }
+   return buf.toString();
+}
+
 
 private class NotificationHandler implements MessageHandler {
 
    @Override public void handleMessage(DatagramPacket msg) {
-      StringBuffer buf = new StringBuffer();
-      byte [] data = msg.getData();
-      for (int i = 0; i < msg.getLength(); ++i) {
-         int v = data[i + msg.getOffset()];
-         String vs = Integer.toHexString(v);
-         if (vs.length() == 1) vs = "0" + vs;
-         buf.append(vs);
-         buf.append(" ");
-       }
-   
+      String msgtxt = decodeMessage(msg.getData(),msg.getOffset(),msg.getLength());
       ShoreLog.logD("NETWORK","Received from " + msg.getAddress() + " " +
             msg.getPort() + " " + msg.getLength() + " " + msg.getOffset() + ": " +
-            buf.toString());
-   
+            msgtxt);
+      
+      byte [] data = msg.getData();
       int id = data[1];                         // controller id
       int which = data[2];                      // switch, signal, sensor id
       int value = data[3];                      // switch, signal, sensor value
@@ -502,6 +509,7 @@ private class NotificationHandler implements MessageHandler {
          case CONTROL_SENSOR :
             if (layout_model != null) {
                IfaceSensor s = findSensor(id,which);
+               if (s == null) break;
                ShoreSensorState sst = getState(value,ShoreSensorState.UNKNOWN); 
                s.setSensorState(sst);
              }
@@ -509,6 +517,7 @@ private class NotificationHandler implements MessageHandler {
          case CONTROL_SWITCH :
             if (layout_model != null) {
                IfaceSwitch s = findSwitch(id,which);
+               if (s == null) break;
                ShoreSwitchState sst = getState(value,ShoreSwitchState.UNKNOWN);
                s.setSwitch(sst);
              }
@@ -516,6 +525,7 @@ private class NotificationHandler implements MessageHandler {
          case CONTROL_SIGNAL :
             if (layout_model != null) {
                IfaceSignal s = findSignal(id,which);
+               if (s == null) break;
                ShoreSignalState sst = getState(value,ShoreSignalState.OFF);
                s.setSignalState(sst);
              }
@@ -614,6 +624,7 @@ private SocketAddress getServiceSocket(ServiceInfo si,Map<?,?> known)
 
 private ControllerInfo setupController(SocketAddress sa)
 {
+   ShoreLog.logD("NETWORK","Setup controller " + sa);
    if (sa == null) return null;
    ControllerInfo ci = controller_map.get(sa);
    if (ci == null) {
@@ -655,25 +666,28 @@ private EngineInfo setupEngine(SocketAddress sa)
 
 private String getMacAddress(SocketAddress sa)
 {
-   if (sa instanceof InetSocketAddress) {
-      InetSocketAddress inet = (InetSocketAddress) sa;
-      InetAddress iadd = inet.getAddress();
-      try {
-         NetworkInterface ni = NetworkInterface.getByInetAddress(iadd);
-         if (ni == null) return null;
-         byte [] mac = ni.getHardwareAddress();
-         StringBuffer buf = new StringBuffer();
-         for (int i = 0; i < mac.length; ++i) {
-            if (i > 0) buf.append("-");
-            int v = mac[i] & 0xff;
-            String s = Integer.toString(v,16);
-            if (s.length() == 1) buf.append("0");
-            buf.append(s);
-          }
-         return buf.toString();
-       }
-      catch (SocketException e) {}
-    }
+   // this code doesn't work. Need to use arp <address> which is not reliable'
+// if (sa instanceof InetSocketAddress) {
+//    InetSocketAddress inet = (InetSocketAddress) sa;
+//    InetAddress iadd = inet.getAddress();
+//    try {
+//       NetworkInterface ni = NetworkInterface.getByInetAddress(iadd);
+//       if (ni == null) return null;
+//       byte [] mac = ni.getHardwareAddress();
+//       StringBuffer buf = new StringBuffer();
+//       for (int i = 0; i < mac.length; ++i) {
+//          if (i > 0) buf.append("-");
+//          int v = mac[i] & 0xff;
+//          String s = Integer.toString(v,16);
+//          if (s.length() == 1) buf.append("0");
+//          buf.append(s);
+//        }
+//       return buf.toString();
+//     }
+//    catch (Throwable e) {
+//       ShoreLog.logD("NETWORK","Problem getting mac access: " + e);
+//     }
+//  }
    
    return null;
 }
@@ -798,20 +812,20 @@ public class ServiceFinder implements ServiceListener, ServiceTypeListener {
     }
 
    @Override public void serviceAdded(ServiceEvent event) {
-      ShoreLog.logI("NETWORK","Service added: " + finder_id + "> " + event.getInfo());
-      broadcastInfo();
+      ShoreLog.logI("NETWORK","Service added: " + finder_id + "> " + event.getInfo().getName());
+//    broadcastInfo();
     }
 
    @Override public void serviceRemoved(ServiceEvent event) {
-      ShoreLog.logI("NETWORK","Service removed: " + finder_id + "> " + event.getInfo());
+      ShoreLog.logI("NETWORK","Service removed: " + finder_id + event.getInfo().getName());
     }
 
    @Override public void serviceResolved(ServiceEvent event) {
-      ShoreLog.logI("NETWORK","Service resolved: " + event.getInfo());
+      ShoreLog.logI("NETWORK","Service resolved: " + finder_id + "> " + event.getInfo());
       ServiceInfo si = event.getInfo();
       String nm = si.getName();
       if (nm.startsWith("controller") || nm.startsWith("tower")) {
-         ShoreLog.logD("NETWORK","Found controller: " + finder_id);
+         ShoreLog.logD("NETWORK","Found controller: " + finder_id + "> " + nm);
          setupController(si);
        }    
       else if (nm.equals("loco") || nm.equals("consist")) {

@@ -53,7 +53,7 @@ import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 
 
-class ViewDisplayFx extends Application implements ViewConstants
+public class ViewDisplayFx extends Application implements ViewConstants
 {
 
 
@@ -67,7 +67,12 @@ class ViewDisplayFx extends Application implements ViewConstants
 static void setupFx(ViewFactory fac)
 {
    view_factory = fac;
-   launch();
+   try {
+      launch();
+    }
+   catch (Throwable t) {
+      ShoreLog.logE("VIEW","Problem creating fx",t);
+    }
 }
 
 

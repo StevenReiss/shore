@@ -108,7 +108,7 @@ private void process()
    network_monitor = new NetworkMonitor(model_base);
    train_base = new TrainFactory(network_monitor,model_base);
    safety_base = new SafetyFactory(network_monitor,model_base,train_base); 
-   view_base = new ViewFactory(model_base,train_base);
+   view_base = new ViewFactory(safety_base,model_base,train_base); 
   
    // set up vision module here
    // set up user interface module here

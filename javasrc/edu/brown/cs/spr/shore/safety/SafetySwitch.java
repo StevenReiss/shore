@@ -43,6 +43,7 @@ import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
+
 class SafetySwitch implements SafetyConstants
 {
 
@@ -81,7 +82,30 @@ SafetySwitch(SafetyFactory sf)
 
 /********************************************************************************/
 /*                                                                              */
-/*      Handle sensor changed                                                        */
+/*     Request change                                                           */
+/*                                                                              */
+/********************************************************************************/
+
+boolean safelySetSwitch(IfaceSwitch sw,ShoreSwitchState ss)
+{
+   if (sw.getSwitchState() == ss) return true;
+   
+   IfaceSensor ns = sw.getNSensor();
+   IfaceSensor rs = sw.getRSensor();
+   
+   if (ns.getSensorState() == ShoreSensorState.ON) return false;
+   if (rs.getSensorState() == ShoreSensorState.ON) return false;
+   
+   triggerSwitch(sw,null,ss);
+   
+   return false;
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Handle sensor changed                                                   */
 /*                                                                              */
 /********************************************************************************/
 
@@ -134,11 +158,11 @@ private class SwitchData {
       
       switch (current_mode) {
          case NORMAL :
-            if (sen != ShoreSensorState.ON) return;
+            if (sen != null && sen != ShoreSensorState.ON) return;
             doTrigger(state);
             break;
          case SET :
-            if (sen == ShoreSensorState.ON) {
+            if (sen == null || sen == ShoreSensorState.ON) {
                if (last_state == state) return;
                doTrigger(state);
              }
@@ -149,7 +173,7 @@ private class SwitchData {
              }
             break;
          case DONE :
-            if (sen == ShoreSensorState.ON) {
+            if (sen == null || sen == ShoreSensorState.ON) {
                if (last_state == state) return;
                doTrigger(state);
              }

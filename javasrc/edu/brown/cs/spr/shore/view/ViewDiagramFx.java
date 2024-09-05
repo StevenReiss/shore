@@ -91,6 +91,7 @@ class ViewDiagramFx extends Pane implements ViewConstants
 /*                                                                              */
 /********************************************************************************/
 
+private ViewFactory view_factory;
 private IfaceDiagram for_diagram;
 private Rectangle2D display_bounds;
 private boolean invert_y;
@@ -122,7 +123,8 @@ private static final Color SWITCH_LABEL_COLOR = Color.BLACK;
 private static final Color SIGNAL_BACKGROUND = Color.WHITE;
 private static final Color SIGNAL_OFF = Color.LIGHTGRAY;
 private static final Color SIGNAL_STROKE = Color.BLACK;
-private static final Color SENSOR_OFF_COLOR = Color.LIGHTGRAY;
+private static final Color SENSOR_UNKNOWN_COLOR = Color.LIGHTGRAY;
+private static final Color SENSOR_OFF_COLOR = Color.LIGHTGREEN;
 private static final Color SENSOR_ON_COLOR = Color.RED;
 private static final Color BLOCK_BACKGROUD_COLOR = Color.BLACK;
 private static final Color BLOCK_BACKGROUD_INUSE_COLOR = Color.RED;
@@ -154,6 +156,7 @@ static {
 
 ViewDiagramFx(ViewFactory fac,IfaceDiagram dgm)
 {
+   view_factory = fac;
    for_diagram = dgm;
    invert_y = false;
    double minx = Integer.MAX_VALUE;
@@ -495,7 +498,7 @@ private class SwitchDrawData {
 
 
 
-private static class SwitchHandler implements EventHandler<MouseEvent> {
+private class SwitchHandler implements EventHandler<MouseEvent> {
   
    private IfaceSwitch for_switch;
    
@@ -506,14 +509,18 @@ private static class SwitchHandler implements EventHandler<MouseEvent> {
    @Override public void handle(MouseEvent evt) { 
       ShoreSwitchState ss = for_switch.getSwitchState();
       if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
+         ShoreSwitchState nss = ShoreSwitchState.UNKNOWN;
          switch (ss) {
             case UNKNOWN :
             case R :
-               for_switch.setSwitch(ShoreSwitchState.N);
+               nss = ShoreSwitchState.N;
                break;
             case N :
-               for_switch.setSwitch(ShoreSwitchState.R);
+               nss = ShoreSwitchState.R;
                break;
+          }
+         if (nss != ShoreSwitchState.UNKNOWN) { 
+            view_factory.getSafetyModel().setSwitch(for_switch,nss); 
           }
        }
     }
@@ -639,7 +646,7 @@ private class SignalDrawData {
 
 
 
-private static class SignalHandler implements EventHandler<MouseEvent> {
+private class SignalHandler implements EventHandler<MouseEvent> {
    
    private IfaceSignal for_signal;
    
@@ -671,7 +678,7 @@ private static class SignalHandler implements EventHandler<MouseEvent> {
                 }
                break; 
           }
-         for_signal.setSignalState(next);
+         view_factory.getSafetyModel().setSignal(for_signal,next);
        }
     }
    
@@ -728,10 +735,13 @@ private static class SensorDrawData {
    
    void doSetSensor() {
       ShoreSensorState st = for_sensor.getSensorState();
-      Color fill = SENSOR_OFF_COLOR;
+      Color fill = SENSOR_UNKNOWN_COLOR;
       switch (st) {
          case ON :
             fill = SENSOR_ON_COLOR;
+            break;
+         case OFF :
+            fill = SENSOR_OFF_COLOR;
             break;
        }
       sensor_node.setFill(fill);

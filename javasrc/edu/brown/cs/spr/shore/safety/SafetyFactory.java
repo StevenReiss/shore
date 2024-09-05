@@ -42,15 +42,17 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import edu.brown.cs.spr.shore.iface.IfaceNetwork;
+import edu.brown.cs.spr.shore.iface.IfaceSafety;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
+import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
 import edu.brown.cs.spr.shore.iface.IfaceModel.ModelCallback;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
-public class SafetyFactory implements SafetyConstants
+public class SafetyFactory implements IfaceSafety, SafetyConstants
 {
 
 
@@ -116,6 +118,22 @@ void schedule(TimerTask task,long delay)
 }
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      Safely Set Switches, Signals, etc.                                      */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public boolean setSwitch(IfaceSwitch sw,ShoreSwitchState state)
+{
+   return safety_switch.safelySetSwitch(sw,state);  
+}
+
+
+@Override public boolean setSignal(IfaceSignal ss,ShoreSignalState state)
+{
+   return safety_signal.safelySetSignal(ss,state);
+}
 
 /********************************************************************************/
 /*                                                                              */

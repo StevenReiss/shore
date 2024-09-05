@@ -78,6 +78,34 @@ SafetySignal(SafetyFactory sf)
 
 /********************************************************************************/
 /*                                                                              */
+/*      Let user set signal if it is safe                                       */
+/*                                                                              */
+/********************************************************************************/
+
+boolean safelySetSignal(IfaceSignal ss,ShoreSignalState state)
+{
+   
+   if (state == ShoreSignalState.GREEN || state == ShoreSignalState.YELLOW) {
+      IfaceBlock frm = ss.getFromBlock();
+      for (IfaceConnection cc : ss.getConnections()) {
+         IfaceBlock blk = cc.getOtherBlock(frm);
+         switch (blk.getBlockState()) {
+            case EMPTY :
+            case UNKNOWN :
+               break;
+            case PENDING :
+            case INUSE :
+               return false;
+          }
+       }
+    }
+   
+   safety_factory.getNetworkModel().setSignal(ss,state);
+   return true;
+}
+
+/********************************************************************************/
+/*                                                                              */
 /*      Change Entry Points                                                     */
 /*                                                                              */
 /********************************************************************************/

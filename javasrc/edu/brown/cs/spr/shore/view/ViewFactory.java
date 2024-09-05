@@ -36,6 +36,7 @@
 package edu.brown.cs.spr.shore.view;
 
 import edu.brown.cs.spr.shore.iface.IfaceModel;
+import edu.brown.cs.spr.shore.iface.IfaceSafety;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
 
 public class ViewFactory implements ViewConstants
@@ -50,6 +51,7 @@ public class ViewFactory implements ViewConstants
 
 private IfaceModel	layout_model;
 private IfaceTrains	train_model;
+private IfaceSafety     safety_model;
 
 
 
@@ -59,8 +61,9 @@ private IfaceTrains	train_model;
 /*										*/
 /********************************************************************************/
 
-public ViewFactory(IfaceModel mdl,IfaceTrains trns)
+public ViewFactory(IfaceSafety safe,IfaceModel mdl,IfaceTrains trns)
 {
+   safety_model = safe;
    layout_model = mdl;
    train_model = trns;
 }
@@ -78,6 +81,9 @@ IfaceModel getLayoutModel()			{ return layout_model; }
 
 
 IfaceTrains getTrainModel()			{ return train_model; }
+
+
+IfaceSafety getSafetyModel()                    { return safety_model; }
 
 
 
