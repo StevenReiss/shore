@@ -520,7 +520,7 @@ private class SwitchHandler implements EventHandler<MouseEvent> {
                break;
           }
          if (nss != ShoreSwitchState.UNKNOWN) { 
-            view_factory.getSafetyModel().setSwitch(for_switch,nss); 
+            view_factory.getSafetyModel().setSwitch(for_switch,nss);  
           }
        }
     }

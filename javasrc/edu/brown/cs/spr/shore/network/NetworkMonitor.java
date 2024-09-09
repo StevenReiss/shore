@@ -628,6 +628,7 @@ private ControllerInfo setupController(SocketAddress sa)
    if (sa == null) return null;
    ControllerInfo ci = controller_map.get(sa);
    if (ci == null) {
+      ShoreLog.logD("NETWORK","New Controller " + sa);
       ci = new ControllerInfo(sa);
       ControllerInfo nci = controller_map.putIfAbsent(sa,ci);
       if (nci != null) ci = nci;

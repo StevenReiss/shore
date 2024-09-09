@@ -117,6 +117,7 @@ void handleSensorChange(IfaceSensor s)
       blk.setBlockState(ShoreBlockState.INUSE);
       checkPendingBlocks(blk);
     }
+   else if (bd == null) ;
    else if (s.getSensorState() == ShoreSensorState.ON) {
       if (bd.noteSensor(s)) {
          for (IfaceConnection conn : blk.getConnections()) {
