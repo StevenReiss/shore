@@ -59,6 +59,7 @@ private String switch_id;
 private ShoreSwitchState switch_state;
 private byte tower_id;
 private byte tower_index;
+private byte tower_rindex;
 private ModelPoint pivot_point;
 private ModelPoint n_point;
 private ModelPoint r_point;
@@ -67,6 +68,7 @@ private ModelSensor n_sensor;
 private ModelSensor r_sensor;
 private String associated_name;
 private ModelSwitch associated_switch;
+
 
 
 
@@ -85,6 +87,7 @@ ModelSwitch(ModelBase model,Element xml)
    r_point = model.getPointById(IvyXml.getAttrString(xml,"R"));
    tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
    tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
+   tower_rindex = (byte) IvyXml.getAttrInt(xml,"RINDEX",-1);
    associated_name = IvyXml.getAttrString(xml,"ASSOCIATE");
    switch_state = ShoreSwitchState.UNKNOWN;
    associated_switch = null;
@@ -158,6 +161,7 @@ ModelSwitch getAssociatedSwitch()
 @Override public byte getTowerId()              { return tower_id; }
 
 @Override public byte getTowerSwitch()          { return tower_index; }
+@Override public byte getTowerRSwitch()         { return tower_rindex; } 
 
 
 

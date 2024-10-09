@@ -234,7 +234,12 @@ public void setSwitch(IfaceSwitch sw,ShoreSwitchState set)
    ControllerInfo ci = id_map.get(id);
    if (ci == null) return;
    sw.setSwitch(set);
-   ci.sendSwitchMessage(sw.getTowerSwitch(),set);
+   if (set == ShoreSwitchState.R && sw.getTowerRSwitch() >= 0) {
+      ci.sendSwitchMessage(sw.getTowerRSwitch(),ShoreSwitchState.N);
+    }
+   else {
+      ci.sendSwitchMessage(sw.getTowerSwitch(),set);
+    }
 }
  
 
@@ -275,6 +280,10 @@ public void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,ShoreSwitchState set)
    int s = 64;
    if (sw != null) {
       s = sw.getTowerSwitch() * 4 + set.ordinal();
+      int idx1 = sw.getTowerRSwitch();
+      if (set == ShoreSwitchState.R && idx1 >= 0) {
+         s = idx1 * 4 + ShoreSwitchState.N.ordinal();
+       }
     }
    ci.sendDefSensorMessage(sen.getTowerSensor(),s);
 }
@@ -428,6 +437,7 @@ private IfaceSwitch findSwitch(int tower,int id)
 {
    for (IfaceSwitch ms : layout_model.getSwitches()) {
       if (ms.getTowerId() == tower && ms.getTowerSwitch() == id) return ms;
+      else if (ms.getTowerId() == tower && ms.getTowerRSwitch() == id) return ms;
     }
    return null;
 }

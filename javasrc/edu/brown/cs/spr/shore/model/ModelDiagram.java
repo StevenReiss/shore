@@ -204,7 +204,7 @@ void loadDiagram(ModelBase mdl,Element xml)
             if (prev != null) prev.connectTo(pn); 
             prev = pn;
           }
-       }
+       } 
     }
    
    for (Element blkxml : IvyXml.children(xml,"BLOCK")) {

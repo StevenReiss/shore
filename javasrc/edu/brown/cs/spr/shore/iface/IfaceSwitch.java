@@ -96,6 +96,14 @@ byte getTowerId();
 byte getTowerSwitch();
 
 
+/**
+ *      Return the index for R-set of the switch.  If this is negative, then use TowerSwitch
+ *      and the setting SWITCH_R.  If this is >= 0, then use this index and SWITCH_N.  This is
+ *      needed to take care of boards that can't handle R settings.
+ **/
+byte getTowerRSwitch();
+
+
 }       // end of interface IfaceSwitch
 
 

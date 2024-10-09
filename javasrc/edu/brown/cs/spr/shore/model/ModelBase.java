@@ -831,6 +831,13 @@ private void checkModel() throws ShoreException
             noteError("Switch tower conflict for " + sw.getId());
           }
        }
+      int idx1 = sw.getTowerRSwitch();
+      if (idx1 >= 0) {
+         idx1 += sw.getTowerId() * 1024;
+         if (!done.add(idx)) {
+            noteError("Switch tower conflict for " + sw.getId());
+          }
+       }
       if (sw.getNSensor() == null) {
          noteError("No N sensor for switch " + sw.getId());
        }
