@@ -154,11 +154,12 @@ public NetworkMonitor(IfaceModel model)
       our_socket.setReuseAddress(true);
       our_socket.setSendBufferSize(BUFFER_SIZE);
       our_socket.setSoTimeout(0);
-      InetAddress mcastaddr = InetAddress.getByName("239.1.2.3");
       multi_group = null;               // Don't try to multicast for now
+      multi_socket = null;
+//    InetAddress mcastaddr = InetAddress.getByName("239.1.2.3");
 //    multi_group = new InetSocketAddress(mcastaddr,6879);
-      multi_socket = new MulticastSocket(6879);
-      multi_socket.joinGroup(new InetSocketAddress(mcastaddr,0),netif);
+//    multi_socket = new MulticastSocket(6879);
+//    multi_socket.joinGroup(new InetSocketAddress(mcastaddr,0),netif);
     }
    catch (IOException e) {
       ShoreLog.logE("NETWORK","Can't create Datagram Socket",e);
