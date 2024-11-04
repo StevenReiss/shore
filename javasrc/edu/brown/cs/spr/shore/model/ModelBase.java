@@ -834,7 +834,7 @@ private void checkModel() throws ShoreException
       int idx1 = sw.getTowerRSwitch();
       if (idx1 >= 0) {
          idx1 += sw.getTowerId() * 1024;
-         if (!done.add(idx)) {
+         if (!done.add(idx1)) {
             noteError("Switch tower conflict for " + sw.getId());
           }
        }
