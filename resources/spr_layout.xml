@@ -86,7 +86,7 @@
      <POINT ID='R6' X='155' Y='4' TYPE='TURNING' />
      <POINT ID='R7' X='156' Y='4' TYPE='SENSOR' REF='128B' />
      <POINT ID='R8' X='161' Y='4' TYPE='GAP' />
-     <POINT ID='R9' X='155' Y='4' TYPE='SENSOR' REF='128A' />
+     <POINT ID='R9' X='166' Y='4' TYPE='SENSOR' REF='128A' />
      <!-- SPUR at 5 -->
      <POINT ID='S1' X='192' Y='43' TYPE='SENSOR' REF='125' />
      <POINT ID='S2' X='207' Y='32' TYPE='END' REF='152' />
