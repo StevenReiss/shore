@@ -195,8 +195,7 @@ public NetworkMonitor(IfaceModel model)
       ShoreLog.logE("NETWORK","Problem registering service",e);
     }
    
-   ShoreLog.logD("NETWORK","Monitor setup  " + our_socket.getLocalAddress() +
-         " " + multi_socket.getLocalAddress());
+   ShoreLog.logD("NETWORK","Monitor setup  " + our_socket.getLocalAddress());
 }
 
 
@@ -211,8 +210,10 @@ public void start()
 {
    ReaderThread rt = new ReaderThread(our_socket,new NotificationHandler());
    rt.start();
-   ReaderThread rt1 = new ReaderThread(multi_socket,new NotificationHandler());
-   rt1.start();
+   if (multi_socket != null) {
+      ReaderThread rt1 = new ReaderThread(multi_socket,new NotificationHandler());
+      rt1.start();
+    }
    
    broadcastInfo();
    
@@ -387,7 +388,7 @@ public void sendMessage(SocketAddress who,byte [] msg,int off,int len)
    if (our_socket == null) return;
    
    if (who == null) {
-      if (multi_group != null) {
+      if (multi_group != null && multi_socket != null) {
          try {
             DatagramPacket dp = new DatagramPacket(msg,len,multi_group);
             multi_socket.send(dp);
@@ -516,6 +517,9 @@ private class NotificationHandler implements MessageHandler {
       switch (data[0]) {
          case CONTROL_ID :
             ci.setId(id);
+            if (which == 1) {                   // first heartbeat
+               ci.sendSyncMessage();
+             }
             break;
          case CONTROL_SENSOR :
             if (layout_model != null) {
@@ -635,15 +639,16 @@ private SocketAddress getServiceSocket(ServiceInfo si,Map<?,?> known)
 
 private ControllerInfo setupController(SocketAddress sa)
 {
-   ShoreLog.logD("NETWORK","Setup controller " + sa);
    if (sa == null) return null;
    ControllerInfo ci = controller_map.get(sa);
    if (ci == null) {
-      ShoreLog.logD("NETWORK","New Controller " + sa);
       ci = new ControllerInfo(sa);
       ControllerInfo nci = controller_map.putIfAbsent(sa,ci);
       if (nci != null) ci = nci;
-      else ci.sendSyncMessage();
+      else { 
+         ShoreLog.logD("NETWORK","New Controller " + sa);
+         ci.sendSyncMessage();
+       }
     }
    
    return ci;
@@ -730,7 +735,7 @@ private class ControllerInfo {
    void sendEndSync() {
       byte msg [] = { CONTROL_HEARTBEAT, controller_id, 1, 0 };
       sendMessage(net_address,msg,0,4);
-      sendSyncMessage();
+   // sendSyncMessage();
       sendSetupMessages(controller_id);
     }
    

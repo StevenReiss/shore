@@ -865,9 +865,46 @@ private class BlockDrawData {
       label_shape.setFill(lcolor);
       label_shape.setStroke(lcolor);
       background_shape.setFill(bcolor);
+      BlockHandler hdlr = new BlockHandler(for_block);
+      label_shape.setOnMouseClicked(hdlr);
+      background_shape.setOnMouseClicked(hdlr);
     }
    
 }       // end of inner class BlockDrawData
+
+
+
+
+private static class BlockHandler implements EventHandler<MouseEvent> {
+
+   private IfaceBlock for_block;
+   
+   BlockHandler(IfaceBlock blk) {
+      for_block = blk;
+    }
+   
+   @Override public void handle(MouseEvent evt) {
+      if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
+         ShoreBlockState st = for_block.getBlockState();
+         ShoreBlockState next = ShoreBlockState.UNKNOWN;
+         switch (st) {
+            case UNKNOWN :
+               next = ShoreBlockState.EMPTY;
+               break;
+            case EMPTY :
+               next = ShoreBlockState.PENDING;
+               break;
+            case PENDING :
+               next = ShoreBlockState.INUSE;
+               break;
+            case INUSE :
+               next = ShoreBlockState.EMPTY;
+               break;
+          }
+         for_block.setBlockState(next);
+       }
+    }
+}       // end of inner class BlockHandler
 
 
 
