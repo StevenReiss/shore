@@ -534,6 +534,7 @@ private class NotificationHandler implements MessageHandler {
                IfaceSwitch s = findSwitch(id,which);
                if (s == null) break;
                ShoreSwitchState sst = getState(value,ShoreSwitchState.UNKNOWN);
+               if (s.getTowerRSwitch() == which) sst = ShoreSwitchState.R;
                s.setSwitch(sst);
              }
             break;
