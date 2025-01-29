@@ -62,6 +62,7 @@ private String block_id;
 private ModelPoint at_point;
 private ShoreBlockState block_state;
 private ModelBlock pending_from;
+private ModelBlock next_pending;
 private Set<ModelConnection> block_connects;
 
 
@@ -84,6 +85,7 @@ ModelBlock(ModelBase model,Element xml)
    block_state = ShoreBlockState.UNKNOWN;
    block_connects = new HashSet<>();
    pending_from = null;
+   next_pending = null;
 } 
 
 
@@ -103,6 +105,8 @@ ModelBlock(ModelBase model,Element xml)
     
    return pending_from;
 }
+@Override public ModelBlock getNextPending()    { return next_pending; }
+
 
 @Override public void setBlockState(ShoreBlockState st)
 {
@@ -115,13 +119,61 @@ ModelBlock(ModelBase model,Element xml)
 
 @Override public boolean setPendingFrom(IfaceBlock blk)  
 {
+   if (blk == null) {
+      setBlockState(ShoreBlockState.EMPTY);
+      return true;
+    }
+   
    if (block_state != ShoreBlockState.EMPTY &&
          block_state != ShoreBlockState.UNKNOWN) return false;
+   if (!checkNextPending(blk)) return false;
+   
    pending_from = (ModelBlock) blk;
    setBlockState(ShoreBlockState.PENDING);
+  
    return true;
 }
 
+@Override public void setNextPending(IfaceBlock blk)
+{
+   if (next_pending != blk) checkNextPending(blk);
+   next_pending = (ModelBlock) blk;
+}
+
+
+private boolean checkNextPending(IfaceBlock from)
+{
+   boolean rslt = true;
+   
+   if (from == null) {
+      for (IfaceConnection conn : getConnections()) {
+         IfaceBlock b1 = conn.getOtherBlock(this);
+         if (b1.getNextPending() == this) {
+            b1.setNextPending(null);
+          }
+       }
+    }
+   else {
+      for (IfaceConnection conn : getConnections()) {
+         IfaceBlock b1 = conn.getOtherBlock(this);
+         if (b1 == from) continue;
+         if (conn.getExitSwitch(this) != null) continue;
+         if (b1.getNextPending() == this) continue;
+         if (b1.getNextPending() != null) rslt = false;
+       }
+      if (rslt) {
+         for (IfaceConnection conn : getConnections()) {
+            IfaceBlock b1 = conn.getOtherBlock(this);
+            if (b1 == from) continue;
+            if (conn.getExitSwitch(this) != null) continue;
+            if (b1.getNextPending() == this) continue;
+            b1.setNextPending(this);
+          }
+       }
+    }
+   
+   return rslt;
+}
 
 @Override public Collection<IfaceConnection> getConnections()
 {

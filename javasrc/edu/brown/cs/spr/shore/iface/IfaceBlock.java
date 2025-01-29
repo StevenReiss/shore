@@ -74,6 +74,20 @@ boolean setPendingFrom(IfaceBlock blk);
 
 
 /**
+ *      If this is non-null, then the block given is in PENDING state
+ *      and the train that will go into that block will have to enter
+ *      this block as well.  Hence this block can't be set pending otherwise.
+ *      Note that this block can be in other states while this is set.  This
+ *      might not be the best way of preventing deadlock, but should work.
+ **/ 
+IfaceBlock getNextPending();
+
+/**
+ *      Set or clear the pending from flags
+ **/
+void setNextPending(IfaceBlock blk);
+
+/**
  *      Return the set of connections associated with this block
  **/
 

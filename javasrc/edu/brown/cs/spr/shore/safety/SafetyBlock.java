@@ -149,7 +149,8 @@ void handleSensorChange(IfaceSensor s)
 
 void handleSwitchChange(IfaceSwitch sw)
 {
-   // check pending blocks
+   IfaceBlock blk = sw.getPivotPoint().getBlock();
+   checkPendingBlocks(blk);
 }
 
 
@@ -163,7 +164,7 @@ private void checkPendingBlocks(IfaceBlock blk)
 {
    BlockData bd = active_blocks.get(blk);
    
-   if (bd.getAtPoint() == null ||  bd.getPriorPoint() == null) return;
+   if (bd == null || bd.getAtPoint() == null ||  bd.getPriorPoint() == null) return;
    
    IfaceBlock toblk = safety_factory.getLayoutModel().findNextBlock(
          bd.getPriorPoint(),
@@ -172,7 +173,9 @@ private void checkPendingBlocks(IfaceBlock blk)
    for (IfaceConnection conn : blk.getConnections()) {
       IfaceBlock nblk = conn.getOtherBlock(blk);
       if (nblk == null) continue;
-      if (nblk == toblk) nblk.setPendingFrom(blk);
+      if (nblk == toblk) {
+         nblk.setPendingFrom(blk);
+       }
       else if (nblk.getPendingFrom() == blk) nblk.setPendingFrom(null);
     }
 }
