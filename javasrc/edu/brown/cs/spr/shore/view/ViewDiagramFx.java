@@ -540,6 +540,7 @@ private void drawSignals()
    signal_map.clear();
    
    for (IfaceSignal sig : for_diagram.getSignals()) {
+      if (sig.getAtPoints().isEmpty()) continue;
       IfacePoint pt = sig.getAtPoints().get(0);
       IfacePoint npt = sig.getNextPoint();
       Point2D cpt = getCoords(pt);
@@ -554,9 +555,12 @@ private void drawSignals()
       switch (sig.getSignalType()) {
          case ENGINE :
          case RG :
+         case ENGINE_ANODE :
+         case RG_ANODE :
             nlight = 2;
             break;
          case RGY :
+         case RGY_ANODE :
             nlight = 3;
             break;
        }
@@ -662,9 +666,12 @@ private class SignalHandler implements EventHandler<MouseEvent> {
          switch (typ) {
             case ENGINE :
             case RG :
+            case RG_ANODE :
+            case ENGINE_ANODE :
                next = (st == ShoreSignalState.RED ? ShoreSignalState.GREEN : ShoreSignalState.RED);
                break;
             case RGY :
+            case RGY_ANODE :
                switch (st) {
                   case RED :
                      next = ShoreSignalState.GREEN;

@@ -182,11 +182,16 @@ private void updateSignal(IfaceSignal sig)
    IfaceBlock from = sig.getFromBlock();
    ShoreSignalState rslt = ShoreSignalState.GREEN;
    
-   for (IfaceConnection conn : safety_factory.getLayoutModel().getConnections()) {
-      if (conn.getStopSignal(from) == sig) {
-         ShoreSignalState nst = updateSignal(sig,conn);
-         if (nst.ordinal() > rslt.ordinal()) rslt = nst;
-       }   
+   if (from != null) {
+      for (IfaceConnection conn : safety_factory.getLayoutModel().getConnections()) {
+         if (conn.getStopSignal(from) == sig) {
+            ShoreSignalState nst = updateSignal(sig,conn);
+            if (nst.ordinal() > rslt.ordinal()) rslt = nst;
+          }   
+       }
+    }
+   else {
+      rslt = ShoreSignalState.OFF;
     }
    
    safety_factory.getNetworkModel().setSignal(sig,rslt);

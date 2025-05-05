@@ -58,6 +58,7 @@ void setSwitch(IfaceSwitch sw,ShoreSwitchState set);
 void setSignal(IfaceSignal sig,ShoreSignalState set);
 
 
+
 /**
  *      Set the sensor state both internally and externally.  This differs
  *      From IfaceSensor.setSensorState which only sets the sensor internally.
@@ -74,6 +75,11 @@ void setSensor(IfaceSensor sen,ShoreSensorState set);
  **/
 void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,ShoreSwitchState state);
 
+
+/**
+ *      Configure a signal (common anode/cathode)
+ **/
+void sendDefSignal(IfaceSignal sig);
 
 
 /**

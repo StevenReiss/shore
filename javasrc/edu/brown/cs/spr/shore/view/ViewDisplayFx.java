@@ -121,16 +121,22 @@ public ViewDisplayFx()
 @Override public void start(Stage stage)
 {
    System.err.println("START FX");
-   EngineerPanel epanel = new EngineerPanel();
-   LayoutPanel lpanel = new LayoutPanel();
-   SplitPane overall = new FullSplitPane(lpanel,epanel);
-   overall.setOrientation(Orientation.HORIZONTAL);
-   Scene scn = new Scene(overall);
+   try {
+      EngineerPanel epanel = new EngineerPanel();
+      LayoutPanel lpanel = new LayoutPanel();
+      SplitPane overall = new FullSplitPane(lpanel,epanel);
+      overall.setOrientation(Orientation.HORIZONTAL);
+      Scene scn = new Scene(overall);
 // lpanel.prefHeightProperty().bind(scn.heightProperty());
 // epanel.prefHeightProperty().bind(overall.heightProperty());
 // overall.prefHeightProperty().bind(scn.heightProperty());
-   stage.setScene(scn);
-   stage.show();
+      stage.setScene(scn);
+      stage.show();
+    }
+   catch (Throwable t) {
+      t.printStackTrace();
+    }
+   System.err.println("START FX COMPLETE");
 }
 
 

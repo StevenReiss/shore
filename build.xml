@@ -65,7 +65,7 @@
 	<fileset dir='${SHORE}/java' includes='**/*.class' />
 	<zipfileset src='${SHORELIB}/ivy.jar' excludes='META-INF/*' />
      </jar>
-     <copy file='shore.jar' tofile='${SHORE}/../bin/shore.jar' />
+     <copy file='shore.jar' tofile='${SHORE}/bin/shore.jar' />
    </target>
 
    <target name='test-setup' depends='compile'>

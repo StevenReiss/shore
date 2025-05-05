@@ -87,7 +87,10 @@ enum ShoreSignalState {
 enum ShoreSignalType { 
    RG,                          // red and green lights only; signal for blocking
    RGY,                         // reg, green and yellow lights; signal for blocking
-   ENGINE                       // red/green but there to wait to identify an engine,
+   RG_ANODE,
+   RGY_ANODE,
+   ENGINE,                       // red/green but there to wait to identify an engine,
+   ENGINE_ANODE,                
 };
 
 

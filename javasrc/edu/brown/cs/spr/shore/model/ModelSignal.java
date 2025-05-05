@@ -72,6 +72,8 @@ private List<ModelSensor> stop_sensors;
 private Set<ModelSensor> prior_sensors;
 private byte tower_id;
 private byte tower_index;
+private boolean is_unused;
+
 
 
 
@@ -91,7 +93,22 @@ ModelSignal(ModelBase model,Element xml)
    for_connections = new HashSet<>(); 
    tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
    tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
+   is_unused = IvyXml.getAttrBool(xml,"UNUSED",false);
    signal_type = IvyXml.getAttrEnum(xml,"TYPE",ShoreSignalType.RG);
+   boolean anode = IvyXml.getAttrBool(xml,"ANODE",false);
+   if (anode) {
+      switch (signal_type) {
+         case RG :
+            signal_type = ShoreSignalType.RG_ANODE;
+            break;
+         case RGY :
+            signal_type = ShoreSignalType.RGY_ANODE;
+            break;
+         case ENGINE :
+            signal_type = ShoreSignalType.ENGINE_ANODE;
+            break;
+       }
+    }
    stop_sensors = null;
    prior_sensors = new HashSet<>();
    signal_state = ShoreSignalState.OFF;
@@ -115,6 +132,9 @@ String getId()                                  { return signal_id; }
 
 @Override public ModelBlock getFromBlock()      
 {
+   if (at_points.isEmpty()) {
+      return null;
+    }
    return at_points.get(0).getBlock();
 }
 
@@ -173,6 +193,8 @@ List<ModelSensor> getModelStopSensors()
 
 void normalizeSignal(ModelBase mdl)
 {
+   if (is_unused) return;
+   
    if (at_points.isEmpty()) {
       mdl.noteError("Missing POINT for signal " + getId());
       return;

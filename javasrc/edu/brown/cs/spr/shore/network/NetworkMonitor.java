@@ -65,7 +65,7 @@ import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 public class NetworkMonitor implements NetworkConstants, NetworkControlMessages,
       NetworkLocoFiMessages, IfaceNetwork 
-{
+{ 
 
 
 
@@ -259,6 +259,8 @@ public void setSignal(IfaceSignal sig,ShoreSignalState set)
 
 
 
+
+
 @Override
 public void setSensor(IfaceSensor sig,ShoreSensorState set)  
 {
@@ -289,6 +291,29 @@ public void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,ShoreSwitchState set)
     }
    ci.sendDefSensorMessage(sen.getTowerSensor(),s);
 }
+
+
+@Override
+public void sendDefSignal(IfaceSignal sig)
+{
+   if (sig == null) return;
+   int id = sig.getTowerId();
+   ControllerInfo ci = id_map.get(id);
+   if (ci == null) return;
+   
+   ShoreSignalType sst = sig.getSignalType();
+   switch (sst) {
+      case ENGINE :
+         sst = ShoreSignalType.RG;
+         break;
+      case ENGINE_ANODE :
+         sst = ShoreSignalType.RG_ANODE;
+         break;
+    }
+   
+   ci.sendDefSignalMessage(sig.getTowerSignal(),sst.ordinal());
+}
+
 
 
 @Override 
@@ -355,6 +380,7 @@ private void sendSetupMessages(byte controller)
    
    for (IfaceSignal sig : layout_model.getSignals()) {
       if (sig.getTowerId() == controller) {
+         sendDefSignal(sig);
          setSignal(sig,sig.getSignalState());
        }
     }
@@ -662,7 +688,7 @@ private EngineInfo setupEngine(ServiceInfo si)
    SocketAddress sa = getServiceSocket(si,engine_map);
    return setupEngine(sa);
 }
-
+ 
 
 private EngineInfo setupEngine(SocketAddress sa)
 {
@@ -758,6 +784,11 @@ private class ControllerInfo {
    
    void sendDefSensorMessage(byte sid,int value) {
       byte msg [] = { CONTROL_DEFSENSOR, controller_id,sid,(byte) value };
+      sendMessage(net_address,msg,0,4);
+    }
+   
+   void sendDefSignalMessage(byte sid,int value) {
+      byte [] msg = { CONTROL_DEFSIGNAL, controller_id, sid, (byte) value };
       sendMessage(net_address,msg,0,4);
     }
    

@@ -93,8 +93,12 @@ boolean safelySetSwitch(IfaceSwitch sw,ShoreSwitchState ss)
    IfaceSensor ns = sw.getNSensor();
    IfaceSensor rs = sw.getRSensor();
    
-   if (ns.getSensorState() == ShoreSensorState.ON) return false;
-   if (rs.getSensorState() == ShoreSensorState.ON) return false;
+   if (ns.getSensorState() == ShoreSensorState.ON) {
+      return false;
+    }
+   if (rs.getSensorState() == ShoreSensorState.ON) {
+      return false;
+    }
    
    triggerSwitch(sw,null,ss);
    
