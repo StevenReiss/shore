@@ -29,7 +29,8 @@ byte [] LOCOFI_STOP_ENGINE_CMD		 = {0x00, 0x00};
 byte [] LOCOFI_FWD_DIR_CMD		 = {0x01, 0x00};
 byte [] LOCOFI_REV_DIR_CMD		 = {0x01, 0x01};
 //{0x02} is reserved for setting the speed step
-//the second and third argument is the actual speed step (two bytes passed in little endian format); for older versions, only second argument is needed; default 0
+//the second and third argument is the actual speed step (two bytes passed in little endian format); 
+//  for older versions, only second argument is needed; default 0
 byte [] LOCOFI_FWD_LIGHT_OFF_CMD	 = {0x03, 0x00};
 byte [] LOCOFI_FWD_LIGHT_ON_CMD 	 = {0x03, 0x01};
 byte [] LOCOFI_FWD_LIGHT_BLINK_CMD	 = {0x03, 0x02};
@@ -51,7 +52,8 @@ byte [] LOCOFI_HOSTNAME_CMD		 = {0x0C, 0x00};
 byte [] LOCOFI_SETTINGS_READ_CMD	 = {0x0D, 0x00};
 byte [] LOCOFI_SETTINGS_WRITE_CMD	 = {0x0D, 0x01};
 //Do not use the following command for running the loco, use only for configuring speed
-//the second and third argument is the actual speed step (two bytes passed in little endian format); for older versions, only second argument is needed; default 0
+//the second and third argument is the actual speed step (two bytes passed in little endian format); 
+//   for older versions, only second argument is needed; default 0
 byte [] LOCOFI_SET_SPEED_CMD		 = {0x0E, 0x00, 0x00};
 byte [] LOCOFI_HEARTBEAT_ON_CMD 	 = {0x0F, 0x01};
 byte [] LOCOFI_HEARTBEAT_OFF_CMD	 = {0x0F, 0x00};

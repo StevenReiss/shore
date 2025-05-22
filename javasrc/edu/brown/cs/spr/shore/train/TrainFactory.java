@@ -219,7 +219,7 @@ void fireTrainChanged(TrainEngine eng)
 /*                                                                              */
 /********************************************************************************/
 
-private class TrainModelUpdater implements IfaceModel.ModelCallback {
+private final class TrainModelUpdater implements IfaceModel.ModelCallback {
    
    @Override public void blockChanged(IfaceBlock blk) {
       TrainEngine eng = null;

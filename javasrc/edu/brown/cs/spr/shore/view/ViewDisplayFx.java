@@ -220,7 +220,7 @@ private class LayoutPanel extends BorderPane {
 
 private class FullSplitPane extends SplitPane {
 
-   FullSplitPane(Node ... nodes) {
+   FullSplitPane(Node... nodes) {
       super(nodes);
     }
 
@@ -236,7 +236,7 @@ private class FullSplitPane extends SplitPane {
 	  }
 	 tot += v;
        }
-      double pos [] = new double[nodes.size()];
+      double [] pos = new double[nodes.size()];
       int i = 0;
       int x = 0;
       for (Node n : nodes) {

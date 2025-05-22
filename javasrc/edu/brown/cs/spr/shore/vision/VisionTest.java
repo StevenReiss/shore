@@ -51,7 +51,7 @@ import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
 
-public class VisionTest implements VisionConstants
+public final class VisionTest implements VisionConstants
 {
 
 
@@ -157,7 +157,9 @@ private void process1()
          double dist = data[0] * data[0] + data[1] * data[1] + data[2] * data[2];
          dist = Math.sqrt(dist);
          if (dist > threshold) {
-            data[0] = data[1] = data[2] = 255;
+            data[0] = 255;
+            data[1] = 255; 
+            data[2] = 255;
             delta_image.put(0,0,data);
           }
        }

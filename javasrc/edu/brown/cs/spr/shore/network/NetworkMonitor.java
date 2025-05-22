@@ -44,6 +44,7 @@ import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Enumeration;
 import java.util.Map;
@@ -60,6 +61,7 @@ import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
+import edu.brown.cs.ivy.file.IvyLog;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
@@ -130,13 +132,12 @@ public NetworkMonitor(IfaceModel model)
    try {
       useaddr = InetAddress.getLocalHost();
       NetworkInterface netif= null;
-      for (int i = 10; i >= 0 ; --i) {
+      for (int i = 10; i >= 0; --i) {
          NetworkInterface ni = NetworkInterface.getByIndex(i);
-         if (ni == null) continue;
-         if (ni.isLoopback()) continue;
-         if (ni.isVirtual()) continue;
-         netif = ni;
-         break;
+         if (isWifiInterface(ni)) {
+            netif = ni;
+            break;
+          }
        }
       useaddr = InetAddress.getLocalHost();
       if (useaddr.isLoopbackAddress()) {
@@ -169,26 +170,14 @@ public NetworkMonitor(IfaceModel model)
    
    try {
       JmmDNS jmm = JmmDNS.Factory.getInstance();
-//    String [] names = jmm.getNames();
-//    JmDNS jm1 = JmDNS.create(useaddr);
-//    jmm.addServiceListener("._udp.local.", new ServiceFinder("0"));
-//    jmm.addServiceListener("_udp.local.", new ServiceFinder("1")); 
       jmm.addServiceListener("_udp._udp.local.",new ServiceFinder("2"));
-//    jm1.addServiceListener("._udp.local.", new ServiceFinder("3"));
-//    jm1.addServiceListener("_udp.local.", new ServiceFinder("4")); 
-//    jm1.addServiceListener("_udp._udp.local.",new ServiceFinder("5"));
-//    jmm.addServiceTypeListener(new ServiceFinder("T1"));
-//    jm1.addServiceTypeListener(new ServiceFinder("T2"));
       jmm.registerServiceType("_master._udp.local");
       jmm.registerServiceType("_tower._udp.local.");
       jmm.registerServiceType("master._udp.local");
       jmm.registerServiceType("tower._udp.local.");
       jmm.registerServiceType("udp._udp.local.");
-      
-//    InetAddress [] iasd = jmm.getInetAddresses();
-      
-//    jmm.addServiceTypeListener(new ServiceFinder());
-      ServiceInfo info = ServiceInfo.create("master._udp.local.","shore",UDP_PORT,"SHORE controller");
+      ServiceInfo info = ServiceInfo.create("master._udp.local.","shore",
+            UDP_PORT,"SHORE controller");
       jmm.registerService(info);
     }
    catch (IOException e) {
@@ -197,6 +186,29 @@ public NetworkMonitor(IfaceModel model)
    
    ShoreLog.logD("NETWORK","Monitor setup  " + our_socket.getLocalAddress());
 }
+
+
+private boolean isWifiInterface(NetworkInterface ni)
+{
+   if (ni == null) return false;
+   if (ni.isVirtual()) return false;
+   try {
+      if (ni.isLoopback()) return false;
+      if (!ni.isUp()) return false;
+      if (ni.isPointToPoint()) return false;
+      
+    }
+   catch (SocketException e) {
+      return false;
+    }
+   
+// String s1 = ni.getName().toLowerCase();
+// String s2 = ni.getDisplayName().toLowerCase();
+   // check name here -- but it might not be significant on a mac?
+   
+   return true;
+}
+
 
 
 
@@ -216,6 +228,9 @@ public void start()
     }
    
    broadcastInfo();
+   
+   StatusUpdater upd = new StatusUpdater();
+   upd.start();
    
    ShoreLog.logD("NETWORK","MONITOR STARTED");   
 }
@@ -242,6 +257,24 @@ public void setSwitch(IfaceSwitch sw,ShoreSwitchState set)
    else {
       ci.sendSwitchMessage(sw.getTowerSwitch(),set);
     }
+   sw.setSwitch(set);
+}
+
+
+private boolean sendSwitchStatus(IfaceSwitch sw) 
+{
+   if (sw == null) return false;
+   int id = sw.getTowerId();
+   ControllerInfo ci = id_map.get(id);
+   if (ci == null) return false;
+   ShoreSwitchState set = sw.getSwitchState();
+   if (set == ShoreSwitchState.R && sw.getTowerRSwitch() >= 0) {
+      ci.sendSwitchMessage(sw.getTowerRSwitch(),ShoreSwitchState.N);
+    }
+   else {
+      ci.sendSwitchMessage(sw.getTowerSwitch(),set);
+    }
+   return true;
 }
  
 
@@ -258,6 +291,17 @@ public void setSignal(IfaceSignal sig,ShoreSignalState set)
 }
 
 
+private boolean sendSignalStatus(IfaceSignal sig) 
+{
+   if (sig == null) return false;
+   
+   int id = sig.getTowerId();
+   ControllerInfo ci = id_map.get(id);
+   if (ci == null) return false;
+   ShoreSignalState set = sig.getSignalState();
+   ci.sendSignalMessage(sig.getTowerSignal(),set);
+   return true;
+}
 
 
 
@@ -274,32 +318,52 @@ public void setSensor(IfaceSensor sig,ShoreSensorState set)
 }
 
 
-@Override
-public void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,ShoreSwitchState set)
+private boolean sendDefSensor(IfaceSensor sen)
 {
-   if (sen == null) return;
+   if (sen == null) return false;
+   if (sen.getTowerSensor() < 0) return false;
+   
    int id = sen.getTowerId();
    ControllerInfo ci = id_map.get(id);
-   if (ci == null) return;
+   if (ci == null) return false;
+   IfaceSwitch sw = null;
+   ShoreSwitchState state = ShoreSwitchState.UNKNOWN;
+   for (IfaceSwitch sw1 : layout_model.getSwitches()) {
+      if (sw1.getTowerId() == id) {
+         if (sw1.getNSensor() == sen) {
+            sw = sw1;
+            state = ShoreSwitchState.N;
+            break;
+          }
+         else if (sw1.getRSensor() == sen) {
+            sw = sw1;
+            state = ShoreSwitchState.R;
+            break;
+          }
+       }
+    }
+   
+   
    int s = 64;
    if (sw != null) {
-      s = sw.getTowerSwitch() * 4 + set.ordinal();
+      s = sw.getTowerSwitch() * 4 + state.ordinal();
       int idx1 = sw.getTowerRSwitch();
-      if (set == ShoreSwitchState.R && idx1 >= 0) {
+      if (state == ShoreSwitchState.R && idx1 >= 0) {
          s = idx1 * 4 + ShoreSwitchState.N.ordinal();
        }
     }
    ci.sendDefSensorMessage(sen.getTowerSensor(),s);
+   
+   return true;
 }
 
 
-@Override
-public void sendDefSignal(IfaceSignal sig)
+private boolean sendDefSignal(IfaceSignal sig)
 {
-   if (sig == null) return;
+   if (sig == null) return false;
    int id = sig.getTowerId();
    ControllerInfo ci = id_map.get(id);
-   if (ci == null) return;
+   if (ci == null) return false;
    
    ShoreSignalType sst = sig.getSignalType();
    switch (sst) {
@@ -312,8 +376,9 @@ public void sendDefSignal(IfaceSignal sig)
     }
    
    ci.sendDefSignalMessage(sig.getTowerSignal(),sst.ordinal());
+   
+   return true;
 }
-
 
 
 @Override 
@@ -352,55 +417,11 @@ public void sendStartTrain(IfaceEngine tr)
 
 
 
-private void sendSetupMessages(byte controller)
-{
-   if (layout_model == null) return;
-   
-   for (IfaceSensor sen : layout_model.getSensors()) {
-      if (sen.getTowerId() == controller) {
-         ShoreSwitchState state = ShoreSwitchState.UNKNOWN;
-         IfaceSwitch stsw = null;
-         for (IfaceSwitch sw : layout_model.getSwitches()) {
-            if (sw.getTowerId() == controller) {
-               if (sw.getNSensor() == sen) {
-                  stsw = sw;
-                  state = ShoreSwitchState.N;
-                  break;
-                }
-               else if (sw.getRSensor() == sen) {
-                  stsw = null;
-                  state = ShoreSwitchState.R;
-                  break;
-                }
-             }
-          }
-         sendDefSensor(sen,stsw,state);
-       }
-    }
-   
-   for (IfaceSignal sig : layout_model.getSignals()) {
-      if (sig.getTowerId() == controller) {
-         sendDefSignal(sig);
-         setSignal(sig,sig.getSignalState());
-       }
-    }
-   
-   for (IfaceSwitch sw : layout_model.getSwitches()) {
-      if (sw.getTowerId() == controller) {
-         setSwitch(sw,sw.getSwitchState());
-       }
-    }
-}
-
-
-
 private void broadcastInfo()
 {
-   byte msg [] = { CONTROL_SYNC, MESSAGE_ALL, 0, 0 };
+   byte [] msg = { CONTROL_SYNC, MESSAGE_ALL, 0, 0 };
    sendMessage(null,msg,0,4);
 }
-
-
 
 
 /********************************************************************************/
@@ -409,7 +430,7 @@ private void broadcastInfo()
 /*										*/
 /********************************************************************************/
 
-public void sendMessage(SocketAddress who,byte [] msg,int off,int len)
+public synchronized void sendMessage(SocketAddress who,byte [] msg,int off,int len)
 {
    if (our_socket == null) return;
    
@@ -433,7 +454,6 @@ public void sendMessage(SocketAddress who,byte [] msg,int off,int len)
    
    String msgtxt = decodeMessage(msg,off,len);
    ShoreLog.logD("NETWORK","Send " + msgtxt + " >> " + who);
-
    
    DatagramPacket packet = new DatagramPacket(msg,off,len,who);
    try {
@@ -516,7 +536,7 @@ static String decodeMessage(byte [] msg,int off,int len)
 }
 
 
-private class NotificationHandler implements MessageHandler {
+private final class NotificationHandler implements MessageHandler {
 
    @Override public void handleMessage(DatagramPacket msg) {
       String msgtxt = decodeMessage(msg.getData(),msg.getOffset(),msg.getLength());
@@ -530,10 +550,11 @@ private class NotificationHandler implements MessageHandler {
       int value = data[3];                      // switch, signal, sensor value
       
       SocketAddress sa = msg.getSocketAddress();
-      ControllerInfo ci = setupController(sa);
+      ControllerInfo ci = findController(sa);
       ControllerInfo ci1 = id_map.get(id);
       if (ci1 == null) {
          id_map.put(id,ci);
+         ShoreLog.logD("NETWORK","Assign id to controller " + id);
          ci.setId(id);
        }
       else if (ci != ci1) {
@@ -543,6 +564,7 @@ private class NotificationHandler implements MessageHandler {
       switch (data[0]) {
          case CONTROL_ID :
             ci.setId(id);
+            ShoreLog.logD("NETWORK","Assign id to controller " + id + " " + which);
             if (which == 1) {                   // first heartbeat
                ci.sendSyncMessage();
              }
@@ -560,8 +582,11 @@ private class NotificationHandler implements MessageHandler {
                IfaceSwitch s = findSwitch(id,which);
                if (s == null) break;
                ShoreSwitchState sst = getState(value,ShoreSwitchState.UNKNOWN);
-               if (s.getTowerRSwitch() == which) sst = ShoreSwitchState.R;
-               s.setSwitch(sst);
+               if (sst != ShoreSwitchState.UNKNOWN &&
+                     s.getSwitchState() == ShoreSwitchState.UNKNOWN) {
+                  if (s.getTowerRSwitch() == which) sst = ShoreSwitchState.R;
+                  s.setSwitch(sst);
+                }
              }
             break;
          case CONTROL_SIGNAL :
@@ -572,9 +597,6 @@ private class NotificationHandler implements MessageHandler {
                s.setSignalState(sst);
              }
             break;
-         case CONTROL_ENDSYNC :
-            ci.sendEndSync();
-            break;
          default :
             break;
        }
@@ -583,6 +605,60 @@ private class NotificationHandler implements MessageHandler {
 }	// end of inner class Notification Handler
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      Handle continuous status sending                                        */
+/*                                                                              */
+/********************************************************************************/
+
+private final class StatusUpdater extends Thread {
+   
+   StatusUpdater() {
+      super("ShoreStatusUpdater");
+      setDaemon(true);
+    }
+   
+   @Override public void run() {
+      for ( ; ; ) {
+         try {
+            for (IfaceSensor sen : layout_model.getSensors()) {
+               if (sendDefSensor(sen)) delay();
+             }
+            for (IfaceSignal sig : layout_model.getSignals()) {
+               if (sendDefSignal(sig)) {
+                  delay();
+                  sendSignalStatus(sig);
+                  delay();
+                }
+             }
+            for (IfaceSwitch sw : layout_model.getSwitches()) {
+               if (sendSwitchStatus(sw)) {
+                  delay();
+                }
+             }
+          }
+         catch (Throwable t) {
+            IvyLog.logE("Problem doing status updates",t);
+          }
+         finalDelay();
+       }
+    }
+   
+   private void delay() {
+      try {
+         Thread.sleep(100);
+       }
+      catch (InterruptedException e) { }
+    }
+   
+   private void finalDelay() {
+      try {
+         Thread.sleep(5000);
+       }
+      catch (InterruptedException e) { }
+    }
+   
+}
 
 /********************************************************************************/
 /*										*/
@@ -628,10 +704,10 @@ private class ReaderThread extends Thread {
 /*                                                                              */
 /********************************************************************************/
 
-private ControllerInfo setupController(ServiceInfo si)
+private ControllerInfo findController(ServiceInfo si)
 {
    SocketAddress sa = getServiceSocket(si,controller_map);
-   return setupController(sa);
+   return findController(sa);
 }
 
 
@@ -646,6 +722,7 @@ private SocketAddress getServiceSocket(ServiceInfo si,Map<?,?> known)
    
    InetAddress use = null;
    for (InetAddress ia : possibles) {
+      ShoreLog.logD("NETWORK","Check address " + ia);
       SocketAddress sa = new InetSocketAddress(ia,port);
       if (known != null && known.containsKey(sa)) return sa;
       if (use == null) use = ia;
@@ -654,6 +731,8 @@ private SocketAddress getServiceSocket(ServiceInfo si,Map<?,?> known)
       else if (use instanceof Inet4Address) continue;
       else if (ia instanceof Inet4Address) use = ia;
     }
+   
+   ShoreLog.logD("NETWORK","Get address " + use + " " + port);
    
    if (use == null) return null;
    
@@ -664,8 +743,9 @@ private SocketAddress getServiceSocket(ServiceInfo si,Map<?,?> known)
  
 
 
-private ControllerInfo setupController(SocketAddress sa)
+private ControllerInfo findController(SocketAddress sa)
 {
+   ShoreLog.logD("NETWORK","Find controller on " + sa);
    if (sa == null) return null;
    ControllerInfo ci = controller_map.get(sa);
    if (ci == null) {
@@ -755,35 +835,28 @@ private class ControllerInfo {
    void setId(int id)                                   { controller_id = (byte) id; }
    
    void sendSyncMessage() {
-      byte msg [] = { CONTROL_SYNC, MESSAGE_ALL, 0, 0 };
+      byte [] msg = { CONTROL_SYNC, MESSAGE_ALL, 0, 0 };
       sendMessage(net_address,msg,0,4);
-    }
-   
-   void sendEndSync() {
-      byte msg [] = { CONTROL_HEARTBEAT, controller_id, 1, 0 };
-      sendMessage(net_address,msg,0,4);
-   // sendSyncMessage();
-      sendSetupMessages(controller_id);
     }
    
    void sendSwitchMessage(byte sid,IfaceSwitch.ShoreSwitchState state) {
-      byte msg [] = { CONTROL_SETSWTICH, controller_id, sid,(byte) state.ordinal()};
+      byte [] msg = { CONTROL_SETSWTICH, controller_id, sid,(byte) state.ordinal()};
       sendMessage(net_address,msg,0,4);
     }
    
    void sendSignalMessage(byte sid,IfaceSignal.ShoreSignalState state) {
-      byte msg [] = { CONTROL_SETSIGNAL, controller_id, sid,(byte) state.ordinal()};
+      byte [] msg = { CONTROL_SETSIGNAL, controller_id, sid,(byte) state.ordinal()};
       sendMessage(net_address,msg,0,4);
     }
    
    
    void sendSensorMessage(byte sid,IfaceSensor.ShoreSensorState state) {
-      byte msg [] = { CONTROL_SETSENSOR, controller_id, sid,(byte) state.ordinal()}; 
+      byte [] msg = { CONTROL_SETSENSOR, controller_id, sid,(byte) state.ordinal()}; 
       sendMessage(net_address,msg,0,4);
    }
    
    void sendDefSensorMessage(byte sid,int value) {
-      byte msg [] = { CONTROL_DEFSENSOR, controller_id,sid,(byte) value };
+      byte [] msg = { CONTROL_DEFSENSOR, controller_id,sid,(byte) value };
       sendMessage(net_address,msg,0,4);
     }
    
@@ -811,32 +884,32 @@ private class EngineInfo {
 // SocketAddress getSocketAddress()                     { return net_address; }
    
    void sendQueryStateMessage() {
-      byte msg [] = LOCOFI_QUERY_LOCO_STATE_CMD;
+      byte [] msg = LOCOFI_QUERY_LOCO_STATE_CMD;
       sendMessage(net_address,msg,0,msg.length);
     }
    
    void sendQueryAboutMessage() {
-      byte msg [] = LOCOFI_QUERY_ABOUT_LOCO_CMD;
+      byte [] msg = LOCOFI_QUERY_ABOUT_LOCO_CMD;
       sendMessage(net_address,msg,0,msg.length);
     }
    
    void sendEmergencyStop() {
-      byte msg [] = LOCOFI_EMERGENCY_STOP_CMD;
+      byte [] msg = LOCOFI_EMERGENCY_STOP_CMD;
       sendMessage(net_address,msg,0,msg.length);
     }
    
    void sendEmergencyStart() {
-      byte msg [] = LOCOFI_EMERGENCY_START_CMD;
+      byte [] msg = LOCOFI_EMERGENCY_START_CMD;
       sendMessage(net_address,msg,0,msg.length);
     }
    
    void sendStopEngine() {
-      byte msg [] = LOCOFI_STOP_ENGINE_CMD;
+      byte [] msg = LOCOFI_STOP_ENGINE_CMD;
       sendMessage(net_address,msg,0,msg.length);
     }
    
    void sendStartEngine() {
-      byte msg [] = LOCOFI_START_ENGINE_CMD;
+      byte [] msg = LOCOFI_START_ENGINE_CMD;
       sendMessage(net_address,msg,0,msg.length);
     }
    
@@ -875,13 +948,16 @@ public class ServiceFinder implements ServiceListener, ServiceTypeListener {
       String nm = si.getName();
       if (nm.startsWith("controller") || nm.startsWith("tower")) {
          ShoreLog.logD("NETWORK","Found controller: " + finder_id + "> " + nm);
-         setupController(si);
+         findController(si);
        }    
       else if (nm.equals("loco") || nm.equals("consist")) {
          setupEngine(si);
        }
       else if (nm.equals("engineer")) {
-         
+         // handle engineer
+       }
+      else {
+         ShoreLog.logI("Unknown service entry " + nm);
        }
     }
    

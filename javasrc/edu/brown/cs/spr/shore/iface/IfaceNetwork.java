@@ -69,17 +69,10 @@ void setSensor(IfaceSensor sen,ShoreSensorState set);
 
 
 
-/**
- *      Configures the remote tower to automatically set a switch based
- *      on N and R sensors for that switch.
- **/
-void sendDefSensor(IfaceSensor sen,IfaceSwitch sw,ShoreSwitchState state);
 
 
-/**
- *      Configure a signal (common anode/cathode)
- **/
-void sendDefSignal(IfaceSignal sig);
+
+
 
 
 /**

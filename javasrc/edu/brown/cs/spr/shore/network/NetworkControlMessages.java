@@ -46,7 +46,7 @@ byte CONTROL_ID         = (byte) 0x50;          // this is our ID
 byte CONTROL_SENSOR     = (byte) 0x51;          // sensor set to value
 byte CONTROL_SWITCH     = (byte) 0x52;          // switch set to value
 byte CONTROL_SIGNAL     = (byte) 0x53;          // signal set to value
-byte CONTROL_ENDSYNC    = (byte) 0x54;
+// byte CONTROL_ENDSYNC    = (byte) 0x54;
 
 
 
@@ -71,6 +71,11 @@ byte MESSAGE_SIG_RG     = 0x0;
 byte MESSAGE_SIG_RGY    = 0x1;
 byte MESSAGE_SIG_RG_ANODE = 0x2;
 byte MESSAGE_SIG_RGY_ANODE = 0x3;
+
+byte MESSAGE_SENSOR     = 0x1;
+byte MESSAGE_SWITCH     = 0x2;
+byte MESSAGE_SIGNAL     = 0x3;
+      
 
 //
 //      Standard messages consist of 4 bytes

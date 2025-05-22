@@ -47,7 +47,7 @@ public class ShoreException extends Exception
 /*                                                                              */
 /********************************************************************************/
 
-static private final long serialVersionUID = 1;
+private static final long serialVersionUID = 1;
 
 
 

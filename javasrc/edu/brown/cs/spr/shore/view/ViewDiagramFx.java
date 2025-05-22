@@ -464,7 +464,7 @@ private class SwitchDrawData {
          doSetArrow();
        }
       else {
-         Platform.runLater( () -> doSetArrow() );
+         Platform.runLater(() -> doSetArrow());
        }
     }
    
@@ -547,7 +547,7 @@ private void drawSignals()
       Point2D cnpt = getCoords(npt);
       double d = cpt.distance(cnpt);
       double dx = (cnpt.getY() - cpt.getY())/d;
-      double dy = - (cnpt.getX() - cpt.getX())/d;
+      double dy = -(cnpt.getX() - cpt.getX())/d;
       double mx = cpt.getX() + SIGNAL_DISTANCE * dx;
       double my = cpt.getY() + SIGNAL_DISTANCE * dy;
       
@@ -573,7 +573,7 @@ private void drawSignals()
       box.setFill(SIGNAL_BACKGROUND);
       getChildren().add(box);
       
-      Shape light[] = new Shape[nlight];
+      Shape [] light = new Shape[nlight];
       for (int i = 0; i < nlight; ++i) {
          y0 = y0 + SIGNAL_GAP;
          Circle c = new Circle(mx + SIGNAL_GAP + SIGNAL_LIGHT/2,
@@ -615,7 +615,7 @@ private class SignalDrawData {
          doSetSignal();
        }
       else {
-         Platform.runLater( () -> doSetSignal() );
+         Platform.runLater(() -> doSetSignal());
        }
     }
    
@@ -736,7 +736,7 @@ private static class SensorDrawData {
          doSetSensor();
        }
       else {
-         Platform.runLater( () -> doSetSensor() );
+         Platform.runLater(() -> doSetSensor());
        }
     }
    
@@ -1001,9 +1001,8 @@ private class CallbackHandler implements ModelCallback, TrainCallback {
       if (dd == null) return;
       dd.setBlock();
     } 
-   
   
-}
+}       // end of inner class CallbackHandler
 
 
 

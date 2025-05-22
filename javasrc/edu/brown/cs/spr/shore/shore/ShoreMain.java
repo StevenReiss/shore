@@ -43,7 +43,7 @@ import edu.brown.cs.spr.shore.safety.SafetyFactory;
 import edu.brown.cs.spr.shore.train.TrainFactory;
 import edu.brown.cs.spr.shore.view.ViewFactory;
 
-public class ShoreMain implements ShoreConstants
+public final class ShoreMain implements ShoreConstants
 {
 
 

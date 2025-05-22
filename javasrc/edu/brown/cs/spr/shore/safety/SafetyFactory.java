@@ -182,7 +182,7 @@ private void handleSwitchChange(IfaceSwitch sw)
 /*                                                                              */
 /********************************************************************************/
 
-private class SafetyCallback implements ModelCallback {
+private final class SafetyCallback implements ModelCallback {
    
    @Override public void sensorChanged(IfaceSensor sen) {
       handleSensorChange(sen);
