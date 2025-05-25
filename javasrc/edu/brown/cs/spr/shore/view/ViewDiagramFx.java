@@ -51,7 +51,6 @@ import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceModel.ModelCallback;
 import edu.brown.cs.spr.shore.iface.IfaceTrains.TrainCallback;
-import edu.brown.cs.spr.shore.shore.ShoreLog;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
@@ -60,8 +59,6 @@ import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
 import javafx.scene.Node;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
@@ -601,6 +598,13 @@ private void drawSignals()
 }
 
 
+private void setAllSignals(ShoreSignalState state)
+{
+   for (IfaceSignal sig : for_diagram.getSignals()) {
+      view_factory.getSafetyModel().setSignal(sig,state);
+    }
+}
+
 private class SignalDrawData {
    
    private IfaceSignal for_signal;
@@ -669,6 +673,16 @@ private class SignalHandler implements EventHandler<MouseEvent> {
    
    @Override public void handle(MouseEvent evt) {
       if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
+         if (evt.isControlDown()) {
+            if (evt.isShiftDown()) { 
+               setAllSignals(ShoreSignalState.RED);
+               return;
+             }
+            else if (evt.isMetaDown()) { 
+               setAllSignals(ShoreSignalState.GREEN);
+               return;
+             }
+          }
          ShoreSignalState st = for_signal.getSignalState();
          ShoreSignalType typ = for_signal.getSignalType();
          ShoreSignalState next = ShoreSignalState.RED;

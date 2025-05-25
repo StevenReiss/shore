@@ -36,14 +36,8 @@
    <path id='spr.classpath'>
      <pathelement location='${SHORE}/java' />
      <pathelement location='${SHORE}/javasrc' />
-     <fileset dir='${SHORELIB}' includes='ivy.jar' />
-     <fileset dir='${SHORELIB}' includes='junit.jar' />
-     <fileset dir='${SHORELIB}' includes='json.jar' />
-     <fileset dir='${SHORELIB}' includes='nanohttpd.jar' />
-     <fileset dir='${SHORELIB}' includes='mongojava.jar' />
-     <fileset dir='${SHORELIB}' includes='jsoup.jar' />
-     <fileset dir='${SHORELIB}' includes='googleapi.jar' />
-     <fileset dir='${SHORELIB}' includes='karma.jar' />
+     <fileset dir='${IVYLIB}' includes='ivy.jar' />
+     <fileset dir='${IVYLIB}' includes='slf4j-api.jar' />
      <fileset dir='${SHORELIB}' includes='jmdns.jar' />
      <fileset dir='${OPENCV}' includes='opencv.jar' />
      <fileset dir='${JAVAFX}' includes='javafx.*.jar' />
@@ -60,10 +54,21 @@
   <target name='jar' depends='compile'>
      <jar destfile='shore.jar'>
 	<manifest>
-	   <attribute name='Main-Class' value='edu.brown.cs.shore.catmain.CatmainMain' />
+	   <attribute name='Main-Class' value='edu.brown.cs.spr.shore.shore.ShoreMain' />
 	</manifest>
 	<fileset dir='${SHORE}/java' includes='**/*.class' />
-	<zipfileset src='${SHORELIB}/ivy.jar' excludes='META-INF/*' />
+	<fileset dir='${SHORE}/resources' includes="*.xml" />
+	<zipfileset src='${IVYLIB}/ivy.jar' excludes='META-INF/*' />
+	<zipfileset src='${IVYLIB}/slf4j-api.jar' excludes='META-INF/*' />
+	<zipfileset src='${SHORELIB}/jmdns.jar' includes='**/*.class' />
+	<zipfileset src='${OPENCV}/opencv.jar' includes='**/*.class' />
+	<zipfileset src='${JAVAFX}/javafx.base.jar' includes='**/*.class' />
+	<zipfileset src='${JAVAFX}/javafx.controls.jar' includes='**/*.class' />
+	<zipfileset src='${JAVAFX}/javafx.fxml.jar' includes='**/*.class' />
+	<zipfileset src='${JAVAFX}/javafx.graphics.jar' includes='**/*.class' />
+	<zipfileset src='${JAVAFX}/javafx.media.jar' includes='**/*.class' />
+	<zipfileset src='${JAVAFX}/javafx.swing.jar' includes='**/*.class' />
+	<zipfileset src='${JAVAFX}/javafx.web.jar' includes='**/*.class' />
      </jar>
      <copy file='shore.jar' tofile='${SHORE}/bin/shore.jar' />
    </target>
@@ -83,3 +88,20 @@
 -->
 
 </project>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
