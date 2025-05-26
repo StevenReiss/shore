@@ -61,7 +61,6 @@ import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
-import edu.brown.cs.ivy.file.IvyLog;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
@@ -638,7 +637,7 @@ private final class StatusUpdater extends Thread {
              }
           }
          catch (Throwable t) {
-            IvyLog.logE("Problem doing status updates",t);
+            ShoreLog.logE("NETWORK","Problem doing status updates",t);
           }
          finalDelay();
        }
@@ -646,14 +645,14 @@ private final class StatusUpdater extends Thread {
    
    private void delay() {
       try {
-         Thread.sleep(100);
+         Thread.sleep(1000);
        }
       catch (InterruptedException e) { }
     }
    
    private void finalDelay() {
       try {
-         Thread.sleep(5000);
+         Thread.sleep(10000);
        }
       catch (InterruptedException e) { }
     }
@@ -690,7 +689,7 @@ private class ReaderThread extends Thread {
             ShoreLog.logE("Problem reading UDP",e);
             // possibly recreate our_socket or set to null
           }
-         ShoreLog.logD("NETWORK","FINISH PACKET");
+   //    ShoreLog.logD("NETWORK","FINISH PACKET");
        }
     }
 
@@ -745,7 +744,7 @@ private SocketAddress getServiceSocket(ServiceInfo si,Map<?,?> known)
 
 private ControllerInfo findController(SocketAddress sa)
 {
-   ShoreLog.logD("NETWORK","Find controller on " + sa);
+// ShoreLog.logD("NETWORK","Find controller on " + sa);
    if (sa == null) return null;
    ControllerInfo ci = controller_map.get(sa);
    if (ci == null) {

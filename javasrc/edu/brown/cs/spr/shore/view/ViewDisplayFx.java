@@ -95,7 +95,7 @@ private static ViewFactory	view_factory;
 
 public ViewDisplayFx()
 {
-   System.err.println("CONSTRUCT FX");
+   ShoreLog.logD("VIEW","CONSTRUCT FX");
 }
 
 
@@ -108,19 +108,19 @@ public ViewDisplayFx()
 
 @Override public void init()
 {
-   System.err.println("INIT FX");
+   ShoreLog.logD("VIEW","INIT FX");
 }
 
 @Override public void stop()
 {
-   System.err.println("STOP FX");
+   ShoreLog.logD("VIEW","STOP FX");
    System.exit(0);
 }
 
 
 @Override public void start(Stage stage)
 {
-   System.err.println("START FX");
+   ShoreLog.logD("VIEW","START FX");
    try {
       EngineerPanel epanel = new EngineerPanel();
       LayoutPanel lpanel = new LayoutPanel();
@@ -136,7 +136,7 @@ public ViewDisplayFx()
    catch (Throwable t) {
       t.printStackTrace();
     }
-   System.err.println("START FX COMPLETE");
+   ShoreLog.logD("VIEW","START FX COMPLETE");
 }
 
 
@@ -261,26 +261,26 @@ private class FullSplitPane extends SplitPane {
       double w = 0;
       double h = 0;
       if (p != null && p instanceof Pane) {
-	 Pane ppp = (Pane) p;
-	 w = ppp.getWidth();
-	 h = ppp.getHeight();
+         Pane ppp = (Pane) p;
+         w = ppp.getWidth();
+         h = ppp.getHeight();
        }
       else if (p == null) {
-	 w = s.getWidth();
-	 h = s.getHeight();
-	 if (w < w0 || h < h0) {
-	   return;
-	  }
+         w = s.getWidth();
+         h = s.getHeight();
+         if (w < w0 || h < h0) {
+           return;
+          }
        }
       else {
-	 System.err.println("CHECK HERE");
+         System.err.println("CHECK HERE");
        }
       if (w > 1.0) {
-	 if (w != w0 || h != h0) {
-	    resize(w,h);
-	  }
+         if (w != w0 || h != h0) {
+            resize(w,h);
+          }
        }
-
+   
       super.layoutChildren();
     }
 }

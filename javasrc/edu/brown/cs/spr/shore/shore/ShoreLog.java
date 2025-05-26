@@ -35,6 +35,8 @@
 
 package edu.brown.cs.spr.shore.shore;
 
+import java.io.File;
+
 import edu.brown.cs.ivy.file.IvyLog;
 
 
@@ -52,7 +54,11 @@ public static void setup()
 {
    setupLogging("SHORE",true);
    setLogLevel(LogLevel.DEBUG);
-   useStdErr(true);
+   String home = System.getProperty("user.home");
+   File f1 = new File(home);
+   File f2 = new File(f1,"shore.log");
+   setLogFile(f2);
+   useStdErr(false);
 }
 
 
