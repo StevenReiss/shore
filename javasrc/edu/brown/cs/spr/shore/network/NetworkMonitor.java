@@ -201,9 +201,20 @@ private boolean isWifiInterface(NetworkInterface ni)
       return false;
     }
    
+   if (ni.getParent() != null) return false;
+   boolean havei4 = false;
+   for (Enumeration<InetAddress> en = ni.getInetAddresses(); en.hasMoreElements(); ) {
+      InetAddress ia = en.nextElement();
+      if (ia instanceof Inet4Address) {
+         havei4 = true;
+       }
+    }
+   if (!havei4) return false;
+  
 // String s1 = ni.getName().toLowerCase();
 // String s2 = ni.getDisplayName().toLowerCase();
    // check name here -- but it might not be significant on a mac?
+   
    
    return true;
 }
@@ -284,9 +295,10 @@ public void setSignal(IfaceSignal sig,ShoreSignalState set)
    
    int id = sig.getTowerId();
    ControllerInfo ci = id_map.get(id);
-   if (ci == null) return;
+   if (ci != null) {
+      ci.sendSignalMessage(sig.getTowerSignal(),set);
+    }
    sig.setSignalState(set);
-   ci.sendSignalMessage(sig.getTowerSignal(),set);
 }
 
 

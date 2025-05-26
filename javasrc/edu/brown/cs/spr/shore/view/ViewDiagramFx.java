@@ -128,6 +128,7 @@ private static final Color SENSOR_UNKNOWN_COLOR = Color.LIGHTGRAY;
 private static final Color SENSOR_OFF_COLOR = Color.LIGHTGREEN;
 private static final Color SENSOR_ON_COLOR = Color.RED;
 private static final Color BLOCK_BACKGROUD_COLOR = Color.BLACK;
+private static final Color BLOCK_BACKGROUND_UNKNOWN_COLOR = Color.DARKGRAY;
 private static final Color BLOCK_BACKGROUD_INUSE_COLOR = Color.RED;
 private static final Color BLOCK_BACKGROUD_PENDING_COLOR = Color.YELLOW;
 private static final Color BLOCK_LABEL_COLOR = Color.WHITE;
@@ -143,7 +144,6 @@ static {
    Font ft0 = Font.getDefault();
    SWITCH_FONT = Font.font(ft0.getFamily(),FontWeight.BOLD,18);
    BLOCK_FONT = SWITCH_FONT;
-   
 }
 
       
@@ -430,7 +430,10 @@ private void drawSwitches()
       t.setX(cpt2.getX() - w0/2);
       t.setY(cpt2.getY());
       
-      Ellipse bkg = new Ellipse(cpt2.getX(),cpt2.getY(),w/2,h/2);
+      Shape bkg = new Ellipse(cpt2.getX(),cpt2.getY(),w/2,h/2);
+      w -= 2;
+      bkg = new Rectangle(cpt2.getX()-w/2,cpt2.getY()-h/2,w,h); 
+      
       bkg.setFill(SWITCH_BACKGROUD_COLOR);
       
       getChildren().add(bkg);
@@ -570,6 +573,9 @@ private void drawSignals()
       double wd = SIGNAL_LIGHT + 2 * SIGNAL_GAP;
       double y0 = my - ht/2;
       
+      Line l0 = new Line(cpt.getX(),cpt.getY(),mx+wd/2,y0+ht/2);
+      getChildren().add(l0);
+      
       Rectangle box = new Rectangle(mx,y0,wd,ht);
       box.setFill(SIGNAL_BACKGROUND);
       getChildren().add(box);
@@ -592,6 +598,13 @@ private void drawSignals()
     }
 }
 
+
+private void setAllSignals(ShoreSignalState state)
+{
+   for (IfaceSignal sig : for_diagram.getSignals()) {
+      view_factory.getSafetyModel().setSignal(sig,state);
+    }
+}
 
 private class SignalDrawData {
    
@@ -661,6 +674,16 @@ private class SignalHandler implements EventHandler<MouseEvent> {
    
    @Override public void handle(MouseEvent evt) {
       if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
+         if (evt.isControlDown()) {
+            if (evt.isShiftDown()) { 
+               setAllSignals(ShoreSignalState.RED);
+               return;
+             }
+            else if (evt.isMetaDown()) { 
+               setAllSignals(ShoreSignalState.GREEN);
+               return;
+             }
+          }
          ShoreSignalState st = for_signal.getSignalState();
          ShoreSignalType typ = for_signal.getSignalType();
          ShoreSignalState next = ShoreSignalState.RED;
@@ -809,7 +832,7 @@ private void drawBlocks()
       t.setStroke(BLOCK_LABEL_COLOR);
       Bounds b = t.getBoundsInLocal();
       double w0 = b.getWidth();
-      double w = w0 + 8;
+      double w = w0 + 10;
       double h = b.getHeight();
       t.setTextAlignment(TextAlignment.CENTER);
       t.setTextOrigin(VPos.CENTER);
@@ -860,8 +883,10 @@ private class BlockDrawData {
       switch (st) {
          default :
          case EMPTY :
-         case UNKNOWN :
             break;
+         case UNKNOWN :
+            bcolor = BLOCK_BACKGROUND_UNKNOWN_COLOR; 
+            break; 
          case INUSE :
             lcolor = BLOCK_LABEL_INUSE_COLOR;
             bcolor = BLOCK_BACKGROUD_INUSE_COLOR;
