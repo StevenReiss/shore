@@ -298,7 +298,9 @@ public void setSignal(IfaceSignal sig,ShoreSignalState set)
    if (ci != null) {
       ci.sendSignalMessage(sig.getTowerSignal(),set);
     }
-   sig.setSignalState(set);
+   else {
+      sig.setSignalState(set);
+    }
 }
 
 
@@ -563,22 +565,19 @@ private final class NotificationHandler implements MessageHandler {
       SocketAddress sa = msg.getSocketAddress();
       ControllerInfo ci = findController(sa);
       ControllerInfo ci1 = id_map.get(id);
-      if (ci1 == null) {
-         id_map.put(id,ci);
-         ShoreLog.logD("NETWORK","Assign id to controller " + id);
-         ci.setId(id);
+      if (ci1 == null && data[0] != CONTROL_ID) {
+         ShoreLog.logD("NETWORK","Message without heartbeat " + id);
+   //    id_map.put(id,ci);
+   //    ShoreLog.logD("NETWORK","Assign id to controller " + id);
+   //    ci.setId(id);
        }
-      else if (ci != ci1) {
+      else if (ci != ci1 && ci1 != null) {
          ShoreLog.logE("NETWORK","Conflicing controllers for " + id);
        }
    
       switch (data[0]) {
          case CONTROL_ID :
-            ci.setId(id);
-            ShoreLog.logD("NETWORK","Assign id to controller " + id + " " + which);
-            if (which == 1) {                   // first heartbeat
-               ci.sendSyncMessage();
-             }
+            ci.noteConnection(id,which);
             break;
          case CONTROL_SENSOR :
             if (layout_model != null) {
@@ -655,18 +654,25 @@ private final class StatusUpdater extends Thread {
        }
     }
    
+   private void checkHeartbeat() {
+      long now = System.currentTimeMillis();
+      for (ControllerInfo ci : controller_map.values()) {
+        ci.checkHeartbeat(now);
+       }
+    }
+   
    private void delay() {
+      checkHeartbeat();
       try {
-         Thread.sleep(1000);
+         Thread.sleep(STATUS_DELAY); 
        }
       catch (InterruptedException e) { }
     }
    
    private void finalDelay() {
-      try {
-         Thread.sleep(10000);
+      for (int i = 0; i < FINAL_DELAY; ++i) {
+         delay();
        }
-      catch (InterruptedException e) { }
     }
    
 }
@@ -831,10 +837,12 @@ private class ControllerInfo {
    
    private byte controller_id;
    private SocketAddress net_address;
+   private long last_heartbeat;
    
    ControllerInfo(SocketAddress net) {
       net_address = net;
       controller_id = -1;
+      last_heartbeat = 0;
       String mac = getMacAddress(net);
       if (mac != null) {
          ShoreLog.logD("NETWORK","Controller mac address: " + mac);
@@ -842,6 +850,45 @@ private class ControllerInfo {
     }
    
    SocketAddress getSocketAddress()                     { return net_address; }
+   
+   synchronized void noteConnection(int id,int first) {
+      if (id != controller_id) {
+         setId(id);
+         id_map.put(id,this);
+         ShoreLog.logD("NETWORK","Assign id to controller " + id + " " + first);
+         first = 1;
+       }
+      else if (id_map.get(id) != this) {
+         id_map.put(id,this);
+         first = 1;
+       }
+      
+      last_heartbeat = System.currentTimeMillis();
+      if (first == 1) {
+         ShoreLog.logD("NETWORK","Set up new controller " + id);
+         for (IfaceSensor sen : layout_model.getSensors()) {
+            if (sen.getTowerId() == id) {
+               sen.setSensorState(ShoreSensorState.UNKNOWN);
+             }
+            // possibly reset switches and signals as well
+          }
+         sendSyncMessage();
+       }
+    }
+   
+   synchronized boolean checkHeartbeat(long now) {
+      if (last_heartbeat == 0 || controller_id < 0) {
+         return false;
+       }
+      if (now - last_heartbeat > HEARTBEAT_TIME) { 
+         int val = (int) controller_id;
+         id_map.remove(val);
+         controller_id = -1;
+         return false;
+       }
+      
+      return true;
+    }
    
    void setId(int id)                                   { controller_id = (byte) id; }
    
@@ -981,6 +1028,11 @@ public class ServiceFinder implements ServiceListener, ServiceTypeListener {
     }
    
 }	// end of inner class ServiceFinder
+
+
+
+
+
 
 
 

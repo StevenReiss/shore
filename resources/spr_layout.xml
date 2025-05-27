@@ -92,8 +92,7 @@
      <POINT ID='S2' X='207' Y='32' TYPE='END' REF='152' />
      <!-- Connection to Yard -->
      <POINT ID='C1' X='155' Y='53' TYPE='SENSOR' REF='123' />
-     <POINT ID='C2' X='148' Y='53' TYPE='TURNING' />
-     <POINT ID='C4' X='137' Y='60' TYPE='SWITCH' REF='0' />
+     <POINT ID='C2' X='148' Y='53' TYPE='TURNING' /> <POINT ID='C4' X='137' Y='60' TYPE='SWITCH' REF='0' />
      <POINT ID='C5' X='130' Y='58' TYPE='TURNING' />
      <POINT ID='C7' X='123' Y='56' TYPE='SENSOR' REF='134' />
      <POINT ID='C8' X='88' Y='32' TYPE='END' REF='153' />
@@ -194,6 +193,8 @@
      <SIGNAL ID='6to4' POINT='M6a' TO='M7' TOWER='3' INDEX='4' TYPE='RG' ANODE='T' />
      <SIGNAL ID='3to5' POINT='N9a' TO='N9' TOWER='1' INDEX='1' TYPE='RG' ANODE='T' />
      <SIGNAL ID='1to14' POINT='C9a' TO='C10' TOWER='0' INDEX='0' TYPE='RG' ANODE='T' />
+     <SIGNAL ID="UNUSED_4" TOWER='2' INDEX='3' TYPE='RG' ANODE='T' UNUSED='T' />
+     <SIGNAL ID="UNUSED_5" TOWER='0' INDEX='5' TYPE='RG' ANODE='T' UNUSED='T' />
   </DIAGRAM>
   <DIAGRAM ID='Yard' ENGINE='15' >
      <POINT ID='Y1' X='7' Y='68' TYPE='END' />
@@ -329,10 +330,3 @@
    <ENGINE ID='Train2' />
    <ENGINE ID='Train3' />
 </LAYOUT>
-
-
-
-
-
-
-

@@ -51,7 +51,6 @@ import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceModel.ModelCallback;
 import edu.brown.cs.spr.shore.iface.IfaceTrains.TrainCallback;
-import edu.brown.cs.spr.shore.shore.ShoreLog;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
@@ -679,7 +678,7 @@ private class SignalHandler implements EventHandler<MouseEvent> {
                setAllSignals(ShoreSignalState.RED);
                return;
              }
-            else if (evt.isMetaDown()) { 
+            else if (evt.isMetaDown() || evt.isAltDown()) { 
                setAllSignals(ShoreSignalState.GREEN);
                return;
              }
@@ -878,7 +877,6 @@ private class BlockDrawData {
       ShoreBlockState st = for_block.getBlockState();
       Color lcolor = BLOCK_LABEL_COLOR;
       Color bcolor = BLOCK_BACKGROUD_COLOR;
-      ShoreLog.logD("VIEW","UPDATE BLOCK " + for_block.getId() + " " + st);
    
       switch (st) {
          default :
