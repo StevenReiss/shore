@@ -45,6 +45,7 @@ import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
+import edu.brown.cs.spr.shore.shore.ShoreLog;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 
 class SafetySignal implements SafetyConstants
@@ -114,6 +115,8 @@ void handleSensorChange(IfaceSensor s)
 {
    for (IfaceSignal sig : s.getSignals()) { 
       Collection<IfaceSensor> pset = sig.getPriorSensors();
+      ShoreLog.logD("SAFETY","PRIOR SENSORS " + s + " " + pset);
+
       if (safety_factory.checkPriorSensors(pset)) {  
          if (s.getSensorState() == ShoreSensorState.ON && sig != null) {
             SignalData sd = active_signals.get(sig);

@@ -631,6 +631,7 @@ private final class StatusUpdater extends Thread {
    @Override public void run() {
       for ( ; ; ) {
          try {
+            broadcastInfo();
             for (IfaceSensor sen : layout_model.getSensors()) {
                if (sendDefSensor(sen)) delay();
              }
@@ -650,6 +651,7 @@ private final class StatusUpdater extends Thread {
          catch (Throwable t) {
             ShoreLog.logE("NETWORK","Problem doing status updates",t);
           }
+         broadcastInfo();
          finalDelay();
        }
     }
@@ -866,13 +868,17 @@ private class ControllerInfo {
       last_heartbeat = System.currentTimeMillis();
       if (first == 1) {
          ShoreLog.logD("NETWORK","Set up new controller " + id);
-         for (IfaceSensor sen : layout_model.getSensors()) {
-            if (sen.getTowerId() == id) {
-               sen.setSensorState(ShoreSensorState.UNKNOWN);
-             }
-            // possibly reset switches and signals as well
-          }
+         setToUnknown();
          sendSyncMessage();
+       }
+    }
+   
+   private void setToUnknown() {
+      for (IfaceSensor sen : layout_model.getSensors()) {
+         if (sen.getTowerId() == controller_id) {
+            sen.setSensorState(ShoreSensorState.UNKNOWN);
+          }
+         // possibly reset switches and signals and blocks as well
        }
     }
    
@@ -883,7 +889,9 @@ private class ControllerInfo {
       if (now - last_heartbeat > HEARTBEAT_TIME) { 
          int val = (int) controller_id;
          id_map.remove(val);
+         setToUnknown();
          controller_id = -1;
+         
          return false;
        }
       

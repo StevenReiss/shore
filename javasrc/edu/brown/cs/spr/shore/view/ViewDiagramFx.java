@@ -605,6 +605,8 @@ private void setAllSignals(ShoreSignalState state)
     }
 }
 
+
+
 private class SignalDrawData {
    
    private IfaceSignal for_signal;
@@ -905,9 +907,15 @@ private class BlockDrawData {
 }       // end of inner class BlockDrawData
 
 
+private void setAllBlocks(ShoreBlockState state)
+{
+   for (IfaceBlock blk : for_diagram.getBlocks()) {
+      blk.setBlockState(state);
+    }
+}
 
 
-private static class BlockHandler implements EventHandler<MouseEvent> {
+private class BlockHandler implements EventHandler<MouseEvent> {
 
    private IfaceBlock for_block;
    
@@ -917,6 +925,10 @@ private static class BlockHandler implements EventHandler<MouseEvent> {
    
    @Override public void handle(MouseEvent evt) {
       if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
+         if (evt.isControlDown()) {
+            setAllBlocks(ShoreBlockState.EMPTY); 
+            return;
+          }
          ShoreBlockState st = for_block.getBlockState();
          ShoreBlockState next = ShoreBlockState.UNKNOWN;
          switch (st) {
