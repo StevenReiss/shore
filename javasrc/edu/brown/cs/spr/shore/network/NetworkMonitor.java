@@ -582,7 +582,10 @@ private final class NotificationHandler implements MessageHandler {
          case CONTROL_SENSOR :
             if (layout_model != null) {
                IfaceSensor s = findSensor(id,which);
-               if (s == null) break;
+               if (s == null) {
+                  ShoreLog.logD("NETWORK","Sensor not found " + id + " " + which);
+                  break;
+                }
                ShoreSensorState sst = getState(value,ShoreSensorState.UNKNOWN); 
                s.setSensorState(sst);
              }

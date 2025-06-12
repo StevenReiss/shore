@@ -154,7 +154,8 @@ private void handleSensorChange(IfaceSensor s)
 
 private void handleActualSensorChange(IfaceSensor s)
 {
-   ShoreLog.logD("SAFETY","Actual sensor change " + s);
+   ShoreLog.logD("SAFETY","Actual sensor change " + s + " " + s.getSensorState());
+   
    safety_switch.handleSensorChange(s);
    safety_signal.handleSensorChange(s);
    safety_block.handleSensorChange(s);

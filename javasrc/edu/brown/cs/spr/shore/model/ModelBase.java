@@ -572,6 +572,9 @@ private void normalizeModel() throws ShoreException
       conn.normalizeConnection(this);
     }
    
+   for (ModelSensor ms : model_sensors.values()) {
+      ms.normalizeSensor(this); 
+    }
    normalizePoints();
   
    // now we need to normalize the model 

@@ -72,6 +72,7 @@ private ModelConnection in_connection;
 private Set<ModelSignal> for_signals;
 private byte tower_id;
 private byte tower_index;
+private ShoreSensorState force_state;
 
 
 
@@ -89,6 +90,7 @@ ModelSensor(ModelBase mdl,Element xml)
    sensor_point = mdl.getPointById(pt);
    tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
    tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
+   force_state = IvyXml.getAttrEnum(xml,"STATE",ShoreSensorState.UNKNOWN);
    n_switch = null;
    r_switch = null;
    entry_switch = null;
@@ -162,6 +164,8 @@ void assignSwitch(ModelSwitch sw,ShoreSwitchState state)
 
 @Override public void setSensorState(ShoreSensorState st)
 {
+   if (force_state != ShoreSensorState.UNKNOWN) st = force_state;
+   
    if (st == sensor_state) return;
    
    ShoreLog.logD("MODEL","Set sensor state " + sensor_id + "=" + st);
@@ -178,6 +182,21 @@ void addSignal(ModelSignal sig)
 @Override public byte getTowerId()              { return tower_id; } 
 
 @Override public byte getTowerSensor()          { return tower_index; }
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Normalization methods                                                   */
+/*                                                                              */
+/********************************************************************************/
+
+void normalizeSensor(ModelBase mdl)
+{
+   if (tower_id < 0 || tower_index < 0) {
+      mdl.noteError("Sensor " + getId() + " " + tower_id + " " + tower_index + 
+            "is bad");
+    }
+}
 
 
 

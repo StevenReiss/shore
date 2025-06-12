@@ -201,7 +201,7 @@ void normalizeBlock(ModelBase mdl)
 {
    ModelPoint pt = getAtPoint();
    if (pt == null) {
-      mdl.noteError("No Point specified for block");
+      mdl.noteError("No Point specified for block " + getId());
       return;
     }
    propagateBlock(mdl,pt);
