@@ -90,7 +90,12 @@ ModelSensor(ModelBase mdl,Element xml)
    sensor_point = mdl.getPointById(pt);
    tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
    tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
-   force_state = IvyXml.getAttrEnum(xml,"STATE",ShoreSensorState.UNKNOWN);
+   if (IvyXml.getAttrPresent(xml,"STATE")) {
+      force_state = IvyXml.getAttrEnum(xml,"STATE",ShoreSensorState.UNKNOWN);
+    }
+   else {
+      force_state = null;
+    }
    n_switch = null;
    r_switch = null;
    entry_switch = null;
@@ -164,7 +169,7 @@ void assignSwitch(ModelSwitch sw,ShoreSwitchState state)
 
 @Override public void setSensorState(ShoreSensorState st)
 {
-   if (force_state != ShoreSensorState.UNKNOWN) st = force_state;
+   if (force_state != null) st = force_state;
    
    if (st == sensor_state) return;
    

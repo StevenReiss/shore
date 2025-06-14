@@ -63,7 +63,7 @@ private SafetyFactory   safety_factory;
 private Map<IfaceBlock,BlockData> active_blocks;
 private Map<IfaceSensor,BlockData> wait_sensors;
 
-private static final long BLOCK_DELAY = 500;
+private static final long BLOCK_DELAY = 10;
 private static final long VERIFY_DELAY = 30000;
 
 
@@ -129,6 +129,7 @@ void handleSensorChange(IfaceSensor s)
     }
    else if (s.getSensorState() == ShoreSensorState.ON) {
       ShoreLog.logD("SAFETY","Note sensor in block");
+      boolean pend = (bd.getPriorPoint() == null);
       if (bd.noteSensor(s) && bd.isVerified()) {
          for (IfaceConnection conn : blk.getConnections()) {
             if (conn.getExitSensor(blk) == s) {
@@ -138,13 +139,14 @@ void handleSensorChange(IfaceSensor s)
              }
           }
        }
+      if (pend && bd.getPriorPoint() != null) checkPendingBlocks(blk);
     }
    else if (s.getSensorState() == ShoreSensorState.OFF &&
          (s == bd.getExitSensor() || s == bd.getExitCheck())) {
       if (bd.getExitSensor().getSensorState() == ShoreSensorState.OFF &&
             bd.getExitCheck().getSensorState() == ShoreSensorState.OFF) {
-         ShoreLog.logD("CHECK BLOCK EDIT " + blk + " " + bd.getExitSensor() + " " 
-               + bd.getExitCheck());
+         ShoreLog.logD("CHECK BLOCK EDIT " + blk + " " + bd.getExitSensor() + " " +
+               bd.getExitCheck());
          // we seem to have exited prior block
          // double check what we can
          boolean checkexit = true;
@@ -254,6 +256,7 @@ private class BlockData {
                BlockData bd = active_blocks.get(prev);
                if (bd != null && bd.is_verified) {
                   is_verified = true;
+                  prior_point = conn.getExitSensor(for_block).getAtPoint();
                   ShoreLog.logD("SAFETY","Verified " + for_block + " based on prior block " +
                         bd.for_block);
                 }
@@ -271,7 +274,9 @@ private class BlockData {
                first_sensor + " " + prior_point);
        }
       else if (s.getSensorState() == ShoreSensorState.ON && prior_point == null) { 
+//       prior_point = current_point;
          findPriorPoint(s.getAtPoint()); 
+         current_point = s.getAtPoint();
          if (!is_verified && prior_point != null) {
             ShoreLog.logD("SAFETY","Check prior for verification " + prior_point);
             if (checkHitSensor(current_point,prior_point,0)) is_verified = true;
