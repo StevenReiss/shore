@@ -298,9 +298,8 @@ public void setSignal(IfaceSignal sig,ShoreSignalState set)
    if (ci != null) {
       ci.sendSignalMessage(sig.getTowerSignal(),set);
     }
-   else {
-      sig.setSignalState(set);
-    }
+   
+   sig.setSignalState(set);
 }
 
 

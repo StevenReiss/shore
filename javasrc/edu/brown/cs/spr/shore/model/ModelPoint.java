@@ -125,7 +125,7 @@ void setPoint2D(double x,double y)
    point_y = y;
 }
 
-@Override public ShorePointType getType()               { return point_type; }   
+@Override public ShorePointType getType()       { return point_type; }   
 
 String getRefId()                               { return ref_id; }
 
@@ -141,9 +141,15 @@ List<ModelPoint> getModelConnectedTo()
 
 
 
-@Override public ModelBlock getBlock()                  { return in_block; }
+@Override public ModelBlock getBlock()          { return in_block; }
 void setBlock(ModelBlock blk)                   { in_block = blk; }
 
+
+void setSignal(ModelSignal sig)
+{
+   point_type = ShorePointType.SIGNAL;
+   ref_id = sig.getId();
+}
 
 
 /********************************************************************************/

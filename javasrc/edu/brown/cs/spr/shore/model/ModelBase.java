@@ -771,6 +771,10 @@ private void checkModel() throws ShoreException
             else if (!rid.equals(sensor.getId())) {
                noteError("Point " + pt.getId() + " has the wrong sensor"); 
              }
+            ModelSignal sig0 = findSignalForPoint(pt);
+            if (sig0 != null) {
+               pt.setSignal(sig0); 
+             }
             break;
          case SIGNAL :
             ModelSignal signal = findSignalForPoint(pt);

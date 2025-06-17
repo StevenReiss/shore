@@ -131,12 +131,6 @@ ModelSwitch getAssociatedSwitch()
 }
 
 
-
-
- 
-
-
-
 @Override public IfaceSensor getNSensor()       { return n_sensor; }
 
 @Override public IfaceSensor getRSensor()       { return r_sensor; }
@@ -300,13 +294,17 @@ private ModelSensor findSensor(ModelBase mdl,ModelPoint pt)
 {
    if (pt == null) return null;
    
-   ModelPoint p = findSensorPoint(pivot_point,pt);
+   ModelPoint p = findSensorPoint(mdl,pivot_point,pt);
    return mdl.findSensorForPoint(p); 
 }
 
-private ModelPoint findSensorPoint(ModelPoint frm,ModelPoint to)
+private ModelPoint findSensorPoint(ModelBase mdl,ModelPoint frm,ModelPoint to)
 {
    if (to.getType() == ShorePointType.SENSOR) return to;
+   if (to.getType() == ShorePointType.SIGNAL) {
+      ModelSensor sen = mdl.findSensorForPoint(to);
+      if (sen != null) return to;
+    }
    
    ModelPoint next = null;
    for (ModelPoint npt : to.getModelConnectedTo()) {
@@ -315,7 +313,7 @@ private ModelPoint findSensorPoint(ModelPoint frm,ModelPoint to)
       else return null;
     }
    if (next == null) return null;
-   return findSensorPoint(to,next);
+   return findSensorPoint(mdl,to,next);
 }
 
 

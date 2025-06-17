@@ -7,32 +7,32 @@
      <POINT ID='M4' X='28' Y='59' TYPE='TURNING' />
      <POINT ID='M5' X='62' Y='59' TYPE='BLOCK' REF='6' />
      <POINT ID='M6' X='98' Y='59' TYPE='TURNING' />
-     <POINT ID='M6a' X='124' Y='42' TYPE='SENSOR' REF='150' />
+     <POINT ID='M6a' X='124' Y='42' TYPE='SIGNAL' REF='6to4' />
      <POINT ID='M7' X='145' Y='29' TYPE='SENSOR' REF='131B' />
      <POINT ID='M8' X='152' Y='26' TYPE='GAP' />
      <POINT ID='M9' X='156' Y='23' TYPE='SENSOR' REF='131A' />
-     <POINT ID='M9a' X='163' Y='21' TYPE='SENSOR' REF='148' />
+     <POINT ID='M9a' X='163' Y='21' TYPE='SIGNAL' REF='4to6' />
      <POINT ID='M10' X='175' Y='12' TYPE='TURNING' />
      <POINT ID='M11' X='217' Y='12' TYPE='BLOCK' REF='4' />
      <POINT ID='M12' X='240' Y='12' TYPE='TURNING' />
      <POINT ID='M13' X='252' Y='24' TYPE='TURNING' />
      <POINT ID='M14' X='252' Y='39' TYPE='TURNING' />
      <POINT ID='M15' X='240' Y='49' TYPE='TURNING' />
-     <POINT ID='M15a' X='222' Y='49' TYPE='SENSOR' REF='140' />
+     <POINT ID='M15a' X='222' Y='49' TYPE='SIGNAL' REF='4to1,2'  />
      <POINT ID='M16' X='203' Y='49' TYPE='SWITCH' REF='2A' />
      <POINT ID='M17' X='198' Y='49' TYPE='SENSOR' REF='126B' />
      <POINT ID='M18' X='193' Y='49' TYPE='GAP' />
      <POINT ID='M19' X='187' Y='49' TYPE='SENSOR' REF='126A' />
-     <POINT ID='M19a' X='185' Y='49' TYPE='SENSOR' REF='141' />
+     <POINT ID='M19a' X='185' Y='49' TYPE='SIGNAL' REF='2to4' />
      <POINT ID='M20' X='182' Y='49' TYPE='SWITCH' REF='5' />
      <POINT ID='M21' X='173' Y='49' TYPE='TURNING' />
      <POINT ID='M22' X='160' Y='41' TYPE='BLOCK' REF='2' />
-     <POINT ID='M22a' X='129' Y='24' TYPE='SENSOR' REF='145' />
+     <POINT ID='M22a' X='129' Y='24' TYPE='SIGNAL' REF='2to6' />
      <POINT ID='M23' X='124' Y='20' TYPE='SENSOR' REF='133B' />
-     <POINT ID='M24' X='120' Y='19' TYPE='GAP' />
+	<POINT ID='M24' X='120' Y='19' TYPE='GAP' />
      <POINT ID='M25' X='117' Y='17' TYPE='SENSOR' REF='133A' />
      <POINT ID='M26' X='112' Y='13' TYPE='SWITCH' REF='4' />
-     <POINT ID='M26a' X='104' Y='9' TYPE='SENSOR' REF='146' />
+     <POINT ID='M26a' X='104' Y='9' TYPE='SIGNAL' REF='6to2R' />
      <POINT ID='M27' X='95' Y='4' TYPE='TURNING' />
      <POINT ID='M28' X='64' Y='4' TYPE='BLOCK' REF='6' />
      <!-- LOOP 5-3-1 -->
@@ -42,32 +42,32 @@
      <POINT ID='N4' X='28' Y='51' TYPE='TURNING' />
      <POINT ID='N5' X='54' Y='51' TYPE='BLOCK' REF='5' />
      <POINT ID='N6' X='95' Y='51' TYPE='TURNING' />
-     <POINT ID='N6a' X='120' Y='42' TYPE='SENSOR' REF='149' />
+     <POINT ID='N6a' X='120' Y='42' TYPE='SIGNAL' REF='5to3' />
      <POINT ID='N7' X='143' Y='22' TYPE='SENSOR' REF='130A' />
      <POINT ID='N8' X='146' Y='19' TYPE='GAP' />
      <POINT ID='N9' X='151' Y='17' TYPE='SENSOR' REF='130B' />
-     <POINT ID='N9a' X='156' Y='16' TYPE='SENSOR' REF='151' />
+     <POINT ID='N9a' X='156' Y='16' TYPE='SIGNAL' REF='3to5' />
      <POINT ID='N10' X='161' Y='10' TYPE='SENSOR' REF='129' />
      <POINT ID='N12' X='170' Y='4' TYPE='SWITCH' REF='3' />
-     <POINT ID='N12a' X='183' Y='4' TYPE='SENSOR' REF='142' />
+     <POINT ID='N12a' X='183' Y='4' TYPE='SIGNAL' REF='3toR' />
      <POINT ID='N13' X='208' Y='4' TYPE='BLOCK' REF='3' />
      <POINT ID='N14' X='245' Y='4' TYPE='TURNING' />
      <POINT ID='N15' X='260' Y='21' TYPE='TURNING' />
      <POINT ID='N16' X='260' Y='42' TYPE='TURNING' />
-     <POINT ID='N16a' X='252' Y='51' TYPE='SENSOR' REF='147' />
+     <POINT ID='N16a' X='252' Y='51' TYPE='SIGNAL' REF='3to1' />
      <POINT ID='N17' X='245' Y='58' TYPE='TURNING' />
      <POINT ID='N18' X='242' Y='58' TYPE='SENSOR' REF='127B' />
      <POINT ID='N19' X='238' Y='58' TYPE='GAP' />
      <POINT ID='N20' X='233' Y='58' TYPE='SENSOR' REF='127A' />
      <POINT ID='N20a' X='224' T='58' TYPE='SIGNAL' REF='1to3' />
-     <POINT ID='N21' X='206' Y='58' TYPE='SENSOR' REF='135' />
+     <POINT ID='N21' X='206' Y='58' TYPE='SIGNAL' REF='1to5' />
      <POINT ID='N22' X='194' Y='58' TYPE='SWITCH' REF='2B' />
      <POINT ID='N23' X='182' Y='58' TYPE='BLOCK' REF='1' />
      <POINT ID='N24' X='172' Y='58' TYPE='TURNING' />
      <POINT ID='N25' X='165' Y='53' TYPE='SWITCH' REF='1' />
-     <POINT ID='N26' X='159' Y='49' TYPE='SENSOR' REF='124A' />
+     <POINT ID='N26' X='159' Y='49' TYPE='SENSOR' REF='124B' />
      <POINT ID='N27' X='154' Y='48' TYPE='GAP' />
-     <POINT ID='N28' X='150' Y='43' TYPE='SENSOR' REF='124B' />
+     <POINT ID='N28' X='150' Y='43' TYPE='SENSOR' REF='124A' />
      <POINT ID='N28a' X='140' Y='40' TYPE='SIGNAL' REF='5to1' />
      <POINT ID='N29' X='94' Y='14' TYPE='TURNING' />
      <POINT ID='N30' X='55' Y='14' TYPE='BLOCK' REF='5' />
@@ -76,13 +76,13 @@
      <POINT ID='MN2' X='197' Y='55' TYPE='SENSOR' REF='136' />
      <POINT ID='MN3' X='201' Y='53' TYPE='SENSOR' REF='137' />
      <!-- REVERSE Circuit -->
-     <POINT ID='R1' X='118' Y='13' TYPE='SENSOR' REF='132B' />
+     <POINT ID='R1' X='118' Y='13' TYPE='SENSOR' REF='132A' />
      <POINT ID='R2' X='122' Y='13' TYPE='GAP' />
-     <POINT ID='R3' X='124' Y='13' TYPE='SENSOR' REF='132A' />
+     <POINT ID='R3' X='124' Y='13' TYPE='SENSOR' REF='132B' />
      <POINT ID='R4' X='133' Y='13' TYPE='BLOCK' REF='R' />
-     <POINT ID='R4a' X='138' Y='13' TYPE='SENSOR' REF='144' />
+     <POINT ID='R4a' X='138' Y='13' TYPE='SIGNAL' REF='Rto6' />
      <POINT ID='R5' X='141' Y='13' TYPE='TURNING' />
-     <POINT ID='R5a' X='148' Y='9' TYPE='SENSOR' REF='143' />
+     <POINT ID='R5a' X='148' Y='9' TYPE='SIGNAL' REF='Rto3' />
      <POINT ID='R6' X='155' Y='4' TYPE='TURNING' />
      <POINT ID='R7' X='156' Y='4' TYPE='SENSOR' REF='128B' />
      <POINT ID='R8' X='161' Y='4' TYPE='GAP' />
@@ -91,13 +91,14 @@
      <POINT ID='S1' X='192' Y='43' TYPE='SENSOR' REF='125' />
      <POINT ID='S2' X='207' Y='32' TYPE='END' REF='152' />
      <!-- Connection to Yard -->
-     <POINT ID='C1' X='155' Y='53' TYPE='SENSOR' REF='123' />
-     <POINT ID='C2' X='148' Y='53' TYPE='TURNING' /> <POINT ID='C4' X='137' Y='60' TYPE='SWITCH' REF='0' />
+     <POINT ID='C1' X='155' Y='53' TYPE='SIGNAL' REF='1to4' />
+     <POINT ID='C2' X='148' Y='53' TYPE='TURNING' />
+     <POINT ID='C4' X='137' Y='60' TYPE='SWITCH' REF='0' />
      <POINT ID='C5' X='130' Y='58' TYPE='TURNING' />
      <POINT ID='C7' X='123' Y='56' TYPE='SENSOR' REF='134' />
      <POINT ID='C8' X='88' Y='32' TYPE='END' REF='153' />
      <POINT ID='C9' X='133' Y='63' TYPE='SENSOR' REF='121' />
-     <POINT ID='C9a' X='130' Y='67' TYPE='SENSOR' REF='154' />
+     <POINT ID='C9a' X='130' Y='67' TYPE='SIGNAL' REF='1to14' />
      <POINT ID='C10' X='126' Y='68' TYPE='TURNING' />
      <POINT ID='C11' X='122' Y='68' TYPE='SENSOR' REF='120B' />
      <POINT ID='C12' X='116' Y='68' TYPE='GAP' />
@@ -128,8 +129,8 @@
      <SENSOR ID='120B' POINT='C11' TOWER='5' INDEX='1' />
      <SENSOR ID='121' POINT='C9' TOWER='2' INDEX='0' />
      <SENSOR ID='123' POINT='C1' TOWER='0' INDEX='1' />
-     <SENSOR ID='124A' POINT='N26' TOWER='5' INDEX='2' />
-     <SENSOR ID='124B' POINT='N28' TOWER='0' INDEX='0' />
+     <SENSOR ID='124A' POINT='N28' TOWER='5' INDEX='2' />
+     <SENSOR ID='124B' POINT='N26' TOWER='0' INDEX='0' />
      <SENSOR ID='125' POINT='S1' TOWER='0' INDEX='5' />
      <SENSOR ID='126A' POINT='M19' TOWER='0' INDEX='4' />
      <SENSOR ID='126B' POINT='M17' TOWER='0' INDEX='2' />
@@ -142,8 +143,8 @@
      <SENSOR ID='130B' POINT='N9' TOWER='5' INDEX='6' />
      <SENSOR ID='131A' POINT='M9' TOWER='1' INDEX='6' />
      <SENSOR ID='131B' POINT='M7' TOWER='1' INDEX='7' />
-     <SENSOR ID='132A' POINT='R3' TOWER='2' INDEX='3' />
-     <SENSOR ID='132B' POINT='R1' TOWER='2' INDEX='4' />
+     <SENSOR ID='132A' POINT='R1' TOWER='2' INDEX='3' />
+     <SENSOR ID='132B' POINT='R3' TOWER='2' INDEX='4' />
      <SENSOR ID='133A' POINT='M25' TOWER='2' INDEX='2' />
      <SENSOR ID='133B' POINT='M23' TOWER='2' INDEX='5' />
      <SENSOR ID='134' POINT='C7' TOWER='2' INDEX='1' />
@@ -197,14 +198,14 @@
      <SIGNAL ID="UNUSED_5" TOWER='0' INDEX='5' TYPE='RG' ANODE='T' UNUSED='T' />
   </DIAGRAM>
   <DIAGRAM ID='Yard' ENGINE='15' >
-     <POINT ID='Y1' X='7' Y='68' TYPE='END' />
+     <POINT ID='Y1' X='7' Y='68' TYPE='END' REF='118d' />
      <POINT ID='Y2' X='38' Y='68' TYPE='BLOCK' REF='10' />
-     <POINT ID='Y2a' X='51' Y='68' TYPE='SENSOR' REF='117b' />
+     <POINT ID='Y2a' X='51' Y='68' TYPE='SIGNAL' REF='10to12' />
      <POINT ID='Y3' X='63' Y='68' TYPE='SENSOR' REF='111B' />
      <POINT ID='Y4' X='69' Y='68' TYPE='GAP' />
      <POINT ID='Y5' X='73' Y='68' TYPE='SENSOR' REF='111A' />
      <POINT ID='Y6' X='83' Y='68' TYPE='SWITCH' ASSOCIATE='10A' REF='10B' />
-     <POINT ID='Y6a' X='100' Y='68' TYPE='SENSOR' REF='117c' />
+     <POINT ID='Y6a' X='100' Y='68' TYPE='SIGNAL' REF='12to10,11' />
      <POINT ID='Y7' X='80' Y='64' TYPE='SENSOR' REF='110A' />
      <POINT ID='Y8' X='141' Y='68' TYPE='BLOCK' REF='12' />
      <POINT ID='Y8a' X='160' Y='68' TYPE='SENSOR' REF='116b' />
@@ -213,22 +214,22 @@
      <POINT ID='Y11' X='182' Y='68' TYPE='SENSOR' REF='101A' />
      <POINT ID='Y12' X='190' Y='68' TYPE='SWITCH' REF='12' />
      <POINT ID='Y13' X='200' Y='68' TYPE='BLOCK' REF='14' />
-     <POINT ID='Y13a' X='210' Y='68' TYPE='SENSOR' REF='116c' />
-     <POINT ID='Y13b' X='230' Y='68' TYPE='SENSOR' REF='116d' />
+     <POINT ID='Y13a' X='210' Y='68' TYPE='SIGNAL' REF='14to12,13' />
+     <POINT ID='Y13b' X='230' Y='68' TYPE='SIGNAL' REF='14to1' />
      <POINT ID='Y14' X='240' Y='68' TYPE='SENSOR' REF='115' />
      <POINT ID='Y15' X='262' Y='68' TYPE='DIAGRAM' REF='Mainline' />
      <POINT ID='Y16' X='17' Y='57' TYPE='END' REF='118c' />
      <POINT ID='Y17' X='50' Y='57' TYPE='BLOCK' REF='11' />
-     <POINT ID='Y17a' X='62' Y='57' TYPE='SENSOR' REF='117a' />
+     <POINT ID='Y17a' X='62' Y='57' TYPE='SIGNAL' REF='11to12,13' />
      <POINT ID='Y18' X='73' Y='57' TYPE='SWITCH' ASSOCIATE='10B' REF='10A' />
      <POINT ID='Y19' X='82' Y='57' TYPE='SENSOR' REF='109B' />
      <POINT ID='Y20' X='86' Y='57' TYPE='GAP' />
      <POINT ID='Y21' X='94' Y='57' TYPE='SENSOR' REF='109A' />
-     <POINT ID='Y21a' X='106' Y='57' TYPE='SENSOR' REF='117d' />
+     <POINT ID='Y21a' X='106' Y='57' TYPE='SIGNAL' REF='13to11' />
      <POINT ID='Y22' X='116' Y='57' TYPE='SENSOR' REF='104' />
      <POINT ID='Y23' X='129' Y='57' TYPE='SWITCH' REF='11' />
      <POINT ID='Y24' X='150' Y='57' TYPE='BLOCK' REF='13' />
-     <POINT ID='Y24a' X='160' Y='57' TYPE='SENSOR' REF='116a'/>
+     <POINT ID='Y24a' X='160' Y='57' TYPE='SIGNAL' REF='13to14'/>
      <POINT ID='Y24b' X='171' Y='57' TYPE='TURNING' />
      <POINT ID='Y25' X='170' Y='57' TYPE='SENSOR' REF='102B' />
      <POINT ID='Y26' X='178' Y='60' TYPE='GAP' />
@@ -246,7 +247,7 @@
      <POINT ID='Y38' X='70' Y='22' TYPE='TURNTABLE' REF='20' />
      <POINT ID='Y39' X='61' Y='23' TYPE='GAP' />
      <POINT ID='Y40' X='50' Y='25' TYPE='BLOCK' REF='22' />
-     <POINT ID='Y41' X='42' Y='28' TYPE='END' REF='118d' />
+     <POINT ID='Y41' X='42' Y='28' TYPE='END' />
      <POINT ID='Y42' X='62' Y='18' TYPE='GAP' />
      <POINT ID='Y43' X='53' Y='11' TYPE='BLOCK' REF='21' />
      <POINT ID='Y44' X='45' Y='6' TYPE='END' />

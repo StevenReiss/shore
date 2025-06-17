@@ -196,6 +196,11 @@ private void updateSignal(IfaceSignal sig)
    else {
       rslt = ShoreSignalState.OFF;
     }
+  
+   if (sig.getSignalState() == rslt) return;
+   
+   ShoreLog.logD("SAFETY","Set signal " + sig.getId() + " = " + rslt + " from " +
+         sig.getSignalState());
    
    safety_factory.getNetworkModel().setSignal(sig,rslt);
 }
@@ -203,21 +208,33 @@ private void updateSignal(IfaceSignal sig)
 
 private ShoreSignalState updateSignal(IfaceSignal sig,IfaceConnection conn)
 {
+         
    IfaceBlock from = sig.getFromBlock();
    IfaceSwitch sw = conn.getExitSwitch(from);
    ShoreSwitchState st = conn.getExitSwitchState(from);  
+   IfaceBlock to = conn.getOtherBlock(from);
+   
+   ShoreLog.logD("SAFETY","Update signal " + sig.getId() + " for " + 
+         from + " " + to + " " + sw + " " + st); 
+         
    if (sw != null && st != null && sw.getSwitchState() != st) {
+      ShoreLog.logD("SAFETY","Signal not relevant due to switch state");
       // this connection is not relevant due to switch state
       return ShoreSignalState.GREEN;                         
     } 
-   IfaceBlock to = conn.getOtherBlock(from);
+   
+   ShoreLog.logD("SAFETY","Next block state " + to + " " + to.getBlockState() + 
+         " " + to.getPendingFrom() + " " + from);
+   
    switch (to.getBlockState()) {
       case INUSE :
          return ShoreSignalState.RED;
       case EMPTY :
          break;
       case PENDING :
-         if (to.getPendingFrom() != from) return ShoreSignalState.RED;
+         if (to.getPendingFrom() != from) {
+            return ShoreSignalState.RED;
+          }
          break;
       case UNKNOWN :
          break;

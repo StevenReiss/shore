@@ -48,6 +48,12 @@ public interface IfaceSignal extends IfaceConstants
 {
 
 /**
+ *      Return the name of the signal
+ **/
+String getId();
+
+
+/**
  *      Return the type of signal
  **/  
 ShoreSignalType getSignalType();

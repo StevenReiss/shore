@@ -124,14 +124,13 @@ ModelConnection(ModelPoint gap,ModelBlock from,ModelBlock to)
 }
 
 
-
-
 @Override public List<IfaceSensor> getStopSensors(IfaceBlock inblock)  
 {
    ModelSignal sig = getStopSignal(inblock);
    if (sig == null) return null;
    return sig.getStopSensors();
 }
+
 
 @Override public ModelSwitch getExitSwitch(IfaceBlock inblock)
 {
@@ -148,12 +147,6 @@ ModelConnection(ModelPoint gap,ModelBlock from,ModelBlock to)
    else if (inblock == to_block) return to_switch_state;
    return null;
 }
-
-
-
-
-
-
 
 
 /********************************************************************************/
@@ -189,83 +182,117 @@ void normalizeConnection(ModelBase mdl)
 
 private void followPath(ModelBase mdl,ModelPoint pt,Set<ModelPoint> done)
 {
-   while (pt != null) {
-      if (done.contains(pt)) return;
-      
-      ModelBlock b0 = pt.getBlock();
-      switch (pt.getType()) {
-         case SENSOR :
-            if (b0 == from_block && from_sensor == null) {
-               from_sensor = mdl.findSensorForPoint(pt);
-             }
-            else if (b0 == to_block && to_sensor == null) {
-               to_sensor = mdl.findSensorForPoint(pt);
-             }
-            break;
-         case SIGNAL :
-            if (b0 == from_block && from_signal == null) {
-               ModelSignal sig = mdl.findSignalForPoint(pt); 
-               if (sig != null && sig.getFromBlock() == b0) {
-                  from_signal = sig;
-                  sig.addConnection(this);
-                } 
-             }
-            else if (b0 == to_block && to_signal == null) {
-               ModelSignal sig = mdl.findSignalForPoint(pt);
-               if (sig != null && sig.getFromBlock() == b0) {
-                  to_signal = sig;
-                  sig.addConnection(this);
-                }
-             }
-            break;
-         case GAP :
-         case END :
-            return;
-         case SWITCH :
-            ModelSwitch sw = mdl.findSwitchForPoint(pt);
-            if (sw == null) {
-               mdl.noteError("No switch for point " + pt);
-               return;
-            }
-            if (b0 == from_block && from_switch == null) {
-               from_switch = sw;
-               if (done.contains(sw.getNPoint())) {
-                  from_switch_state = ShoreSwitchState.N;
-                }
-               else if (done.contains(sw.getRPoint())) {
-                  from_switch_state = ShoreSwitchState.R;
-                }
-             }
-            else if (b0 == to_block && to_switch == null) {
-               to_switch = sw;
-               if (done.contains(sw.getNPoint())) {
-                  to_switch_state = ShoreSwitchState.N;
-                }
-               else if (done.contains(sw.getRPoint())) {
-                  to_switch_state = ShoreSwitchState.R;
-                }
-             }
-            if (done.contains(sw.getEntryPoint())) return;
-            done.add(sw.getNPoint());
-            done.add(sw.getRPoint());
-            break;
-         default :
-            break;
-       }
-      
-      if (b0 == from_block && from_signal != null && from_sensor != null) return;
-      else if (b0 == to_block && to_signal != null && to_sensor != null) return;
-      
-      done.add(pt);
-      
-      ModelPoint nxt = null;
-      for (ModelPoint npt : pt.getModelConnectedTo()) {
-         if (done.contains(npt)) continue;
-         if (nxt == null) nxt = npt;
-         else return;
-       }
+   if (done.contains(pt)) return;
    
-      pt = nxt;
+   switch (pt.getType()) {
+      case SENSOR :
+         followSensor(mdl.findSensorForPoint(pt));
+         break;
+      case SIGNAL :
+         followSignal(mdl,pt);
+         break;
+      case GAP :
+      case END :
+         return;
+      case SWITCH :
+         ModelSwitch sw = mdl.findSwitchForPoint(pt);
+         if (sw == null) {
+            mdl.noteError("No switch for point " + pt);
+            return;
+          }
+         followSwitch(sw,done);
+         break;
+      default :
+         break;
+    }
+   
+   ModelBlock b0 = pt.getBlock();
+   if (b0 == from_block && from_signal != null &&
+         from_sensor != null) {
+      return;
+    }
+   else if (b0 == to_block && to_signal != null &&
+         to_sensor != null) {
+      return;
+    }
+   
+   done.add(pt);
+   
+   ModelPoint nxt = null;
+   for (ModelPoint npt : pt.getModelConnectedTo()) {
+      if (done.contains(npt)) continue;
+      followPath(mdl,npt,done);
+    }
+   
+   pt = nxt;
+}
+
+
+private void followSensor(ModelSensor s0)
+{
+   IfaceBlock b0 = s0.getAtPoint().getBlock();
+   if (b0 == from_block && from_sensor == null) {
+      from_sensor = s0;
+    }
+   else if (b0 == to_block && to_sensor == null) {
+      to_sensor = s0;
+    }
+}
+   
+
+private void followSignal(ModelBase mdl,ModelPoint pt)
+{
+   ModelSignal sig = mdl.findSignalForPoint(pt);
+   ModelBlock b0 = pt.getBlock();
+   if (b0 == from_block && from_signal == null) {
+      if (sig != null && sig.getFromBlock() == b0) {
+         from_signal = sig;
+         sig.addConnection(this);
+       } 
+    }
+   else if (b0 == to_block && to_signal == null) {
+      if (sig != null && sig.getFromBlock() == b0) {
+         to_signal = sig;
+         sig.addConnection(this);
+       }
+    }
+   
+   ModelSensor sen = mdl.findSensorForPoint(pt);
+   if (sen != null) followSensor(sen);
+}
+
+
+private void followSwitch(ModelSwitch sw,Set<ModelPoint> done)
+{
+   ModelBlock b0 = sw.getPivotPoint().getBlock();
+   
+   if (b0 == from_block && from_switch == null) {
+      from_switch = sw;
+      if (done.contains(sw.getNPoint())) {
+         from_switch_state = ShoreSwitchState.N;
+         done.add(sw.getRPoint());
+       }
+      else if (done.contains(sw.getRPoint())) {
+         from_switch_state = ShoreSwitchState.R;
+         done.add(sw.getNPoint());
+       }
+      else if (done.contains(sw.getEntryPoint())) {
+         from_switch = null;
+       }
+    }
+   else if (b0 == to_block && to_switch == null) {
+      to_switch = sw;
+      if (done.contains(sw.getNPoint())) {
+         to_switch_state = ShoreSwitchState.N;
+         done.add(sw.getRPoint());
+       }
+      else if (done.contains(sw.getRPoint())) {
+         to_switch_state = ShoreSwitchState.R;
+         done.add(sw.getNPoint());
+       }
+      else if (done.contains(sw.getEntryPoint())) {
+         to_switch = null;
+       }
     }
 }
 

@@ -121,7 +121,7 @@ ModelSignal(ModelBase model,Element xml)
 /*                                                                              */
 /********************************************************************************/
 
-String getId()                                  { return signal_id; } 
+@Override public String getId()                 { return signal_id; } 
 
 @Override public List<IfacePoint> getAtPoints() 
 {
@@ -262,6 +262,19 @@ private void addPriorSensors(ModelPoint prev,ModelPoint pt)
        }
     }
 }
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Output methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public String toString()
+{
+   return "SIGNAL[" + signal_id + "=" + signal_state + "]";
+}
+
 
 
 }       // end of class ModelSignal
