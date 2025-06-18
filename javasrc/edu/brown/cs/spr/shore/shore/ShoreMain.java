@@ -73,6 +73,7 @@ private SafetyFactory   safety_base;
 private ViewFactory     view_base;
 
 private File            model_file;
+private File            report_file;
 
 
 
@@ -91,6 +92,7 @@ private ShoreMain(String [] args)
    model_file = null;
    train_base = null;
    safety_base = null;
+   report_file = null;
    
    scanArgs(args);
 }
@@ -104,7 +106,12 @@ private ShoreMain(String [] args)
 
 private void process()
 {
+   ShoreLog.logD("SHORE","STARTING with " + model_file);
+   
    model_base = new ModelBase(model_file); 
+   if (report_file != null) {
+      model_base.createReport(report_file); 
+    }
    network_monitor = new NetworkMonitor(model_base);
    train_base = new TrainFactory(network_monitor,model_base);
    safety_base = new SafetyFactory(network_monitor,model_base,train_base); 
@@ -137,6 +144,9 @@ private void scanArgs(String [] args)
                model_file = new File(args[++i]);
              }
             else badArgs();
+          }
+         else if (arg.startsWith("-r") && i+1 < args.length) {  // -report <file>
+            report_file = new File(args[++i]);
           }
          else badArgs();
        }

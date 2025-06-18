@@ -159,6 +159,8 @@ void addConnection(ModelConnection conn)
 
 @Override public List<IfaceSensor> getStopSensors()    
 {
+   if (stop_sensors == null) return new ArrayList<>();
+   
    return new ArrayList<>(stop_sensors);
 } 
 
@@ -181,6 +183,12 @@ List<ModelSensor> getModelStopSensors()
    
    signal_state = state;
    for_model.fireSignalChanged(this);
+}
+
+
+ModelPoint getGapPoint()
+{
+   return gap_point;
 }
 
 

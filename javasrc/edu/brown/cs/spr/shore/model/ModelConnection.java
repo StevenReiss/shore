@@ -42,6 +42,7 @@ import java.util.Set;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
+import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 class ModelConnection implements IfaceConnection, ModelConstants
 {
@@ -93,6 +94,8 @@ ModelConnection(ModelPoint gap,ModelBlock from,ModelBlock to)
 /*      Access methods                                                          */
 /*                                                                              */
 /********************************************************************************/
+
+ModelBlock getFromBlock()               { return from_block; }
 
 @Override public ModelBlock getOtherBlock(IfaceBlock blk)             
 { 
@@ -177,6 +180,12 @@ void normalizeConnection(ModelBase mdl)
    
    from_block.addConnection(this);
    to_block.addConnection(this);
+   
+   ShoreLog.logD("MODEL","Connection " + from_block + "=>" + to_block + " " +
+         from_sensor + " " + to_sensor + " " + gap_point + " " + 
+         from_signal + " " + to_signal + " " + 
+         from_switch + " " + from_switch_state + " " +
+         to_switch + " " + to_switch_state);
 }
 
 
@@ -294,6 +303,19 @@ private void followSwitch(ModelSwitch sw,Set<ModelPoint> done)
          to_switch = null;
        }
     }
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Output Methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public String toString()
+{
+   return "CONN[" + from_block.getId() + "<->" + to_block.getId() + "]";
 }
 
 

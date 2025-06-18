@@ -208,7 +208,7 @@
      <POINT ID='Y6a' X='100' Y='68' TYPE='SIGNAL' REF='12to10,11' />
      <POINT ID='Y7' X='80' Y='64' TYPE='SENSOR' REF='110A' />
      <POINT ID='Y8' X='141' Y='68' TYPE='BLOCK' REF='12' />
-     <POINT ID='Y8a' X='160' Y='68' TYPE='SENSOR' REF='116b' />
+     <POINT ID='Y8a' X='160' Y='68' TYPE='SIGNAL' REF='12to14' />
      <POINT ID='Y9' X='172' Y='68' TYPE='SENSOR' REF='101B' />
      <POINT ID='Y10' X='177' Y='68' TYPE='GAP' />
      <POINT ID='Y11' X='182' Y='68' TYPE='SENSOR' REF='101A' />

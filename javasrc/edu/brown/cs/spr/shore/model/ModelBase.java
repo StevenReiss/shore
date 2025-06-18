@@ -37,6 +37,8 @@ package edu.brown.cs.spr.shore.model;
 
 import java.awt.geom.Point2D;
 import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -45,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.TreeMap;
 
 import org.w3c.dom.Element;
 
@@ -84,6 +87,10 @@ public static void main(String [] args)
    ModelBase mb = new ModelBase(f);
    
    ShoreLog.logD("Built model " + mb);
+   
+   File f1 = new File(System.getProperty("user.home"));
+   File f2 = new File(f1,"shore.report");
+   mb.createReport(f2);
 }
 
 
@@ -93,6 +100,7 @@ public static void main(String [] args)
 /*                                                                              */
 /********************************************************************************/
 
+private File model_file;
 private Map<String,ModelPoint> model_points;
 private Map<String,ModelSwitch> model_switches;
 private Map<String,ModelBlock> model_blocks;
@@ -115,11 +123,12 @@ private Element model_xml;
 
 public ModelBase(File file)
 {
+   model_file = file;
    model_points = new HashMap<>();
-   model_switches = new HashMap<>(); 
+   model_switches = new TreeMap<>(); 
    model_blocks = new HashMap<>();
-   model_sensors = new HashMap<>();
-   model_signals = new HashMap<>();
+   model_sensors = new TreeMap<>();
+   model_signals = new TreeMap<>();
    model_diagrams = new HashMap<>();
    block_connections = new ArrayList<>();
    model_listeners = new SwingEventListenerList<>(ModelCallback.class);
@@ -203,9 +212,6 @@ Collection<ModelSwitch> getModelSwitches()
 
 
 
-
-
-
 ModelSensor findSensorForPoint(ModelPoint pt)
 {
    if (pt == null) return null;
@@ -246,9 +252,6 @@ ModelSwitch findSwitchForPoint(IfacePoint pt)
    
    return null;
 }
-
-
-
 
 
 ModelDiagram findDiagram(String id)
@@ -861,6 +864,138 @@ private void checkModel() throws ShoreException
        }
     }
 }
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Output Methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+public void createReport(File output)
+{
+   PrintStream ps = System.out;
+   try {
+      if (output != null) ps = new PrintStream(output);
+    }
+   catch (IOException e) {
+      System.err.println("Can't open report file " + output);
+      return;
+    }
+   
+   ps.println("HO TRAIN Setup for " + model_file);
+   ps.println();
+   
+   ps.println("SWITCHES:");
+   for (ModelSwitch sw : model_switches.values()) {
+      ps.println("   Switch " + sw.getId() + 
+            " (" + sw.getTowerId() + "-" + sw.getTowerSwitch() + ")");
+      ps.println("      N: " + sw.getNPoint() + " " + sw.getNSensor());
+      ps.println("      R: " + sw.getRPoint() + " " + sw.getRSensor());
+      ps.println("      E: " + sw.getEntryPoint());
+    }
+   ps.println("\f");
+   
+   ps.println("SIGNALS:");
+   for (ModelSignal sg : model_signals.values()) {
+      if (sg.getModelStopSensors() == null) continue;
+      ps.println("   Signal " + sg.getId() + "  " + sg.getSignalType() + 
+            " (" + sg.getTowerId() + "-" + sg.getTowerSignal() + ")");
+      ps.print("      Connections:");
+      for (IfaceConnection conn : sg.getConnections()) {
+         ps.print(" " + conn);
+       }
+      ps.println();
+      ps.print("      At:  ");
+      for (IfacePoint pt : sg.getAtPoints()) {
+         ps.print(" " + pt);
+       }
+      ps.println();
+      ps.print("      Stop:");
+      for (IfaceSensor sn : sg.getStopSensors()) {
+         ps.print(" " + sn);
+       }
+      ps.println();
+      ps.println("      Gap: " + sg.getGapPoint()); 
+    }
+   ps.println("\f");
+   
+   ps.println("CONNECTIONS:");
+   for (ModelConnection conn : block_connections) {
+      ModelBlock fblk = conn.getFromBlock();
+      ModelBlock tblk = conn.getOtherBlock(fblk); 
+      ps.println("   CONNECT " + fblk + " <--> " + tblk);
+      ps.println("      SENSORS: " + conn.getEntrySensor(fblk) + " " +
+            conn.getExitSensor(fblk));
+      ps.print("      FROM: " + conn.getStopSignal(fblk));
+      if (conn.getStopSensors(fblk) != null) {
+         for (IfaceSensor sen : conn.getStopSensors(fblk)) {
+            ps.print(" " + sen);
+          }
+       }
+      ModelSwitch sw0 = conn.getExitSwitch(fblk);
+      if (sw0 != null) {
+         ps.print(" " + sw0 + " = " + conn.getExitSwitchState(fblk));
+       }
+      ps.println();
+      ps.print("      TO:   " + conn.getStopSignal(tblk));
+      if (conn.getStopSensors(tblk) != null) {
+         for (IfaceSensor sen : conn.getStopSensors(tblk)) {
+            ps.print(" " + sen);
+          }
+       }
+      sw0 = conn.getExitSwitch(tblk);
+      if (sw0 != null) {
+         ps.print(" " + sw0 + " = " + conn.getExitSwitchState(tblk));
+       }
+      ps.println();
+    }
+   ps.println("\f"); 
+   
+   for (int i = 0; ; ++i) {
+      Map<Byte,ModelSensor> senmap = new TreeMap<>();
+      Map<Byte,ModelSignal> sigmap = new TreeMap<>();
+      Map<Byte,ModelSwitch> swmap = new TreeMap<>();
+      for (ModelSensor sen : model_sensors.values()) {
+         if (sen.getTowerId() == i) {
+            senmap.put(sen.getTowerSensor(),sen);
+          }
+       }
+      if (senmap.isEmpty()) break;
+      for (ModelSignal sig : model_signals.values()) {
+         if (sig.getTowerId() == i) {
+            sigmap.put(sig.getTowerSignal(),sig);
+          }
+       }
+      for (ModelSwitch sw : model_switches.values()) {
+         if (sw.getTowerId() == i) {
+            swmap.put(sw.getTowerSwitch(),sw);
+          }
+       }
+      ps.println("TOWER " + i);
+      ps.println("   SENSORS: ");
+      for (Map.Entry<Byte,ModelSensor> ent : senmap.entrySet()) {
+         ps.println("      " + ent.getKey() + ":  " + ent.getValue());
+       }
+      if (!sigmap.isEmpty()) {
+         ps.println();
+         ps.println("   SIGNALS: ");
+         for (Map.Entry<Byte,ModelSignal> ent : sigmap.entrySet()) {
+            ps.println("      " + ent.getKey() + ":  " + ent.getValue());
+          }
+       }
+      if (!swmap.isEmpty()) {
+         ps.println();
+         ps.println("   SWITCHES: ");
+         for (Map.Entry<Byte,ModelSwitch> ent : swmap.entrySet()) {
+            ps.println("      " + ent.getKey() + ":  " + ent.getValue());
+          }
+       }
+      ps.println("\f");
+    }
+}
+
 
 }       // end of class ModelBase
 
