@@ -111,7 +111,7 @@ boolean checkPriorSensors(Collection<IfaceSensor> prior)
 
 void handleSensorChange(IfaceSensor s)
 {
-   IfaceBlock blk = s.getAtPoint().getBlock(); 
+   IfaceBlock blk = s.getBlock(); 
    if (blk == null) return;
    BlockData bd = active_blocks.get(blk);
    ShoreLog.logD("SAFETY","SENSOR " + s + " In BLOCK " + blk + " " + bd +  " "  +
@@ -121,7 +121,7 @@ void handleSensorChange(IfaceSensor s)
       bd = new BlockData(blk,s);
       active_blocks.put(blk,bd);
       blk.setBlockState(ShoreBlockState.INUSE);
-      ShoreLog.logD("SAFETY","Note first use of block " + blk);
+      ShoreLog.logD("SAFETY","Note first use of block " + blk + " " + s);
       checkPendingBlocks(blk);
     }
    else if (bd == null) {
@@ -130,31 +130,24 @@ void handleSensorChange(IfaceSensor s)
    else if (s.getSensorState() == ShoreSensorState.ON) {
       ShoreLog.logD("SAFETY","Note sensor in block");
       boolean pend = (bd.getPriorPoint() == null);
-      if (bd.noteSensor(s) && bd.isVerified()) {
-         for (IfaceConnection conn : blk.getConnections()) {
-            if (conn.getExitSensor(blk) == s) {
-               IfaceSensor ent = conn.getEntrySensor(blk);
-               ShoreLog.logD("SAFETY","Set exit sensor " + blk + " " + s + " " + ent);
-               bd.setExitSensor(s,ent);
-             }
-          }
-       }
+      bd.noteSensor(s);
       if (pend && bd.getPriorPoint() != null) checkPendingBlocks(blk);
     }
-   else if (s.getSensorState() == ShoreSensorState.OFF &&
-         (s == bd.getExitSensor() || s == bd.getExitCheck())) {
-      if (bd.getExitSensor().getSensorState() == ShoreSensorState.OFF &&
-            bd.getExitCheck().getSensorState() == ShoreSensorState.OFF) {
-         ShoreLog.logD("CHECK BLOCK EDIT " + blk + " " + bd.getExitSensor() + " " +
-               bd.getExitCheck());
+   else if (s.getSensorState() == ShoreSensorState.OFF) {
+      IfaceBlock prior = checkBlockExit(s);
+      if (prior != null) {
+         ShoreLog.logD("CHECK BLOCK EXIT " + blk + " " + prior);
+         BlockData pbd = active_blocks.get(prior);
          // we seem to have exited prior block
          // double check what we can
          boolean checkexit = true;
-         for (IfaceSensor chksen : bd.getAllSensors()) {
-            if (chksen.getSensorState() == ShoreSensorState.ON) {
-               checkexit = false;
-               break;
-             } 
+         if (pbd != null) {
+            for (IfaceSensor chksen : pbd.getAllSensors()) {
+               if (chksen.getSensorState() == ShoreSensorState.ON) {
+                  checkexit = false;
+                  break;
+                } 
+             }
           }
          if (checkexit) {
             bd.checkEmptyBlock();
@@ -168,6 +161,33 @@ void handleSensorChange(IfaceSensor s)
       wait_sensors.remove(s);
       bdw.checkEmptyBlock();
     }
+}
+
+
+
+
+
+private IfaceBlock checkBlockExit(IfaceSensor s) 
+{
+   IfaceBlock blk = s.getBlock();
+   for (IfaceConnection conn : blk.getConnections()) {
+      if (conn.getExitSensor(blk) == s) {
+         IfaceSensor ent = conn.getEntrySensor(blk);
+         if (s.getSensorState() == ShoreSensorState.OFF &&
+               ent.getSensorState() == ShoreSensorState.OFF) {
+            IfaceBlock xblk = ent.getBlock();
+            ShoreLog.logD("SAFETY","Exit check " + s + " " + ent + " " + xblk);
+            if (xblk.getBlockState() == ShoreBlockState.INUSE) {
+               return xblk;
+             }
+            else {
+               ShoreLog.logD("SAFETY","Prior block " + ent.getBlock() + " not in use");
+             }
+          }
+       }
+    }
+   
+   return null;
 }
 
 
@@ -197,7 +217,18 @@ private void checkPendingBlocks(IfaceBlock blk)
 {
    BlockData bd = active_blocks.get(blk);
    
-   if (bd == null || bd.getAtPoint() == null ||  bd.getPriorPoint() == null) return;
+   if (bd == null || bd.getAtPoint() == null ||  bd.getPriorPoint() == null) {
+      if (bd == null) {
+         ShoreLog.logD("SAFETY","No pending check  because " + blk + 
+               "has no active block");
+       }
+      else {
+         ShoreLog.logD("SAFETY","No pending check for direction " + 
+               bd.getAtPoint() + " " + bd.getPriorPoint());
+       }
+       
+      return;
+    }
    
    IfaceBlock toblk = safety_factory.getLayoutModel().findNextBlock(
          bd.getPriorPoint(),
@@ -228,8 +259,6 @@ private class BlockData {
    private IfaceSensor first_sensor;
    private IfacePoint current_point;
    private IfacePoint prior_point;
-   private IfaceSensor exit_sensor;
-   private IfaceSensor exit_check;
    private Set<IfaceSensor> hit_sensors;
    private long exit_time;
    private boolean is_verified;
@@ -238,8 +267,6 @@ private class BlockData {
       for_block = blk;
       first_sensor = null;
       current_point = null;
-      exit_sensor = null;
-      exit_check = null;
       hit_sensors = new HashSet<>();
       noteSensor(s);
       exit_time = 0;
@@ -257,8 +284,8 @@ private class BlockData {
                if (bd != null && bd.is_verified) {
                   is_verified = true;
                   prior_point = conn.getExitSensor(for_block).getAtPoint();
-                  ShoreLog.logD("SAFETY","Verified " + for_block + " based on prior block " +
-                        bd.for_block);
+                  ShoreLog.logD("SAFETY","Verified " + for_block + 
+                        " based on prior block " + bd.for_block);
                 }
              }
           }
@@ -273,13 +300,15 @@ private class BlockData {
          ShoreLog.logD("SAFETY","Enter block " + for_block + " " +
                first_sensor + " " + prior_point);
        }
-      else if (s.getSensorState() == ShoreSensorState.ON && prior_point == null) { 
-//       prior_point = current_point;
-         findPriorPoint(s.getAtPoint()); 
+      else if (s.getSensorState() == ShoreSensorState.ON) { 
+         if (current_point != null && prior_point == null) {
+            prior_point = current_point;
+          }
          current_point = s.getAtPoint();
-         if (!is_verified && prior_point != null) {
-            ShoreLog.logD("SAFETY","Check prior for verification " + prior_point);
-            if (checkHitSensor(current_point,prior_point,0)) is_verified = true;
+         if (!is_verified && hit_sensors.size() > 0 && !hit_sensors.contains(s)) {
+            ShoreLog.logD("SAFETY","Verified " + for_block + " base on prior sensors " + 
+                  hit_sensors);
+            is_verified = true;
           }
        }
       exit_time = 0;
@@ -294,16 +323,9 @@ private class BlockData {
       return hit_sensors.add(s); 
     }
    
-   IfaceSensor getExitSensor()                  { return exit_sensor; }
-   IfaceSensor getExitCheck()                   { return exit_check; }
    IfacePoint getAtPoint()                      { return current_point; } 
    IfacePoint getPriorPoint()                   { return prior_point; }
    boolean isVerified()                         { return is_verified; }
-   
-   void setExitSensor(IfaceSensor s,IfaceSensor check) {
-      exit_sensor = s;
-      exit_check = check;
-    }
       
    Collection<IfaceSensor> getAllSensors()      { return hit_sensors; }
    
@@ -313,6 +335,7 @@ private class BlockData {
     }
    
    void checkEmptyBlock() {
+      ShoreLog.logD("SAFETY","Note block " + for_block + " seems empty");
       exit_time = System.currentTimeMillis();
       safety_factory.schedule(new BlockTask(this,exit_time),BLOCK_DELAY);
     }
@@ -334,43 +357,6 @@ private class BlockData {
       for_block.setBlockState(ShoreBlockState.EMPTY);
     }
    
-   private void findPriorPoint(IfacePoint at) {
-      if (current_point == null) return;
-      for (IfacePoint pt : at.getConnectedTo()) {
-         if (safety_factory.getLayoutModel().goesTo(at,pt,current_point)) {
-            prior_point = pt;
-            current_point = at;
-          }
-       }
-    }
-   
-   private boolean checkHitSensor(IfacePoint cur,IfacePoint prev,int ct) {
-      if (prev == null) return false;
-      // if previous was hit then we are okay
-      if (prev.getType() == ShorePointType.SENSOR) {
-         for (IfaceSensor sen : hit_sensors) {
-            if (sen.getAtPoint() == prev) {
-               ShoreLog.logD("SAFETY","Found prior hit " + sen + " " + sen.getAtPoint());
-               return true;
-             }
-          }
-         if (++ct >= 2) {
-            ShoreLog.logD("SAFETY","Missed 2 sensors for " + for_block);
-            return false;           // can skip one sensor, not two
-          }
-       }
-      for (IfacePoint pt : prev.getConnectedTo()) {
-         if (pt == cur) continue;
-         if (pt.getBlock() != for_block) continue;
-         // check proper direction
-         if (safety_factory.getLayoutModel().goesTo(cur,prev,pt)) {
-            // check if it was hit
-            if (checkHitSensor(prev,pt,ct)) return true;
-          }
-       }
-      
-      return false;
-    }
    
 }       // end of inner class BlockData
 

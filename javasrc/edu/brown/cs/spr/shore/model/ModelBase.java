@@ -319,6 +319,7 @@ boolean hasErrors()
 private boolean goesTo(IfacePoint prev,IfacePoint pt,IfacePoint tgt,Set<IfacePoint> done)
 {
    if (pt == tgt) return true;
+   if (pt == prev) return false;
    if (!done.add(pt)) return false;
    
    Collection<IfacePoint> next = pt.getConnectedTo();
@@ -331,7 +332,7 @@ private boolean goesTo(IfacePoint prev,IfacePoint pt,IfacePoint tgt,Set<IfacePoi
       return false;
     }
    for (IfacePoint npt : next) {
-      if (goesTo(pt,npt,tgt,done)) return true;
+      if (goesTo(prev,npt,tgt,done)) return true;
     }
    return false;
 }
@@ -346,18 +347,33 @@ private boolean goesTo(IfacePoint prev,IfacePoint pt,IfacePoint tgt,Set<IfacePoi
 }
 
 
-private IfaceBlock findNextBlock(IfacePoint prev,IfacePoint pt,IfaceBlock blk,Set<IfacePoint> done)
+private IfaceBlock findNextBlock(IfacePoint prev0,IfacePoint pt0,IfaceBlock blk,Set<IfacePoint> done)
 {
+   IfacePoint pt = pt0;
+   IfacePoint prev = prev0;
+   for (IfacePoint pt1 : pt0.getConnectedTo()) {
+      if (pt1 == prev) break;
+      if (goesTo(pt0,pt1,prev)) {
+         prev = pt1;
+         break;
+       }
+    }
+   ShoreLog.logD("MODEL","Find next block " + prev + " " + pt + " " + blk);
+   
    while (pt != null) {
       if (pt.getBlock() != blk) {
          if (pt.getBlock() == null) {
             for (IfacePoint npt : pt.getConnectedTo()) {
                if (npt == prev) continue;
-               if (npt.getBlock() == blk) return null;
+               if (pt.getBlock() == blk) return null;
+               ShoreLog.logD("MODEL","Next block is " + npt.getBlock());
                return npt.getBlock();
              }
           }
-         else return pt.getBlock();
+         else {
+            ShoreLog.logD("MODEL","Next block is " + pt.getBlock());
+            return pt.getBlock();
+          }
        }
       
       IfacePoint nextpt = null;
@@ -908,16 +924,14 @@ public void createReport(File output)
        }
       ps.println();
       ps.print("      At:  ");
-      for (IfacePoint pt : sg.getAtPoints()) {
-         ps.print(" " + pt);
+      List<IfacePoint> pts = sg.getAtPoints();
+      List<IfaceSensor> sns = sg.getStopSensors();
+      for (int i = 0; i < pts.size(); ++i) {
+         ps.print(" " + pts.get(i));
+         ps.print(" " + sns.get(i));
        }
       ps.println();
-      ps.print("      Stop:");
-      for (IfaceSensor sn : sg.getStopSensors()) {
-         ps.print(" " + sn);
-       }
-      ps.println();
-      ps.println("      Gap: " + sg.getGapPoint()); 
+      ps.println("      Next: " + sg.getGapPoint()); 
     }
    ps.println("\f");
    
@@ -925,9 +939,9 @@ public void createReport(File output)
    for (ModelConnection conn : block_connections) {
       ModelBlock fblk = conn.getFromBlock();
       ModelBlock tblk = conn.getOtherBlock(fblk); 
-      ps.println("   CONNECT " + fblk + " <--> " + tblk);
-      ps.println("      SENSORS: " + conn.getEntrySensor(fblk) + " " +
-            conn.getExitSensor(fblk));
+      ps.println("   CONNECT " + fblk + " <--> " + tblk + "  at " + conn.getGapPoint()); 
+      ps.println("      SENSORS: " + conn.getExitSensor(fblk) + " " +
+            conn.getEntrySensor(fblk));
       ps.print("      FROM: " + conn.getStopSignal(fblk));
       if (conn.getStopSensors(fblk) != null) {
          for (IfaceSensor sen : conn.getStopSensors(fblk)) {

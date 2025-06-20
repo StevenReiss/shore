@@ -63,7 +63,6 @@ class ModelSensor implements IfaceSensor, ModelConstants
 private ModelBase for_model;
 private String sensor_id;
 private ModelPoint sensor_point;
-private ModelBlock sensor_block;
 private ShoreSensorState sensor_state;
 private ModelSwitch n_switch;
 private ModelSwitch r_switch;
@@ -99,12 +98,8 @@ ModelSensor(ModelBase mdl,Element xml)
    n_switch = null;
    r_switch = null;
    entry_switch = null;
-   if (sensor_point != null) {
-      sensor_block = sensor_point.getBlock();
-    }
-   else {
+   if (sensor_point == null) {
       mdl.noteError("Sensor point " + pt + " not found for " + sensor_id);
-      sensor_block = null;
     }
    sensor_state = ShoreSensorState.UNKNOWN;
    for_signals = new HashSet<>();
@@ -120,9 +115,9 @@ ModelSensor(ModelBase mdl,Element xml)
 /*                                                                              */
 /********************************************************************************/
 
-String getId()                                  { return sensor_id; }
+String getId()                                   { return sensor_id; }
 
-@Override public ModelPoint getAtPoint()                { return sensor_point; }
+@Override public ModelPoint getAtPoint()        { return sensor_point; }
 
 @Override public IfaceSwitch getSwitchN()       { return n_switch; }
 
@@ -163,7 +158,10 @@ void assignSwitch(ModelSwitch sw,ShoreSwitchState state)
 }
 
 
-@Override  public IfaceBlock getBlock()         { return sensor_block; }
+@Override  public IfaceBlock getBlock()         
+{
+   return sensor_point.getBlock();
+}  
 
 @Override public ShoreSensorState getSensorState()   { return sensor_state; }
 

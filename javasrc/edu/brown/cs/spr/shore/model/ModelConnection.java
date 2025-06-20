@@ -97,6 +97,8 @@ ModelConnection(ModelPoint gap,ModelBlock from,ModelBlock to)
 
 ModelBlock getFromBlock()               { return from_block; }
 
+ModelPoint getGapPoint()                { return gap_point; }
+
 @Override public ModelBlock getOtherBlock(IfaceBlock blk)             
 { 
    if (blk == from_block) return to_block;

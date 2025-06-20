@@ -70,8 +70,6 @@ private SafetySwitch    safety_switch;
 private SafetySignal    safety_signal;
 private SafetyBlock     safety_block;
 
-private static final long OFF_TIME = 2000L;
-
 
 /********************************************************************************/
 /*                                                                              */
@@ -210,63 +208,26 @@ private final class SafetyCallback implements ModelCallback {
 private class SensorStatus {
 
    private IfaceSensor for_sensor;
-   private long off_time;
    private ShoreSensorState last_state;
    
    SensorStatus(IfaceSensor sensor) {
       for_sensor = sensor;
-      off_time = 0;
       last_state = null;
       setState();
     }
    
    private void setState() {
       ShoreSensorState newstate = for_sensor.getSensorState();
-      switch (newstate) {
-         case ON :
-            if (last_state != newstate && off_time == 0) {
-               handleActualSensorChange(for_sensor);
-             }
-            last_state = newstate;
-            off_time = 0;
-            break;
-         case OFF :
-            last_state = newstate;
-            if (off_time == 0) {
-               off_time = System.currentTimeMillis();
-               safety_timer.schedule(new SensorTimerTask(this,off_time),OFF_TIME);
-             }
-            break;
-         case UNKNOWN :
-            break;
-       }
-    }
-   
-   void checkOff(long base) {
-      if (off_time == base) {
-         off_time = 0;
+      if (last_state != newstate && newstate != ShoreSensorState.UNKNOWN) {
          handleActualSensorChange(for_sensor);
        }
+      last_state = newstate;
     }
    
 }
 
 
-private class SensorTimerTask extends TimerTask {
-   
-   private SensorStatus for_status;
-   private long base_time;
-   
-   SensorTimerTask(SensorStatus sts,long when) {
-      for_status = sts;
-      base_time = when;
-    }
-   
-   @Override public void run() {
-      for_status.checkOff(base_time);
-    }
-   
-}
+
 
 }       // end of class SafetyFactory
 

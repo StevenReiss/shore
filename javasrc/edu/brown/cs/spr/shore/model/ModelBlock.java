@@ -126,7 +126,7 @@ ModelBlock(ModelBase model,Element xml)
    
    if (block_state != ShoreBlockState.EMPTY &&
          block_state != ShoreBlockState.UNKNOWN) return false;
-   if (!checkNextPending(blk)) return false;
+// if (!checkNextPending(blk)) return false;
    
    pending_from = (ModelBlock) blk;
    setBlockState(ShoreBlockState.PENDING);
@@ -136,8 +136,8 @@ ModelBlock(ModelBase model,Element xml)
 
 @Override public void setNextPending(IfaceBlock blk)
 {
-   if (next_pending != blk) checkNextPending(blk);
    next_pending = (ModelBlock) blk;
+   if (next_pending != blk) checkNextPending(blk);
 }
 
 
