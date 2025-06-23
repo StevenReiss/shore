@@ -174,7 +174,7 @@ void normalizeConnection(ModelBase mdl)
          ss.setConnection(this);
        }
     }
-   if (to_signal != null) {
+   if (to_signal != null && to_signal.getModelStopSensors() != null) {
       for (ModelSensor ss : to_signal.getModelStopSensors()) {
          ss.setConnection(this);
        }

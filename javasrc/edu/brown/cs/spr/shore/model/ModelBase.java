@@ -310,6 +310,7 @@ boolean hasErrors()
 @Override public boolean goesTo(IfacePoint prev,IfacePoint pt,IfacePoint tgt)
 {
    Set<IfacePoint> done = new HashSet<>();
+   done.add(prev);
    return goesTo(prev,pt,tgt,done);
    
 }
@@ -332,7 +333,8 @@ private boolean goesTo(IfacePoint prev,IfacePoint pt,IfacePoint tgt,Set<IfacePoi
       return false;
     }
    for (IfacePoint npt : next) {
-      if (goesTo(prev,npt,tgt,done)) return true;
+      if (done.contains(npt)) continue;
+      if (goesTo(pt,npt,tgt,done)) return true;
     }
    return false;
 }
@@ -409,6 +411,7 @@ private IfaceBlock findNextBlock(IfacePoint prev0,IfacePoint pt0,IfaceBlock blk,
 
 private IfacePoint findSwitchPoint(IfacePoint pt,ModelSwitch sw)
 {
+   Set<IfacePoint> done = new HashSet<>();
    IfacePoint prev = sw.getPivotPoint();
    while (pt != null) {
       if (sw.getNPoint() == pt) return pt;
@@ -416,6 +419,7 @@ private IfacePoint findSwitchPoint(IfacePoint pt,ModelSwitch sw)
       if (sw.getEntryPoint() == pt) return pt;
       for (IfacePoint npt : pt.getConnectedTo()) {
          if (npt == prev) continue;
+         if (!done.add(npt)) continue;
          if (npt.getType() == ShorePointType.SWITCH) continue;
          prev = pt;
          pt = npt;

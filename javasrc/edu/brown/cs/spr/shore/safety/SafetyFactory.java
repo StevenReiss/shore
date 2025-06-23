@@ -133,6 +133,14 @@ void schedule(TimerTask task,long delay)
    return safety_signal.safelySetSignal(ss,state);
 }
 
+
+@Override public boolean setSensor(IfaceSensor ss,ShoreSensorState state)
+{
+   network_model.setSensor(ss,state); 
+   
+   return true;
+}
+
 /********************************************************************************/
 /*                                                                              */
 /*      Handle sensor changes                                                   */

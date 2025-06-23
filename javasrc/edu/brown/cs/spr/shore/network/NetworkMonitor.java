@@ -318,15 +318,15 @@ private boolean sendSignalStatus(IfaceSignal sig)
 
 
 @Override
-public void setSensor(IfaceSensor sig,ShoreSensorState set)  
+public void setSensor(IfaceSensor sen,ShoreSensorState set)  
 {
-   if (sig == null) return;
+   if (sen == null) return;
    
-   int id = sig.getTowerId();
+   int id = sen.getTowerId();
    ControllerInfo ci = id_map.get(id);
    if (ci == null) return;
-   sig.setSensorState(set);
-   ci.sendSensorMessage(sig.getTowerSensor(),set);
+   sen.setSensorState(set);
+   ci.sendSensorMessage(sen.getTowerSensor(),set);
 }
 
 
@@ -916,7 +916,6 @@ private class ControllerInfo {
       byte [] msg = { CONTROL_SETSIGNAL, controller_id, sid,(byte) state.ordinal()};
       sendMessage(net_address,msg,0,4);
     }
-   
    
    void sendSensorMessage(byte sid,IfaceSensor.ShoreSensorState state) {
       byte [] msg = { CONTROL_SETSENSOR, controller_id, sid,(byte) state.ordinal()}; 

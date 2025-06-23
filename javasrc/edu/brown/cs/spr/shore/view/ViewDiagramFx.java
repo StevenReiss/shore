@@ -742,7 +742,7 @@ private void drawSensors()
 }
 
 
-private static class SensorDrawData {
+private class SensorDrawData {
   
    private IfaceSensor for_sensor;
    private Shape sensor_node;
@@ -783,7 +783,7 @@ private static class SensorDrawData {
 
 
 
-private static class SensorHandler implements EventHandler<MouseEvent> {
+private class SensorHandler implements EventHandler<MouseEvent> {
    
    private IfaceSensor for_sensor;
    
@@ -804,7 +804,7 @@ private static class SensorHandler implements EventHandler<MouseEvent> {
                next = ShoreSensorState.OFF;
                break;
           }
-         for_sensor.setSensorState(next);
+         view_factory.getSafetyModel().setSensor(for_sensor,next);
        }
     }
    

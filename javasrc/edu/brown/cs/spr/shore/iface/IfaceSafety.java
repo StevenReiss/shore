@@ -42,7 +42,7 @@ public interface IfaceSafety extends IfaceConstants
 
 boolean setSwitch(IfaceSwitch sw,ShoreSwitchState state);
 boolean setSignal(IfaceSignal ss,ShoreSignalState state);
-
+boolean setSensor(IfaceSensor ss,ShoreSensorState state);
 
 
 }       // end of interface IfaceSafety

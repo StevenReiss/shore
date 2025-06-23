@@ -150,7 +150,7 @@ void handleSensorChange(IfaceSensor s)
              }
           }
          if (checkexit) {
-            bd.checkEmptyBlock();
+            pbd.checkEmptyBlock();
           }
        }
     }
@@ -325,7 +325,7 @@ private class BlockData {
    
    IfacePoint getAtPoint()                      { return current_point; } 
    IfacePoint getPriorPoint()                   { return prior_point; }
-   boolean isVerified()                         { return is_verified; }
+   
       
    Collection<IfaceSensor> getAllSensors()      { return hit_sensors; }
    
@@ -355,6 +355,9 @@ private class BlockData {
       if (time != 0 && exit_time != time) return;
       active_blocks.remove(for_block);
       for_block.setBlockState(ShoreBlockState.EMPTY);
+      current_point = null;
+      prior_point = null;
+      is_verified = false;
     }
    
    
