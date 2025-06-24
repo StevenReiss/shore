@@ -37,6 +37,7 @@ package edu.brown.cs.spr.shore.iface;
 
 import java.util.Collection;
 import java.util.EventListener;
+import java.util.Set;
 
 import org.w3c.dom.Element;
 
@@ -120,6 +121,27 @@ void addModelCallback(ModelCallback cb);
  **/
 void removeModelCallback(ModelCallback cb);
 
+
+/**
+ *      Find prior points in a block given prior and current
+ **/
+Set<IfacePoint> findPriorPoints(IfacePoint current,IfacePoint entry);
+
+
+/**
+ *      Find successor points in a block from given point.  This
+ *      users the result of findPriorPoints and can follow switch
+ *      settings if desired.
+ **/
+Set<IfacePoint> findSuccessorPoints(IfacePoint current,
+      Set<IfacePoint> prior,boolean useswitch);
+
+
+/**
+ *      Find successor points given current and entry point
+ **/
+Set<IfacePoint> findSuccessorPoints(IfacePoint current,IfacePoint entry,
+      boolean useswitch);
 
 
 /**

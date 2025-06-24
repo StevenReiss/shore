@@ -96,6 +96,11 @@ IfaceSwitch getExitSwitch(IfaceBlock inblock);
 ShoreSwitchState getExitSwitchState(IfaceBlock inblock);
 
 
+/**
+ *      Return the gap point for this connection
+ **/
+IfacePoint getGapPoint();
+
 
 
 }       // end of interface IfaceConnection

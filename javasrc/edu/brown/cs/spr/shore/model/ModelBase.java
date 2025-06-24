@@ -434,6 +434,87 @@ private IfacePoint findSwitchPoint(IfacePoint pt,ModelSwitch sw)
 
 /********************************************************************************/
 /*                                                                              */
+/*      New Path methods                                                        */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public Set<IfacePoint> findPriorPoints(IfacePoint cur,IfacePoint entry)
+{
+   // note entry point might be a gap point from prior block
+   Set<IfacePoint> rslt = new HashSet<>();
+   rslt.add(cur);
+   addPriorPoints(entry,rslt,cur.getBlock());
+   rslt.remove(cur);
+   return rslt;
+}
+
+
+private void addPriorPoints(IfacePoint pt,Set<IfacePoint> rslt,IfaceBlock blk)
+{
+   if (!rslt.add(pt)) return;
+   for (IfacePoint npt : pt.getConnectedTo()) {
+      if (npt.getBlock() != blk) continue;
+      if (!rslt.contains(npt)) {
+         addPriorPoints(npt,rslt,blk);
+       }
+    }
+}
+
+
+
+@Override public Set<IfacePoint> findSuccessorPoints(IfacePoint current,  
+      IfacePoint prior,boolean usesw)
+{
+   Set<IfacePoint> priors = findPriorPoints(current,prior);
+   return findSuccessorPoints(current,priors,usesw);
+}
+
+
+@Override public Set<IfacePoint> findSuccessorPoints(IfacePoint current,
+      Set<IfacePoint> prior,boolean usesw)
+{
+   Set<IfacePoint> rslt = new HashSet<>();
+   if (prior == null) prior = new HashSet<>();
+   addNextPoints(current,rslt,prior,usesw);
+   return rslt;
+}
+
+
+private void addNextPoints(IfacePoint pt,Set<IfacePoint> rslt,Set<IfacePoint> prior,boolean usesw)
+{
+   if (prior.contains(pt)) return;
+   if (pt.getType() == ShorePointType.GAP) return;
+   if (!rslt.add(pt)) return;
+   if (pt.getType() == ShorePointType.SWITCH) {
+      ModelSwitch sw = findSwitchForPoint(pt);
+      IfacePoint snpt = sw.getNPoint();
+      IfacePoint srpt = sw.getRPoint();
+      if (rslt.contains(snpt) || prior.contains(snpt)) {
+         prior.add(srpt);
+       }
+      else if (rslt.contains(srpt) || prior.contains(srpt)) {
+         prior.add(snpt);
+       }
+      else if (usesw) {
+         // coming from entry point
+         if (sw.getSwitchState() == ShoreSwitchState.N) {
+            prior.add(srpt);
+          }
+         else if (sw.getSwitchState() == ShoreSwitchState.R) {
+            prior.add(snpt);
+          }
+       }
+    }
+   for (IfacePoint npt : pt.getConnectedTo()) {
+      if (rslt.contains(npt) || prior.contains(npt)) continue;
+      addNextPoints(npt,rslt,prior,usesw);
+    }
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
 /*      Callback methods                                                        */
 /*                                                                              */
 /********************************************************************************/
