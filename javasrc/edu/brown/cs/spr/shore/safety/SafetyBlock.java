@@ -63,7 +63,7 @@ private SafetyFactory   safety_factory;
 private Map<IfaceBlock,BlockData> active_blocks;
 
 private static final long BLOCK_DELAY = 10;
-private static final long VERIFY_DELAY = 30000;
+private static final long VERIFY_DELAY = 10000;
 
 
 
@@ -83,7 +83,7 @@ SafetyBlock(SafetyFactory fac)
 
 /********************************************************************************/
 /*                                                                              */
-/*      Access methods                                                          */
+/*      Checks for signals to determine proper direction                        */
 /*                                                                              */
 /********************************************************************************/
 
@@ -123,62 +123,18 @@ void handleSensorChange(IfaceSensor s)
       checkPendingBlocks(blk);
     }
    else if (bd == null) {
-      ShoreLog.logD("SAFETY","Ignore sensor " + s);
+      ShoreLog.logD("SAFETY","Ignore OFF sensor " + s);
     }
    else if (s.getSensorState() == ShoreSensorState.ON) {
-      ShoreLog.logD("SAFETY","Note sensor in block");
+      ShoreLog.logD("SAFETY","Note sensor " + s + " in block");
       boolean pend = (bd.getPriorPoint() == null);
       bd.noteBlockSensor(s);
       if (!pend && bd.getPriorPoint() != null) checkPendingBlocks(blk);
     }
    else if (s.getSensorState() == ShoreSensorState.OFF) {
-      IfaceBlock prior = checkBlockExit(s);
-      if (prior != null) {
-         ShoreLog.logD("CHECK BLOCK EXIT " + blk + " " + prior);
-         BlockData pbd = active_blocks.get(prior);
-         // we seem to have exited prior block
-         // double check what we can
-         boolean checkexit = true;
-         if (pbd != null) {
-            for (IfaceSensor chksen : pbd.getAllSensors()) {
-               if (chksen.getSensorState() == ShoreSensorState.ON) {
-                  checkexit = false;
-                  break;
-                } 
-             }
-          }
-         if (checkexit) {
-            pbd.checkEmptyBlock();
-          }
-       }
+      bd.noteBlockSensor(s);            // handle spurrious sensors if block not verified
+      checkBlockExit(s);
     }
-}
-
-
-
-
-
-private IfaceBlock checkBlockExit(IfaceSensor s) 
-{
-   IfaceBlock blk = s.getBlock();
-   for (IfaceConnection conn : blk.getConnections()) {
-      if (conn.getExitSensor(blk) == s) {
-         IfaceSensor ent = conn.getEntrySensor(blk);
-         if (s.getSensorState() == ShoreSensorState.OFF &&
-               ent.getSensorState() == ShoreSensorState.OFF) {
-            IfaceBlock xblk = ent.getBlock();
-            ShoreLog.logD("SAFETY","Exit check " + s + " " + ent + " " + xblk);
-            if (xblk.getBlockState() == ShoreBlockState.INUSE) {
-               return xblk;
-             }
-            else {
-               ShoreLog.logD("SAFETY","Prior block " + ent.getBlock() + " not in use");
-             }
-          }
-       }
-    }
-   
-   return null;
 }
 
 
@@ -205,6 +161,79 @@ void handleBlockChange(IfaceBlock blk)
    checkPendingBlocks(blk);
 }
            
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Block Exit Checks                                                       */
+/*                                                                              */
+/********************************************************************************/
+
+/** 
+ *      Check if we have exited previous block.  If we have turned off a sensor
+ *      at a connector and the other block of the connector is also off, check
+ *      if the other block is actually empty and mark it as such.
+ **/
+
+private void checkBlockExit(IfaceSensor s)
+{
+   if (s.getSensorState() != ShoreSensorState.OFF) return;
+   
+   IfaceBlock prior = findExitingBlock(s);
+   if (prior != null) {
+      ShoreLog.logD("CHECK BLOCK EXIT " + s.getBlock() + " " + prior);
+      BlockData pbd = active_blocks.get(prior);
+      boolean checkexit = true;
+      if (pbd != null) {
+         for (IfaceSensor chksen : pbd.getAllSensors()) {
+            if (chksen.getSensorState() == ShoreSensorState.ON) {
+               checkexit = false;
+               break;
+             } 
+          }
+       }
+      if (checkexit) {
+         pbd.checkEmptyBlock();
+       }
+    }
+}
+
+
+private IfaceBlock findExitingBlock(IfaceSensor s) 
+{
+   IfaceBlock blk = s.getBlock();
+   for (IfaceConnection conn : blk.getConnections()) {
+      if (conn.getExitSensor(blk) == s) {
+         IfaceSensor ent = conn.getEntrySensor(blk);
+         ShoreLog.logD("SAFETY","Exit connection " + conn + " " + s + " " + ent);
+         if (s.getSensorState() == ShoreSensorState.OFF &&
+               ent.getSensorState() == ShoreSensorState.OFF) {
+            IfaceBlock xblk = ent.getBlock();
+            ShoreLog.logD("SAFETY","Exit check " + s + " " + ent + " " + xblk);
+            if (xblk.getBlockState() == ShoreBlockState.INUSE) {
+               return xblk;
+             }
+            else {
+               ShoreLog.logD("SAFETY","Prior block " + ent.getBlock() + " not in use");
+             }
+          }
+       }
+    }
+   
+   return null;
+}
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Pending block checks                                                    */
+/*                                                                              */
+/********************************************************************************/
+
+/**
+ *      Find the next block we will be going to given current switches and direction.
+ *      Set its pending to this block, ensure no other blocks are pending on this block
+ **/
 
 private void checkPendingBlocks(IfaceBlock blk)
 {
@@ -233,7 +262,9 @@ private void checkPendingBlocks(IfaceBlock blk)
       if (nblk == toblk) {
          nblk.setPendingFrom(blk);
        }
-      else if (nblk.getPendingFrom() == blk) nblk.setPendingFrom(null);
+      else if (nblk.getPendingFrom() == blk) {
+         nblk.setPendingFrom(null);
+       }
     }
 }
 
@@ -249,7 +280,6 @@ private void checkPendingBlocks(IfaceBlock blk)
 private class BlockData {
    
    private IfaceBlock for_block;
-   private IfaceSensor first_sensor;
    private IfacePoint current_point;
    private IfacePoint prior_point;
    private Set<IfaceSensor> hit_sensors;
@@ -258,45 +288,30 @@ private class BlockData {
    
    BlockData(IfaceBlock blk,IfaceSensor s) {
       for_block = blk;
-      first_sensor = null;
       current_point = null;
+      prior_point = null;
       hit_sensors = new HashSet<>();
       noteBlockSensor(s);
       exit_time = 0;
     }
    
    boolean noteBlockSensor(IfaceSensor s) {
-      if (s.getSensorState() == ShoreSensorState.ON && first_sensor == null) {
-         first_sensor = s;
+      if (s.getSensorState() == ShoreSensorState.ON && current_point == null) {
          current_point = s.getAtPoint();
          prior_point = null;
-         for (IfaceConnection conn : for_block.getConnections()) {
-            if (conn.getEntrySensor(for_block) == s) {
-               IfaceBlock prev = conn.getOtherBlock(for_block);
-               BlockData bd = active_blocks.get(prev);
-               if (bd != null && bd.is_verified) {
-                  is_verified = true;
-                  prior_point = conn.getGapPoint();
-                  ShoreLog.logD("SAFETY","Verified " + for_block + 
-                        " based on prior block " + bd.for_block);
-                }
-             }
-          }
+         checkPriorBlock(s);
          ShoreLog.logD("SAFETY","Enter block " + for_block + " " +
-               first_sensor + " " + prior_point + " " + is_verified);
+                current_point + " " + prior_point + " " + is_verified);
        }
       else if (s.getSensorState() == ShoreSensorState.ON) { 
-         if (current_point != null && prior_point == null) {
-            prior_point = current_point;
-          }
-         IfacePoint pt = s.getAtPoint();
          if (!hit_sensors.contains(s)) {
             // first time at this sensor
+            IfacePoint pt = s.getAtPoint();
             if (prior_point == null && current_point != null && current_point != pt) {
                prior_point = current_point;
              }
             current_point = pt;
-            if (!is_verified) {
+            if (!is_verified && prior_point != null) {
                ShoreLog.logD("SAFETY","Verified " + for_block + " base on prior sensors " + 
                      hit_sensors);
                is_verified = true;
@@ -352,6 +367,22 @@ private class BlockData {
       is_verified = false;
     }
    
+   private void checkPriorBlock(IfaceSensor s) {
+      // check if first sensor is a connector with prior verified block
+      for (IfaceConnection conn : for_block.getConnections()) {
+         if (conn.getEntrySensor(for_block) == s) {
+            IfaceBlock prev = conn.getOtherBlock(for_block);
+            BlockData bd = active_blocks.get(prev);
+            if (bd != null && bd.is_verified) {
+               is_verified = true;
+               prior_point = conn.getGapPoint();
+               ShoreLog.logD("SAFETY","Verified " + for_block + 
+                     " based on prior block " + bd.for_block);
+               break;
+             }
+          }
+       }
+    }
    
 }       // end of inner class BlockData
 

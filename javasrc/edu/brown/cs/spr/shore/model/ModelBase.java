@@ -341,72 +341,25 @@ private boolean goesTo(IfacePoint prev,IfacePoint pt,IfacePoint tgt,Set<IfacePoi
 
 
 
-@Override public IfaceBlock findNextBlock(IfacePoint prev,IfacePoint pt)
+@Override public IfaceBlock findNextBlock(IfacePoint prev,IfacePoint cur)
 {
-   Set<IfacePoint> done = new HashSet<>();
-   IfaceBlock blk = pt.getBlock();
-   return findNextBlock(prev,pt,blk,done);
-}
-
-
-private IfaceBlock findNextBlock(IfacePoint prev0,IfacePoint pt0,IfaceBlock blk,Set<IfacePoint> done)
-{
-   IfacePoint pt = pt0;
-   IfacePoint prev = prev0;
-   for (IfacePoint pt1 : pt0.getConnectedTo()) {
-      if (pt1 == prev) break;
-      if (goesTo(pt0,pt1,prev)) {
-         prev = pt1;
-         break;
-       }
-    }
-   ShoreLog.logD("MODEL","Find next block " + prev + " " + pt + " " + blk);
+   if (prev == null || cur == null || prev == cur) return null;
    
-   while (pt != null) {
-      if (pt.getBlock() != blk) {
-         if (pt.getBlock() == null) {
-            for (IfacePoint npt : pt.getConnectedTo()) {
-               if (npt == prev) continue;
-               if (pt.getBlock() == blk) return null;
-               ShoreLog.logD("MODEL","Next block is " + npt.getBlock());
-               return npt.getBlock();
-             }
-          }
-         else {
-            ShoreLog.logD("MODEL","Next block is " + pt.getBlock());
-            return pt.getBlock();
+   Set<IfacePoint> next = findSuccessorPoints(prev,cur,true);
+   for (IfacePoint pt : next) {
+      IfaceBlock curblk = pt.getBlock();
+      for (IfaceConnection c : pt.getBlock().getConnections()) {
+         IfaceSensor xsen = c.getExitSensor(curblk);
+         if (xsen == null) continue;
+         if (next.contains(xsen.getAtPoint())) {
+            return c.getOtherBlock(curblk);
           }
        }
-      
-      IfacePoint nextpt = null;
-      for (IfacePoint npt : pt.getConnectedTo()) {
-         if (npt == prev) continue;
-         if (nextpt == null) nextpt = npt;
-         else {
-            ModelSwitch sw = findSwitchForPoint(pt);
-            IfacePoint xpt = findSwitchPoint(prev,sw);
-            IfacePoint tpt = findSwitchPoint(npt,sw);
-            if (xpt == sw.getNPoint() || xpt == sw.getRPoint()) {
-               if (tpt == sw.getEntryPoint()) nextpt = npt;
-             }
-            else {
-               switch (sw.getSwitchState()) {
-                  case R :
-                     if (tpt == sw.getRPoint()) nextpt = npt;
-                     break;
-                  case N :
-                     if (tpt == sw.getNPoint()) nextpt = npt;
-                     break;
-                }
-             }
-          }
-       }
-      prev = pt;
-      pt = nextpt;
     }
    
    return null;
 }
+
 
 
 private IfacePoint findSwitchPoint(IfacePoint pt,ModelSwitch sw)
@@ -1008,7 +961,7 @@ public void createReport(File output)
          ps.print(" " + conn);
        }
       ps.println();
-      ps.print("      At:  ");
+      ps.print("      At:   ");
       List<IfacePoint> pts = sg.getAtPoints();
       List<IfaceSensor> sns = sg.getStopSensors();
       for (int i = 0; i < pts.size(); ++i) {
@@ -1016,7 +969,13 @@ public void createReport(File output)
          ps.print(" " + sns.get(i));
        }
       ps.println();
-      ps.println("      Next: " + sg.getGapPoint()); 
+      ps.println("      Next:  " + sg.getGapPoint()); 
+      ps.print("      Prior: ");
+      Collection<IfaceSensor> pri = sg.getPriorSensors();
+      for (IfaceSensor sen : pri) {
+         ps.print(" "  + sen);
+       }
+      ps.println();
     }
    ps.println("\f");
    

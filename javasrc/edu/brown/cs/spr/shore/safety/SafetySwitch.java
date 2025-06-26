@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TimerTask;
 
+import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
@@ -123,6 +124,18 @@ void handleSensorChange(IfaceSensor s)
    else if (swr != null) {
       triggerSwitch(swr,s.getSensorState(),ShoreSwitchState.R);
     }
+}
+
+
+void handleBlockChange(IfaceBlock blk)
+{
+   // nothing needed
+}
+
+
+void handleSwitchChange(IfaceSwitch blk)
+{
+   // nothing needed
 }
 
 

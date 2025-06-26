@@ -65,7 +65,7 @@ public class SafetyFactory implements IfaceSafety, SafetyConstants
 private IfaceNetwork    network_model;
 private IfaceModel      layout_model;
 private Timer           safety_timer;
-private Map<IfaceSensor,SensorStatus> sensor_map;
+private Map<IfaceSensor,ShoreSensorState> sensor_map;
 private SafetySwitch    safety_switch;
 private SafetySignal    safety_signal;
 private SafetyBlock     safety_block;
@@ -136,6 +136,8 @@ void schedule(TimerTask task,long delay)
 
 @Override public boolean setSensor(IfaceSensor ss,ShoreSensorState state)
 {
+   // user set sensor -- tell the network to adjust levels and set sensor
+   
    network_model.setSensor(ss,state); 
    
    return true;
@@ -149,12 +151,12 @@ void schedule(TimerTask task,long delay)
 
 private void handleSensorChange(IfaceSensor s)
 {
-   SensorStatus sts = sensor_map.get(s);
-   if (sts == null) {
-      sts = new SensorStatus(s);
-      sensor_map.put(s,sts);
+   ShoreSensorState laststate = sensor_map.get(s);
+   ShoreSensorState newstate = s.getSensorState();
+   sensor_map.put(s,newstate);
+   if (laststate != newstate && newstate != ShoreSensorState.UNKNOWN) {
+      handleActualSensorChange(s);
     }
-   sts.setState();
 }
 
 
@@ -173,6 +175,7 @@ private void handleBlockChange(IfaceBlock blk)
 {
    safety_signal.handleBlockChange(blk);
    safety_block.handleBlockChange(blk);  
+   safety_switch.handleBlockChange(blk);
 }
 
 
@@ -180,6 +183,7 @@ private void handleSwitchChange(IfaceSwitch sw)
 {
    safety_signal.handleSwitchChange(sw);
    safety_block.handleSwitchChange(sw); 
+   safety_switch.handleSwitchChange(sw);
 }
 
 
@@ -204,36 +208,6 @@ private final class SafetyCallback implements ModelCallback {
     }
 
 }       // end of inner class SafetyCallback
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Track sensor states with delay                                          */
-/*                                                                              */
-/********************************************************************************/
-
-private class SensorStatus {
-
-   private IfaceSensor for_sensor;
-   private ShoreSensorState last_state;
-   
-   SensorStatus(IfaceSensor sensor) {
-      for_sensor = sensor;
-      last_state = null;
-      setState();
-    }
-   
-   private void setState() {
-      ShoreSensorState newstate = for_sensor.getSensorState();
-      if (last_state != newstate && newstate != ShoreSensorState.UNKNOWN) {
-         handleActualSensorChange(for_sensor);
-       }
-      last_state = newstate;
-    }
-   
-}
-
 
 
 

@@ -85,7 +85,6 @@ SafetySignal(SafetyFactory sf)
 
 boolean safelySetSignal(IfaceSignal ss,ShoreSignalState state)
 {
-   
    if (state == ShoreSignalState.GREEN || state == ShoreSignalState.YELLOW) {
       IfaceBlock frm = ss.getFromBlock();
       for (IfaceConnection cc : ss.getConnections()) {
@@ -96,6 +95,8 @@ boolean safelySetSignal(IfaceSignal ss,ShoreSignalState state)
                break;
             case PENDING :
             case INUSE :
+               ShoreLog.logD("SAFETY","Attempt to set signal " + ss + 
+                     "when target block in use " + blk);
                return false;
           }
        }
@@ -105,6 +106,8 @@ boolean safelySetSignal(IfaceSignal ss,ShoreSignalState state)
    return true;
 }
 
+
+
 /********************************************************************************/
 /*                                                                              */
 /*      Change Entry Points                                                     */
@@ -113,24 +116,28 @@ boolean safelySetSignal(IfaceSignal ss,ShoreSignalState state)
 
 void handleSensorChange(IfaceSensor s)
 {
+   if (s.getSensorState() != ShoreSensorState.ON) return;
+   
+   // check if we have to stop a train
    for (IfaceSignal sig : s.getSignals()) { 
       Collection<IfaceSensor> pset = sig.getPriorSensors();
       ShoreLog.logD("SAFETY","PRIOR SENSORS " + s + " " + pset);
-
       if (safety_factory.checkPriorSensors(pset)) {  
-         if (s.getSensorState() == ShoreSensorState.ON && sig != null) {
-            SignalData sd = active_signals.get(sig);
-            if (sd == null) {
-               if (sig.getSignalState() != ShoreSignalState.GREEN) {
-                  // get train for block
-                  SignalData si = new SignalData(sig,null);
-                  active_signals.put(sig,si);
-                  si.stopTrain();
-                }
-               else {
-                  active_signals.put(sig,new SignalData(sig,null));
-                  sig.setSignalState(ShoreSignalState.RED);
-                }
+         SignalData sd = active_signals.get(sig);
+         if (sd == null) {
+            // ensure first time we have this signal for block
+            if (sig.getSignalState() != ShoreSignalState.GREEN) {
+               // get train for block
+               IfaceEngine trn = null;
+               ShoreLog.logD("SAFETY","Signal " + sig + 
+                     " should stop train " + trn);
+               SignalData si = new SignalData(sig,trn);
+               active_signals.put(sig,si);
+               si.stopTrain();
+             }
+            else {
+               // add to active signals so we ignore later sets
+               active_signals.put(sig,new SignalData(sig,null));
              }
           }
        }
@@ -140,29 +147,26 @@ void handleSensorChange(IfaceSensor s)
 
 void handleBlockChange(IfaceBlock b)
 {
-   if (b.getBlockState() == ShoreBlockState.EMPTY) {
+   if (b.getBlockState() != ShoreBlockState.INUSE) {
+      // remove active signals from block
       for (Iterator<SignalData> it = active_signals.values().iterator(); it.hasNext(); ) {
          SignalData sd = it.next();
          if (sd.getBlock() == b) it.remove();
        }
     }
    
-   // might want to track all signals associated with block 
-   updateSignals();
+   updateSignals(b);
 }
 
 
 void handleSwitchChange(IfaceSwitch sw)
 { 
-   // might want to track all signals associated withs switch
-   updateSignals();
+   // switch changes will result in block status changes -- we can ignore here
 }
 
 
 void handleSignalChange(IfaceSignal sig)
-{
-   
-}
+{ }
 
 
 
@@ -172,10 +176,17 @@ void handleSignalChange(IfaceSignal sig)
 /*                                                                              */
 /********************************************************************************/
 
-private void updateSignals()
+private void updateSignals(IfaceBlock blk)
 {
    for (IfaceSignal sig : safety_factory.getLayoutModel().getSignals()) {
-      updateSignal(sig);
+      IfaceBlock sigblk = sig.getFromBlock();
+      for (IfaceConnection conn : sig.getConnections()) {
+         IfaceBlock toblk = conn.getOtherBlock(sigblk);
+         if (toblk == blk) {
+            updateSignal(sig);
+            break;
+          }
+       }
     }
 }
 
@@ -186,11 +197,9 @@ private void updateSignal(IfaceSignal sig)
    ShoreSignalState rslt = ShoreSignalState.GREEN;
    
    if (from != null) {
-      for (IfaceConnection conn : safety_factory.getLayoutModel().getConnections()) {
-         if (conn.getStopSignal(from) == sig) {
-            ShoreSignalState nst = updateSignal(sig,conn);
-            if (nst.ordinal() > rslt.ordinal()) rslt = nst;
-          }   
+      for (IfaceConnection conn : sig.getConnections()) {
+         ShoreSignalState nst = updateSignal(sig,conn);
+         if (nst.ordinal() > rslt.ordinal()) rslt = nst;
        }
     }
    else {
@@ -223,24 +232,25 @@ private ShoreSignalState updateSignal(IfaceSignal sig,IfaceConnection conn)
       return ShoreSignalState.GREEN;                         
     } 
    
-   ShoreLog.logD("SAFETY","Next block state " + to + " " + to.getBlockState() + 
-         " " + to.getPendingFrom() + " " + from);
-   
+   ShoreSignalState rslt = ShoreSignalState.GREEN;
    switch (to.getBlockState()) {
       case INUSE :
-         return ShoreSignalState.RED;
+         rslt = ShoreSignalState.RED;
       case EMPTY :
          break;
       case PENDING :
          if (to.getPendingFrom() != from) {
-            return ShoreSignalState.RED;
+            rslt = ShoreSignalState.RED;
           }
          break;
       case UNKNOWN :
          break;
     }
    
-   return ShoreSignalState.GREEN;
+   ShoreLog.logD("SAFETY","Next block state " + to + " " + to.getBlockState() + 
+         " " + to.getPendingFrom() + " " + from + " = " + rslt);
+   
+   return rslt;
 }
 
 
