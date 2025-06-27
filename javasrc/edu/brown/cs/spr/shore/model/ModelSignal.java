@@ -177,7 +177,7 @@ List<ModelSensor> getModelStopSensors()
 
 @Override public void setSignalState(ShoreSignalState state)
 {
-   if (signal_state == state) return;
+   if (signal_state == state || is_unused) return;
    
    ShoreLog.logD("MODEL","Set signal " + signal_id + "=" + state);
    

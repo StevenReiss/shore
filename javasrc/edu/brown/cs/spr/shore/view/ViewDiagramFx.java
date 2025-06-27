@@ -732,6 +732,7 @@ private void drawSensors()
    
    for (IfaceSensor sen : for_diagram.getSensors()) {
       IfacePoint pt = sen.getAtPoint();
+      if (pt == null) continue;
       Point2D cpt = getCoords(pt);
       Circle c = new Circle(cpt.getX(),cpt.getY(),SENSOR_RADIUS,
             SENSOR_OFF_COLOR);

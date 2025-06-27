@@ -112,7 +112,7 @@ void handleSensorChange(IfaceSensor s)
    IfaceBlock blk = s.getBlock(); 
    if (blk == null) return;
    BlockData bd = active_blocks.get(blk);
-   ShoreLog.logD("SAFETY","SENSOR " + s + " In BLOCK " + blk + " " + (bd != null) +
+   ShoreLog.logD("SAFETY","SENSOR " + s + " In BLOCK " + blk + " " + (bd == null) +
          " "  + s.getSensorState());
    
    if (bd == null && s.getSensorState() == ShoreSensorState.ON) {
@@ -242,7 +242,7 @@ private void checkPendingBlocks(IfaceBlock blk)
    if (bd == null || bd.getAtPoint() == null ||  bd.getPriorPoint() == null) {
       if (bd == null) {
          ShoreLog.logD("SAFETY","No pending check  because " + blk + 
-               "has no active block");
+               " has no active block");
        }
       else {
          ShoreLog.logD("SAFETY","No pending check for direction " + 
@@ -348,6 +348,7 @@ private class BlockData {
     }
    
    void checkVerified() {
+      ShoreLog.logD("SAFETY","Check verified block " + for_block + " " + is_verified);
       if (is_verified) return;
       for (IfaceSensor s : hit_sensors) {
          if (s.getSensorState() == ShoreSensorState.ON) return;
@@ -359,7 +360,10 @@ private class BlockData {
    void noteDone(long time) {
       ShoreLog.logD("SAFETY","Done with block " + for_block + " " +
             time + " " + exit_time);
-      if (time != 0 && exit_time != time) return;
+      if (time != 0 && exit_time != time) {
+         ShoreLog.logD("SAFETY","Block status changed -- don't remove");
+         return;
+       }
       active_blocks.remove(for_block);
       for_block.setBlockState(ShoreBlockState.EMPTY);
       current_point = null;

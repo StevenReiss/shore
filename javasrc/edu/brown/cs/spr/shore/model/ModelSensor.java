@@ -72,6 +72,7 @@ private Set<ModelSignal> for_signals;
 private byte tower_id;
 private byte tower_index;
 private ShoreSensorState force_state;
+private boolean is_ignored;
 
 
 
@@ -89,6 +90,8 @@ ModelSensor(ModelBase mdl,Element xml)
    sensor_point = mdl.getPointById(pt);
    tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
    tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
+   is_ignored = IvyXml.getAttrBool(xml,"IGNORED");
+   
    if (IvyXml.getAttrPresent(xml,"STATE")) {
       force_state = IvyXml.getAttrEnum(xml,"STATE",ShoreSensorState.UNKNOWN);
     }
@@ -98,7 +101,7 @@ ModelSensor(ModelBase mdl,Element xml)
    n_switch = null;
    r_switch = null;
    entry_switch = null;
-   if (sensor_point == null) {
+   if (sensor_point == null && !is_ignored) {
       mdl.noteError("Sensor point " + pt + " not found for " + sensor_id);
     }
    sensor_state = ShoreSensorState.UNKNOWN;
@@ -170,6 +173,7 @@ void assignSwitch(ModelSwitch sw,ShoreSwitchState state)
    if (force_state != null) st = force_state;
    
    if (st == sensor_state) return;
+   if (is_ignored) return;
    
    ShoreLog.logD("MODEL","Set sensor state " + sensor_id + "=" + st);
    

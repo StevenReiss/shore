@@ -188,11 +188,11 @@ private class LayoutPanel extends BorderPane {
       double totx = 0;
       double toty = 0;
       for (IfaceDiagram dgm : dgms) {
-	 ViewDiagramFx vd = new ViewDiagramFx(view_factory,dgm);
-	 SplitPane.setResizableWithParent(vd,true);
-	 totx = Math.max(totx,vd.getPrefWidth());
-	 toty += vd.getPrefHeight();
-	 pnls[i++] = vd;
+         ViewDiagramFx vd = new ViewDiagramFx(view_factory,dgm);
+         SplitPane.setResizableWithParent(vd,true);
+         totx = Math.max(totx,vd.getPrefWidth());
+         toty += vd.getPrefHeight();
+         pnls[i++] = vd;
        }
       ViewPlannerFx planner = new ViewPlannerFx();
       SplitPane.setResizableWithParent(planner,true);
