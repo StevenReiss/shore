@@ -601,6 +601,7 @@ private void drawSignals()
 private void setAllSignals(ShoreSignalState state)
 {
    for (IfaceSignal sig : for_diagram.getSignals()) {
+      if (sig.isUnused()) continue;
       view_factory.getSafetyModel().setSignal(sig,state);
     }
 }

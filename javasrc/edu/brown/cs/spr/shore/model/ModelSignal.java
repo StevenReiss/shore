@@ -192,6 +192,12 @@ ModelPoint getGapPoint()
 }
 
 
+@Override public boolean isUnused()
+{
+   return is_unused;
+}
+
+
 
 /********************************************************************************/
 /*                                                                              */

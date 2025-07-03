@@ -68,6 +68,7 @@ private ModelSensor n_sensor;
 private ModelSensor r_sensor;
 private String associated_name;
 private ModelSwitch associated_switch;
+private boolean is_flipped;
 
 
 
@@ -89,6 +90,7 @@ ModelSwitch(ModelBase model,Element xml)
    tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
    tower_rindex = (byte) IvyXml.getAttrInt(xml,"RINDEX",-1);
    associated_name = IvyXml.getAttrString(xml,"ASSOCIATE");
+   is_flipped = IvyXml.getAttrBool(xml,"FLIPPED");      // if wires are flipped
    switch_state = ShoreSwitchState.UNKNOWN;
    associated_switch = null;
    n_sensor = null;
@@ -326,7 +328,9 @@ private ModelPoint findSensorPoint(ModelBase mdl,ModelPoint frm,ModelPoint to)
 
 @Override public String toString()
 {
-   return "SWITCH[" + switch_id + "]";
+   String flip = "";
+   if (is_flipped) flip = "*";
+   return "SWITCH[" + switch_id + flip + "]";
 }
 
 

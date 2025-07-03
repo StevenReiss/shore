@@ -115,9 +115,16 @@ IfacePoint getNextPoint();
 
 
 /**
+ *      Check if this is an unused signal
+ **/
+boolean isUnused();
+
+
+/**
  *      Return the tower id controlling this signal
  **/
 byte getTowerId();
+
 
 /**
  *      Return the index of this signal in its tower

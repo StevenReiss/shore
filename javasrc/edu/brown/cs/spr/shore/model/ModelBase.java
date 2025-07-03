@@ -943,8 +943,12 @@ public void createReport(File output)
    
    ps.println("SWITCHES:");
    for (ModelSwitch sw : model_switches.values()) {
-      ps.println("   Switch " + sw.getId() + 
-            " (" + sw.getTowerId() + "-" + sw.getTowerSwitch() + ")");
+      ps.print("   Switch " + sw.getId() + 
+            " (" + sw.getTowerId() + "-" + sw.getTowerSwitch());
+      if (sw.getTowerRSwitch() > 0) {
+         ps.print("/" + sw.getTowerRSwitch());
+       }
+      ps.println(")");
       ps.println("      N: " + sw.getNPoint() + " " + sw.getNSensor());
       ps.println("      R: " + sw.getRPoint() + " " + sw.getRSensor());
       ps.println("      E: " + sw.getEntryPoint());
@@ -1029,6 +1033,9 @@ public void createReport(File output)
       for (ModelSwitch sw : model_switches.values()) {
          if (sw.getTowerId() == i) {
             swmap.put(sw.getTowerSwitch(),sw);
+            if (sw.getTowerRSwitch() >= 0) {
+               swmap.put(sw.getTowerRSwitch(),sw);
+             }
           }
        }
       ps.println("TOWER " + i);
@@ -1047,7 +1054,10 @@ public void createReport(File output)
          ps.println();
          ps.println("   SWITCHES: ");
          for (Map.Entry<Byte,ModelSwitch> ent : swmap.entrySet()) {
-            ps.println("      " + ent.getKey() + ":  " + ent.getValue());
+            String post = "";
+            ModelSwitch sw = ent.getValue();
+            if (ent.getKey() == sw.getTowerRSwitch()) post = " (R)";
+            ps.println("      " + ent.getKey() + ":  " + sw + post);
           }
        }
       ps.println("\f");

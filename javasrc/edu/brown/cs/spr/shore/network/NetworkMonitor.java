@@ -167,6 +167,8 @@ public NetworkMonitor(IfaceModel model)
       System.exit(1);
     }
    
+   ShoreLog.logD("NETWORK","Listening for datagrams on " + useaddr);
+   
    try {
       JmmDNS jmm = JmmDNS.Factory.getInstance();
       jmm.addServiceListener("_udp._udp.local.",new ServiceFinder("2"));
@@ -293,6 +295,8 @@ public void setSignal(IfaceSignal sig,ShoreSignalState set)
 {
    if (sig == null) return;
    
+   ShoreLog.logD("NETWORK","Set signal request " + sig + " " + set);
+   
    int id = sig.getTowerId();
    ControllerInfo ci = id_map.get(id);
    if (ci != null) {
@@ -386,6 +390,8 @@ private boolean sendDefSignal(IfaceSignal sig)
          sst = ShoreSignalType.RG_ANODE;
          break;
     }
+   
+   if (sig.isUnused()) sst = ShoreSignalType.RG;
    
    ci.sendDefSignalMessage(sig.getTowerSignal(),sst.ordinal());
    
