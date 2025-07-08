@@ -171,7 +171,7 @@ public NetworkMonitor(IfaceModel model)
    
    try {
       JmmDNS jmm = JmmDNS.Factory.getInstance();
-      jmm.addServiceListener("_udp._udp.local.",new ServiceFinder("2"));
+      jmm.addServiceListener("_udp._udp.local.",new ServiceFinder("UDP"));
       jmm.registerServiceType("_master._udp.local");
       jmm.registerServiceType("_tower._udp.local.");
       jmm.registerServiceType("master._udp.local");

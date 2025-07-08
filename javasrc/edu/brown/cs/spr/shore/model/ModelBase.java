@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -938,7 +939,9 @@ public void createReport(File output)
       return;
     }
    
+   ps.println("\n");
    ps.println("HO TRAIN Setup for " + model_file);
+   ps.println("      " + new Date());
    ps.println();
    
    ps.println("SWITCHES:");
@@ -948,7 +951,12 @@ public void createReport(File output)
       if (sw.getTowerRSwitch() > 0) {
          ps.print("/" + sw.getTowerRSwitch());
        }
-      ps.println(")");
+      ps.print(")");
+      ModelSwitch asw = sw.getAssociatedSwitch();
+      if (asw != null) {
+         ps.print(" ASSOC: " + asw.getId());
+       }
+      ps.println();
       ps.println("      N: " + sw.getNPoint() + " " + sw.getNSensor());
       ps.println("      R: " + sw.getRPoint() + " " + sw.getRSensor());
       ps.println("      E: " + sw.getEntryPoint());
@@ -1056,8 +1064,13 @@ public void createReport(File output)
          for (Map.Entry<Byte,ModelSwitch> ent : swmap.entrySet()) {
             String post = "";
             ModelSwitch sw = ent.getValue();
+            ModelSwitch asw = sw.getAssociatedSwitch();
             if (ent.getKey() == sw.getTowerRSwitch()) post = " (R)";
-            ps.println("      " + ent.getKey() + ":  " + sw + post);
+            ps.print("      " + ent.getKey() + ":  " + sw + post);
+            if (asw != null) {
+               ps.print(" + " + asw);
+             }
+            ps.println();
           }
        }
       ps.println("\f");

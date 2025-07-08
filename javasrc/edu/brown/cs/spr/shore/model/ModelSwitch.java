@@ -148,8 +148,9 @@ ModelSwitch getAssociatedSwitch()
    switch_state = st;
    for_model.fireSwitchChanged(this); 
    
-   if (associated_switch != null) {
-      associated_switch.setSwitch(st);
+   ModelSwitch sw = getAssociatedSwitch();
+   if (sw != null) {
+      sw.setSwitch(st);
     }
 }
 

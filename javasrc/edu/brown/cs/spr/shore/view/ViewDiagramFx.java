@@ -51,6 +51,7 @@ import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceModel.ModelCallback;
 import edu.brown.cs.spr.shore.iface.IfaceTrains.TrainCallback;
+import edu.brown.cs.spr.shore.shore.ShoreLog;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
@@ -600,6 +601,8 @@ private void drawSignals()
 
 private void setAllSignals(ShoreSignalState state)
 {
+   ShoreLog.logD("VIEW","Set all signals " + state);
+   
    for (IfaceSignal sig : for_diagram.getSignals()) {
       if (sig.isUnused()) continue;
       view_factory.getSafetyModel().setSignal(sig,state);
