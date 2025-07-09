@@ -346,13 +346,19 @@ private boolean goesTo(IfacePoint prev,IfacePoint pt,IfacePoint tgt,Set<IfacePoi
 {
    if (prev == null || cur == null || prev == cur) return null;
    
-   Set<IfacePoint> next = findSuccessorPoints(prev,cur,true);
+   ShoreLog.logD("MODEL","Find next block " + prev + " -> " + cur);
+   
+   Set<IfacePoint> next = findSuccessorPoints(cur,prev,true);
+   ShoreLog.logD("MODEL","Next points: " + next);
    for (IfacePoint pt : next) {
       IfaceBlock curblk = pt.getBlock();
       for (IfaceConnection c : pt.getBlock().getConnections()) {
          IfaceSensor xsen = c.getExitSensor(curblk);
          if (xsen == null) continue;
          if (next.contains(xsen.getAtPoint())) {
+            ShoreLog.logD("MODEL","Found next block " + 
+               xsen + " " + xsen.getAtPoint() + " " + curblk + " " +
+               c.getOtherBlock(curblk) + " " + c);
             return c.getOtherBlock(curblk);
           }
        }
@@ -420,6 +426,7 @@ private void addPriorPoints(IfacePoint pt,Set<IfacePoint> rslt,IfaceBlock blk)
       IfacePoint prior,boolean usesw)
 {
    Set<IfacePoint> priors = findPriorPoints(current,prior);
+   ShoreLog.logD("MODEL","Prior points: " + prior);
    return findSuccessorPoints(current,priors,usesw);
 }
 

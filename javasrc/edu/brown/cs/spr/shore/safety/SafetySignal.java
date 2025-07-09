@@ -247,7 +247,7 @@ private ShoreSignalState updateSignal(IfaceSignal sig,IfaceConnection conn)
          break;
     }
    
-   ShoreLog.logD("SAFETY","Next block state " + to + " " + to.getBlockState() + 
+   ShoreLog.logD("SAFETY","Next signal state " + to + " " + to.getBlockState() + 
          " " + to.getPendingFrom() + " " + from + " = " + rslt);
    
    return rslt;

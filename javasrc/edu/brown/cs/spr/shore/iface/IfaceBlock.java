@@ -82,10 +82,7 @@ boolean setPendingFrom(IfaceBlock blk);
  **/ 
 IfaceBlock getNextPending();
 
-/**
- *      Set or clear the pending from flags
- **/
-void setNextPending(IfaceBlock blk);
+
 
 /**
  *      Return the set of connections associated with this block

@@ -126,8 +126,8 @@ void handleSensorChange(IfaceSensor s)
       ShoreLog.logD("SAFETY","Ignore OFF sensor " + s);
     }
    else if (s.getSensorState() == ShoreSensorState.ON) {
-      ShoreLog.logD("SAFETY","Note sensor " + s + " in block");
       boolean pend = (bd.getPriorPoint() == null);
+      ShoreLog.logD("SAFETY","Note sensor " + s + " in block " + bd.getPriorPoint());
       bd.noteBlockSensor(s);
       if (!pend && bd.getPriorPoint() != null) checkPendingBlocks(blk);
     }
@@ -157,6 +157,8 @@ void handleBlockChange(IfaceBlock blk)
       default :
         break;
     }
+   
+   ShoreLog.logD("SAFETY","Note block change " + blk);
    
    checkPendingBlocks(blk);
 }
@@ -377,12 +379,17 @@ private class BlockData {
          if (conn.getEntrySensor(for_block) == s) {
             IfaceBlock prev = conn.getOtherBlock(for_block);
             BlockData bd = active_blocks.get(prev);
+            ShoreLog.logD("SAFETY","CHECK Prior connection " +
+                  prev + "" + (bd != null));
             if (bd != null && bd.is_verified) {
                is_verified = true;
                prior_point = conn.getGapPoint();
                ShoreLog.logD("SAFETY","Verified " + for_block + 
                      " based on prior block " + bd.for_block);
                break;
+             }
+            else {
+               ShoreLog.logD("SAFETY","Prior block " + prev + " not verified");
              }
           }
        }

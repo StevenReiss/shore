@@ -112,10 +112,14 @@ ModelBlock(ModelBase model,Element xml)
 {
    if (block_state == st) return;
    
-   ShoreLog.logD("MODEL","Set Block State " + block_id + "=" + st);
+   String stnm = st.toString();
+   if (st == ShoreBlockState.PENDING) stnm += "[" + pending_from + "]";
+   ShoreLog.logD("MODEL","Set Block State " + block_id + "=" + stnm);
+   
    block_state = st;
    for_model.fireBlockChanged(this);
 }
+
 
 @Override public boolean setPendingFrom(IfaceBlock blk)  
 {
@@ -134,51 +138,12 @@ ModelBlock(ModelBase model,Element xml)
    return true;
 }
 
-@Override public void setNextPending(IfaceBlock blk)
-{
-   next_pending = (ModelBlock) blk;
-   if (next_pending != blk) checkNextPending(blk);
-}
-
-
-private boolean checkNextPending(IfaceBlock from)
-{
-   boolean rslt = true;
-   
-   if (from == null) {
-      for (IfaceConnection conn : getConnections()) {
-         IfaceBlock b1 = conn.getOtherBlock(this);
-         if (b1.getNextPending() == this) {
-            b1.setNextPending(null);
-          }
-       }
-    }
-   else {
-      for (IfaceConnection conn : getConnections()) {
-         IfaceBlock b1 = conn.getOtherBlock(this);
-         if (b1 == from) continue;
-         if (conn.getExitSwitch(this) != null) continue;
-         if (b1.getNextPending() == this) continue;
-         if (b1.getNextPending() != null) rslt = false;
-       }
-      if (rslt) {
-         for (IfaceConnection conn : getConnections()) {
-            IfaceBlock b1 = conn.getOtherBlock(this);
-            if (b1 == from) continue;
-            if (conn.getExitSwitch(this) != null) continue;
-            if (b1.getNextPending() == this) continue;
-            b1.setNextPending(this);
-          }
-       }
-    }
-   
-   return rslt;
-}
 
 @Override public Collection<IfaceConnection> getConnections()
 {
    return new ArrayList<>(block_connects); 
 }
+
 
 void addConnection(ModelConnection conn) 
 {
