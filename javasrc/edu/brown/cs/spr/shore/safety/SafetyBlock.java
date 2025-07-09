@@ -154,6 +154,10 @@ void handleBlockChange(IfaceBlock blk)
       case UNKNOWN :
          active_blocks.remove(blk);
          break;
+      case PENDING :
+         active_blocks.remove(blk);
+         break;
+  
       default :
         break;
     }
