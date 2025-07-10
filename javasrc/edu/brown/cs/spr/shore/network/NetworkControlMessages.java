@@ -33,6 +33,7 @@ byte CONTROL_SETSIGNAL  = (byte) 0x44;          // set signal to state
 byte CONTROL_DEFSENSOR  = (byte) 0x45;          // assoc sensor with switch state
 byte CONTROL_SETSENSOR  = (byte) 0x46;          // note sensor state
 byte CONTROL_DEFSIGNAL  = (byte) 0x47;          // set type of signal
+byte CONTROL_DEFSWITCH  = (byte) 0x48;          // assoc r-index with switch
 
 
 

@@ -273,6 +273,7 @@ public void setSwitch(IfaceSwitch sw,ShoreSwitchState set)
 }
 
 
+
 private boolean sendSwitchStatus(IfaceSwitch sw) 
 {
    if (sw == null) return false;
@@ -333,6 +334,20 @@ public void setSensor(IfaceSensor sen,ShoreSensorState set)
    ci.sendSensorMessage(sen.getTowerSensor(),set);
 }
 
+
+private boolean sendDefSwitch(IfaceSwitch sw) 
+{
+   if (sw.getTowerRSwitch() >= 0) {
+      int id = sw.getTowerId();
+      ControllerInfo ci = id_map.get(id);
+      if (ci != null) {
+         ci.sendDefSwitchMessage(sw.getTowerSwitch(),sw.getTowerRSwitch());
+         return true;
+       }
+    }
+   
+   return false;
+}
 
 private boolean sendDefSensor(IfaceSensor sen)
 {
@@ -651,6 +666,9 @@ private final class StatusUpdater extends Thread {
                 }
              }
             for (IfaceSwitch sw : layout_model.getSwitches()) {
+               if (sendDefSwitch(sw)) {
+                  delay();
+                }
                if (sendSwitchStatus(sw)) {
                   delay();
                 }
@@ -935,6 +953,11 @@ private class ControllerInfo {
    
    void sendDefSignalMessage(byte sid,int value) {
       byte [] msg = { CONTROL_DEFSIGNAL, controller_id, sid, (byte) value };
+      sendMessage(net_address,msg,0,4);
+    }
+   
+   void sendDefSwitchMessage(byte sid,byte rsid) {
+      byte[] msg = { CONTROL_DEFSWITCH, controller_id, sid, rsid };
       sendMessage(net_address,msg,0,4);
     }
    

@@ -62,7 +62,7 @@ enum SwitchMode {
 private SafetyFactory   safety_factory;
 private Map<IfaceSwitch,SwitchData> switch_map;
 
-private static final long SWITCH_DELAY = 4000;
+private static final long SWITCH_DELAY = 2000;
 
 
 
@@ -171,7 +171,7 @@ private class SwitchData {
    
    void trigger(ShoreSensorState sen,ShoreSwitchState state) {
       ShoreLog.logD("SAFETY","Trigger switch " + for_switch + "=" + state + 
-            " @ " + current_mode);
+            " @ " + current_mode + " " + sen);
       
       switch (current_mode) {
          case NORMAL :
@@ -186,7 +186,8 @@ private class SwitchData {
             else {
                last_trigger = System.currentTimeMillis();
                current_mode = SwitchMode.DONE;
-               safety_factory.schedule(new SwitchTask(this,last_trigger),SWITCH_DELAY);
+               SwitchTask task = new SwitchTask(this,last_trigger);
+               safety_factory.schedule(task,SWITCH_DELAY);
              }
             break;
          case DONE :
@@ -199,6 +200,7 @@ private class SwitchData {
     }
    
    void noteDone(long time) {
+      ShoreLog.logD("SAFETY","Switch state to normal request " + time + " " + last_trigger);
       if (time != last_trigger) return;
       current_mode = SwitchMode.NORMAL;
       last_trigger = 0;

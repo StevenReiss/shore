@@ -380,11 +380,9 @@ private class BlockData {
    private void checkPriorBlock(IfaceSensor s) {
       // check if first sensor is a connector with prior verified block
       for (IfaceConnection conn : for_block.getConnections()) {
-         if (conn.getEntrySensor(for_block) == s) {
+         if (conn.getEntrySensor(for_block) == s || conn.getExitSensor(for_block) == s) {
             IfaceBlock prev = conn.getOtherBlock(for_block);
             BlockData bd = active_blocks.get(prev);
-            ShoreLog.logD("SAFETY","CHECK Prior connection " +
-                  prev + "" + (bd != null));
             if (bd != null && bd.is_verified) {
                is_verified = true;
                prior_point = conn.getGapPoint();

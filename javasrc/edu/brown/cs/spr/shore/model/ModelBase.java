@@ -955,7 +955,7 @@ public void createReport(File output)
    for (ModelSwitch sw : model_switches.values()) {
       ps.print("   Switch " + sw.getId() + 
             " (" + sw.getTowerId() + "-" + sw.getTowerSwitch());
-      if (sw.getTowerRSwitch() > 0) {
+      if (sw.getTowerRSwitch() >= 0) {
          ps.print("/" + sw.getTowerRSwitch());
        }
       ps.print(")");
