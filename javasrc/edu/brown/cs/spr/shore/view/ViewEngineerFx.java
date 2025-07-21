@@ -40,8 +40,14 @@ package edu.brown.cs.spr.shore.view;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import eu.hansolo.medusa.Gauge;
 import eu.hansolo.medusa.Gauge.SkinType;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.geometry.HPos;
 import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
@@ -51,6 +57,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.paint.Color;
 
@@ -132,7 +139,7 @@ ViewEngineerFx(IfaceEngine engine)
    add(bell,4,4,1,1);
    setHalignment(bell,HPos.CENTER);
    
-   ToggleButton rev = new ToggleButton("Reverse");
+   FwdRevSwitch rev = getFwdReverse();
    add(rev,0,5,3,1);
    
    Button stop = getStopButton();
@@ -280,9 +287,82 @@ private Button getStopButton()
 }
 
 
+private FwdRevSwitch getFwdReverse()
+{
+   return new FwdRevSwitch();
+}
 
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      Forward-reverse toggle                                                  */
+/*                                                                              */
+/********************************************************************************/
+
+@SuppressWarnings("rawtypes")
+private class FwdRevSwitch extends HBox implements ChangeListener<Boolean>,
+      EventHandler {
+
+   private final Label label = new Label();
+   private final Button button = new Button();
+   
+   private static final String ON_LABEL = "REV";
+   private static final String OFF_LABEL = "FWD";
+   
+   
+   private SimpleBooleanProperty switchedOn = new SimpleBooleanProperty(false);
+   
+   FwdRevSwitch() {
+      init();
+      switchedOn.addListener(this);
+    }
+   
+   SimpleBooleanProperty switchOnProperty() { return switchedOn; }
+   
+   @SuppressWarnings("unchecked")
+   private void init() {
+      label.setText(OFF_LABEL);
+      getChildren().addAll(label, button);	
+      button.setOnAction(this);
+      label.setOnMouseClicked(this);
+      setStyle(); 
+      bindProperties();
+    }
+   
+   private void setStyle() {
+      //Default Width
+      setWidth(80);
+      label.setAlignment(Pos.CENTER);
+      setStyle("-fx-background-color: grey; -fx-text-fill:black; -fx-background-radius: 4;");
+      setAlignment(Pos.CENTER_LEFT);
+    }
+   
+   private void bindProperties() {
+      label.prefWidthProperty().bind(widthProperty().divide(2));
+      label.prefHeightProperty().bind(heightProperty());
+      button.prefWidthProperty().bind(widthProperty().divide(2));
+      button.prefHeightProperty().bind(heightProperty());
+    }
+   
+   @Override public void changed(ObservableValue<? extends Boolean> obs,Boolean oldval,Boolean newval) {
+      if (newval) {
+         label.setText(ON_LABEL);
+         setStyle("-fx-background-color: yellow;");
+         label.toFront();
+       }
+      else {
+         label.setText(OFF_LABEL);
+         setStyle("-fx-background-color: grey;");
+         button.toFront();
+       }
+    } 
+   
+   @Override public void handle(Event evt) {
+      switchedOn.set(!switchedOn.get());
+    }
+   
+}
 
 }       // end of class ViewEngineerFx
 
