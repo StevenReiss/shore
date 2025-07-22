@@ -37,6 +37,8 @@ package edu.brown.cs.spr.shore.view;
 
 
 
+import java.net.URL;
+
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import eu.hansolo.medusa.Gauge;
 import eu.hansolo.medusa.Gauge.SkinType;
@@ -88,6 +90,9 @@ ViewEngineerFx(IfaceEngine engine)
    Background bkg = new Background(new BackgroundFill(Color.WHEAT,null,null));
    setBackground(bkg);
    
+   URL r = getClass().getClassLoader().getResource("engineer.css");
+   getStylesheets().add(r.toExternalForm());
+   
    // top row for labels
    Label hdr1 = new Label("CONTROL ID   ");
    Label hdr2 = new Label("Engine " + for_engine.getTrainName());
@@ -101,17 +106,7 @@ ViewEngineerFx(IfaceEngine engine)
    setVgrow(speed,Priority.ALWAYS);
    setFillHeight(speed,true);
    
-   Slider accel = new Slider();
-   accel.setMin(0);
-   accel.setMax(100);
-   accel.setValue(0);
-   accel.setShowTickMarks(true);
-   accel.setShowTickLabels(false);
-   accel.setMajorTickUnit(50);
-   accel.setMinorTickCount(5);
-   accel.setBlockIncrement(10);
-   accel.setOrientation(Orientation.VERTICAL);
-   accel.setValueChanging(true);
+   Slider accel = getAccelerator();
    add(accel,3,1,1,4);
    setVgrow(accel,Priority.ALWAYS);
    setHalignment(accel,HPos.CENTER);
@@ -148,9 +143,6 @@ ViewEngineerFx(IfaceEngine engine)
    Button pwer = getPowerButton();
    add(pwer,3,6,1,1);
    
-   Label power = new Label("On/Off");
-   add(power,4,6,1,1);
-   
    Label spacer2 = new Label();
    spacer2.setMinHeight(3.0);
    add(spacer2,0,7);
@@ -161,6 +153,38 @@ ViewEngineerFx(IfaceEngine engine)
 
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      Accelerator                                                             */
+/*                                                                              */
+/********************************************************************************/
+
+private Slider getAccelerator()
+{
+   Slider accel = new Accelerator();
+   
+   return accel;
+}
+
+
+private class Accelerator extends Slider {
+   
+   Accelerator() {
+      setMin(0);
+      setMax(100);
+      setValue(0);
+      setShowTickMarks(true);
+      setShowTickLabels(false);
+      setMajorTickUnit(50);
+      setMinorTickCount(5);
+      setBlockIncrement(10);
+      setOrientation(Orientation.VERTICAL);
+      setValueChanging(true);
+      String style = "-fx-fill: linear-gradient(to right,#ff0000 0,#00ff00 100)";
+      setStyle(style);
+      
+    }
+}
 
 /********************************************************************************/
 /*                                                                              */
@@ -304,28 +328,29 @@ private FwdRevSwitch getFwdReverse()
 private class FwdRevSwitch extends HBox implements ChangeListener<Boolean>,
       EventHandler {
 
-   private final Label label = new Label();
-   private final Button button = new Button();
+   private Label fwdrev_label;
+   private Button fwdrev_button;
    
    private static final String ON_LABEL = "REV";
    private static final String OFF_LABEL = "FWD";
-   
-   
-   private SimpleBooleanProperty switchedOn = new SimpleBooleanProperty(false);
+   private SimpleBooleanProperty switched_on;
    
    FwdRevSwitch() {
+      fwdrev_label = new Label();
+      fwdrev_button = new Button();
+      switched_on = new SimpleBooleanProperty(false);
       init();
-      switchedOn.addListener(this);
+      switched_on.addListener(this);
     }
    
-   SimpleBooleanProperty switchOnProperty() { return switchedOn; }
+   SimpleBooleanProperty switchOnProperty() { return switched_on; }
    
    @SuppressWarnings("unchecked")
    private void init() {
-      label.setText(OFF_LABEL);
-      getChildren().addAll(label, button);	
-      button.setOnAction(this);
-      label.setOnMouseClicked(this);
+      fwdrev_label.setText(OFF_LABEL);
+      getChildren().addAll(fwdrev_label, fwdrev_button);	
+      fwdrev_button.setOnAction(this);
+      fwdrev_label.setOnMouseClicked(this);
       setStyle(); 
       bindProperties();
     }
@@ -333,33 +358,33 @@ private class FwdRevSwitch extends HBox implements ChangeListener<Boolean>,
    private void setStyle() {
       //Default Width
       setWidth(80);
-      label.setAlignment(Pos.CENTER);
-      setStyle("-fx-background-color: grey; -fx-text-fill:black; -fx-background-radius: 4;");
+      fwdrev_label.setAlignment(Pos.CENTER);
+      setStyle("-fx-background-color: lightgreen; -fx-text-fill:black; -fx-background-radius: 4;");
       setAlignment(Pos.CENTER_LEFT);
     }
    
    private void bindProperties() {
-      label.prefWidthProperty().bind(widthProperty().divide(2));
-      label.prefHeightProperty().bind(heightProperty());
-      button.prefWidthProperty().bind(widthProperty().divide(2));
-      button.prefHeightProperty().bind(heightProperty());
+      fwdrev_label.prefWidthProperty().bind(widthProperty().divide(2));
+      fwdrev_label.prefHeightProperty().bind(heightProperty());
+      fwdrev_button.prefWidthProperty().bind(widthProperty().divide(2));
+      fwdrev_button.prefHeightProperty().bind(heightProperty());
     }
    
    @Override public void changed(ObservableValue<? extends Boolean> obs,Boolean oldval,Boolean newval) {
       if (newval) {
-         label.setText(ON_LABEL);
+         fwdrev_label.setText(ON_LABEL);
          setStyle("-fx-background-color: yellow;");
-         label.toFront();
+         fwdrev_label.toFront();
        }
       else {
-         label.setText(OFF_LABEL);
-         setStyle("-fx-background-color: grey;");
-         button.toFront();
+         fwdrev_label.setText(OFF_LABEL);
+         setStyle("-fx-background-color: lightgreen;");
+         fwdrev_button.toFront();
        }
     } 
    
    @Override public void handle(Event evt) {
-      switchedOn.set(!switchedOn.get());
+      switched_on.set(!switched_on.get());
     }
    
 }

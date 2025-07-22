@@ -105,14 +105,17 @@ public TrainFactory(IfaceNetwork net,IfaceModel mdl)
 /********************************************************************************/
 
 @Override
-public TrainEngine createTrain(String name)
+public TrainEngine createTrain(String name,String id)
 {
    if (name == null) return null; 
    
    TrainEngine eng = known_trains.get(name);
-   if (eng == null) {
-      eng = new TrainEngine(this,name);
-      known_trains.put(name,eng);
+   if (eng == null) eng = known_trains.get(id);
+   if (eng == null) { 
+      int idx = known_trains.size();
+      eng = new TrainEngine(this,name,id,ENGINE_COLORS[idx]);  
+      known_trains.put(name,eng); 
+      known_trains.put(id,eng);
     }
    return eng;
 }
@@ -181,8 +184,9 @@ private void loadTrains()
    Element xml = layout_model.getModelXml();
    
    for (Element telt : IvyXml.children(xml,"ENGINE")) {
-      String name = IvyXml.getAttrString(telt,"ID");
-      createTrain(name);
+      String name = IvyXml.getAttrString(telt,"NAME");
+      String id = IvyXml.getAttrString(telt,"ID");
+      createTrain(name,id);
     }
 }
 

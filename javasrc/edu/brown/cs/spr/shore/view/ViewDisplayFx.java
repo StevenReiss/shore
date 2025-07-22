@@ -154,18 +154,18 @@ private class EngineerPanel extends Pane {
       Node [] engarr = new Node[engs.size()];
       int i = 0;
       for (IfaceEngine eng : engs) {
-	 ViewEngineerFx n = new ViewEngineerFx(eng);
-	 SplitPane.setResizableWithParent(n,true);
-	 engarr[i++] = n;
+         ViewEngineerFx n = new ViewEngineerFx(eng);
+         SplitPane.setResizableWithParent(n,true);
+         engarr[i++] = n;
        }
       if (engarr.length > 1) {
-	 FullSplitPane spl = new FullSplitPane(engarr);
-	 spl.setOrientation(Orientation.VERTICAL);
-	 spl.setDefaultDividers();
-	 getChildren().add(spl);
+         FullSplitPane spl = new FullSplitPane(engarr);
+         spl.setOrientation(Orientation.VERTICAL);
+         spl.setDefaultDividers();
+         getChildren().add(spl);
        }
       else if (engarr.length == 1) {
-	 getChildren().add(engarr[0]);
+         getChildren().add(engarr[0]);
        }
     }
 

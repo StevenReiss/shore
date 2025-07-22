@@ -42,6 +42,7 @@ import java.util.List;
 
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
+import javafx.scene.paint.Color;
 
 class TrainEngine implements TrainConstants, IfaceEngine
 {
@@ -59,6 +60,16 @@ private List<IfaceBlock>        train_blocks;
 private SocketAddress           socket_address;
 private boolean                 is_stopped;
 private boolean                 is_emergency;
+private boolean                 bell_on;
+private boolean                 reverse_on;
+private double                  engine_speed;
+private double                  engine_rpm;
+private double                  engine_throttle; 
+private boolean                 fwd_light;
+private boolean                 rev_light;
+private EngineState             engine_state;
+private Color                   engine_color;
+private String                  engine_id;
 
 
 
@@ -68,7 +79,7 @@ private boolean                 is_emergency;
 /*                                                                              */
 /********************************************************************************/
 
-TrainEngine(TrainFactory fac,String name)
+TrainEngine(TrainFactory fac,String name,String id,Color color)
 {
    train_factory = fac;
    engine_name = name;
@@ -76,6 +87,16 @@ TrainEngine(TrainFactory fac,String name)
    socket_address = null;
    is_stopped = true;
    is_emergency = false;
+   bell_on = false;
+   reverse_on = false;
+   engine_speed = 0;
+   engine_rpm = 0;
+   engine_throttle = 0;
+   fwd_light = false;
+   rev_light = false;
+   engine_state = EngineState.IDLE;
+   engine_color = color;
+   engine_id = id;
 }
 
 
@@ -88,6 +109,8 @@ TrainEngine(TrainFactory fac,String name)
 
 @Override public String getTrainName()                  { return engine_name; }
 
+@Override public String getEngineId()                    { return engine_id; }
+
 @Override public SocketAddress getEngineAddress()       { return socket_address; }
 
 void setEngineAddress(SocketAddress sa)                 { socket_address = sa; }  
@@ -99,7 +122,25 @@ void setEngineAddress(SocketAddress sa)                 { socket_address = sa; }
    return is_stopped && is_emergency;
 }
 
+@Override public boolean isBellOn()                     { return bell_on; }
 
+@Override public boolean isReverse()                    { return reverse_on; } 
+
+@Override public double getSpeed()                      { return engine_speed; }
+
+@Override public double getRpm()                        { return engine_rpm; }
+
+@Override public double getThrottle()                   { return engine_throttle; }
+
+@Override public boolean isFwdLightOn()                 { return fwd_light; }
+
+@Override public boolean isRevLightOn()                 { return rev_light; }
+
+@Override public EngineState getEngineState()           { return engine_state; }
+
+@Override public Color getEngineColor()                 { return engine_color; }
+
+  
 
 /********************************************************************************/
 /*                                                                              */
@@ -171,11 +212,13 @@ public void exitBlock(IfaceBlock blk)
 
 @Override public void setSpeed(int arg0)
 {
+   // set engine_throttle
    // method body goes here
 }
 
-@Override public void ringBell()
+@Override public void toggleBell() 
 {
+   // set bell_on
    // method body goes here
 }
 
@@ -184,12 +227,18 @@ public void exitBlock(IfaceBlock blk)
    // method body goes here
 }
 
+@Override public void setFwdLight(boolean on)
+{
+   fwd_light = on;
+   // send message
+}
 
 
-
-
-
-
+@Override public void setRevLight(boolean on)
+{
+   rev_light = on; 
+   // send message
+}
 
 
 

@@ -50,6 +50,7 @@ public interface NetworkConstants extends IfaceConstants
 /********************************************************************************/
 
 int	UDP_PORT = 2390;
+int     ALT_PORT = 8266;
 int	CONTROLER_PORT = 2390;
 
 int	BUFFER_SIZE = 40;

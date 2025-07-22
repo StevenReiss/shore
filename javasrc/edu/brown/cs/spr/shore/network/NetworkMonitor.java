@@ -41,12 +41,12 @@ import java.net.DatagramSocket;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -95,9 +95,9 @@ public static void main(String [] args)
 /********************************************************************************/
 
 private DatagramSocket	our_socket;
-private MulticastSocket multi_socket;
-private InetSocketAddress multi_group;
+private DatagramSocket  alt_socket;
 private IfaceModel layout_model;
+private NotificationHandler notification_handler;
 
 private Map<SocketAddress,ControllerInfo>  controller_map;
 private Map<Integer,ControllerInfo>        id_map;
@@ -116,6 +116,7 @@ public NetworkMonitor(IfaceModel model)
    controller_map = new ConcurrentHashMap<>();
    id_map = new ConcurrentHashMap<>();
    engine_map = new ConcurrentHashMap<>();
+   notification_handler = new NotificationHandler();
    
    layout_model = model;
    
@@ -126,6 +127,13 @@ public NetworkMonitor(IfaceModel model)
       catch (Throwable e) { }
     }
    our_socket = null;
+   if (alt_socket != null) {
+      try {
+         alt_socket.close();
+       }
+      catch (Throwable e) { }
+    }
+   alt_socket = null;
    InetAddress useaddr = null;
    
    try {
@@ -154,12 +162,12 @@ public NetworkMonitor(IfaceModel model)
       our_socket.setReuseAddress(true);
       our_socket.setSendBufferSize(BUFFER_SIZE);
       our_socket.setSoTimeout(0);
-      multi_group = null;               // Don't try to multicast for now
-      multi_socket = null;
-//    InetAddress mcastaddr = InetAddress.getByName("239.1.2.3");
-//    multi_group = new InetSocketAddress(mcastaddr,6879);
-//    multi_socket = new MulticastSocket(6879);
-//    multi_socket.joinGroup(new InetSocketAddress(mcastaddr,0),netif);
+      
+      alt_socket = new DatagramSocket(ALT_PORT,useaddr);
+      alt_socket.setReceiveBufferSize(BUFFER_SIZE);
+      alt_socket.setReuseAddress(true);
+      alt_socket.setSendBufferSize(BUFFER_SIZE);
+      alt_socket.setSoTimeout(0);
     }
    catch (IOException e) {
       ShoreLog.logE("NETWORK","Can't create Datagram Socket",e);
@@ -171,15 +179,26 @@ public NetworkMonitor(IfaceModel model)
    
    try {
       JmmDNS jmm = JmmDNS.Factory.getInstance();
+//    jmm.addServiceTypeListener(new ServiceFinder("TYPE"));
       jmm.addServiceListener("_udp._udp.local.",new ServiceFinder("UDP"));
+      jmm.addServiceListener("_loco._udp.local.",new ServiceFinder("LOCO"));
       jmm.registerServiceType("_master._udp.local");
       jmm.registerServiceType("_tower._udp.local.");
       jmm.registerServiceType("master._udp.local");
       jmm.registerServiceType("tower._udp.local.");
+      jmm.registerServiceType("_loco._udp.local");
+      jmm.registerServiceType("_engineer._udp.local");
+      jmm.registerServiceType("_consist._udp.local");
+      jmm.registerServiceType("loco._udp.local");
+      jmm.registerServiceType("engineer._udp.local");
+      jmm.registerServiceType("consist._udp.local.");
       jmm.registerServiceType("udp._udp.local.");
       ServiceInfo info = ServiceInfo.create("master._udp.local.","shore",
             UDP_PORT,"SHORE controller");
+      ServiceInfo info1 = ServiceInfo.create("engineer._udp.local.","engineer",
+            ALT_PORT,"SHORE engineer");
       jmm.registerService(info);
+      jmm.registerService(info1);
     }
    catch (IOException e) {
       ShoreLog.logE("NETWORK","Problem registering service",e);
@@ -232,12 +251,10 @@ private boolean isWifiInterface(NetworkInterface ni)
 
 public void start()
 {
-   ReaderThread rt = new ReaderThread(our_socket,new NotificationHandler());
+   ReaderThread rt = new ReaderThread(our_socket,notification_handler);
    rt.start();
-   if (multi_socket != null) {
-      ReaderThread rt1 = new ReaderThread(multi_socket,new NotificationHandler());
-      rt1.start();
-    }
+   ReaderThread art = new ReaderThread(alt_socket,notification_handler);
+   art.start();
    
    broadcastInfo();
    
@@ -468,17 +485,6 @@ public synchronized void sendMessage(SocketAddress who,byte [] msg,int off,int l
    if (our_socket == null) return;
    
    if (who == null) {
-      if (multi_group != null && multi_socket != null) {
-         try {
-            DatagramPacket dp = new DatagramPacket(msg,len,multi_group);
-            multi_socket.send(dp);
-            ShoreLog.logD("NETWORK","MULTI SEND " + len);
-            return;
-          }
-         catch (IOException e) {
-            ShoreLog.logE("NETWORK","Problem with multicast: ",e);
-          }
-       }
       for (ControllerInfo ci : controller_map.values()) {
          sendMessage(ci.getSocketAddress(),msg,off,len);
        }
@@ -571,11 +577,47 @@ static String decodeMessage(byte [] msg,int off,int len)
 
 private final class NotificationHandler implements MessageHandler {
 
+   private Map<SocketAddress,MessageHandler> reply_handler;
+   
+   NotificationHandler() {
+      reply_handler = new HashMap<>();
+    }
+   
+   void handleReply(SocketAddress sa,MessageHandler mh) {
+      reply_handler.put(sa,mh);
+    }
+   
    @Override public void handleMessage(DatagramPacket msg) {
+      SocketAddress sa = msg.getSocketAddress();
+      MessageHandler mh = reply_handler.remove(sa);
+      if (!reply_handler.isEmpty()) {
+         ShoreLog.logD("NETWORK","Pending replies: " + reply_handler);
+       }
+      if (mh != null) {
+         mh.handleMessage(msg);
+       }
+      else if (msg.getPort() == ALT_PORT) {
+         handleLocoFiMessage(msg);
+       }
+      else {
+         handleTowerMessage(msg);
+       }
+    }
+      
+   private void handleTowerMessage(DatagramPacket msg) {   
       String msgtxt = decodeMessage(msg.getData(),msg.getOffset(),msg.getLength());
       ShoreLog.logD("NETWORK","Received from " + msg.getAddress() + " " +
             msg.getPort() + " " + msg.getLength() + " " + msg.getOffset() + ": " +
             msgtxt);
+      if (msg.getPort() == ALT_PORT) {
+         ShoreLog.logD("NETWORK","Wrong handler");
+         return;
+       }
+      
+      if (msg.getLength() < 2) {
+         ShoreLog.logD("NETWORK","Ignoring ACK message");
+         return;
+       }
       
       byte [] data = msg.getData();
       int id = data[1];                         // controller id
@@ -634,8 +676,33 @@ private final class NotificationHandler implements MessageHandler {
             break;
        }
     }
+   
+   private void handleLocoFiMessage(DatagramPacket msg) {
+      String msgtxt = decodeMessage(msg.getData(),msg.getOffset(),msg.getLength());
+      ShoreLog.logD("NETWORK","Received from engine " + msg.getAddress() + " " +
+            msg.getPort() + " " + msg.getLength() + " " + msg.getOffset() + ": " +
+            msgtxt);
+      
+      byte [] data = msg.getData();
+      
+      SocketAddress sa = msg.getSocketAddress();
+      if (msg.getLength() < 2) {
+         ShoreLog.logD("NETWORK","Ignoring ACK message");
+         return;
+       }
+      EngineInfo ei = setupEngine(sa,null);
+      
+      switch (data[0]) {
+         default :
+            break;
+       }
+    }
 
 }	// end of inner class Notification Handler
+
+
+
+
 
 
 /********************************************************************************/
@@ -811,21 +878,20 @@ private ControllerInfo findController(SocketAddress sa)
 private EngineInfo setupEngine(ServiceInfo si)
 {
    SocketAddress sa = getServiceSocket(si,engine_map);
-   return setupEngine(sa);
+   return setupEngine(sa,si.getName());
 }
  
 
-private EngineInfo setupEngine(SocketAddress sa)
+private EngineInfo setupEngine(SocketAddress sa,String name)
 {
    if (sa == null) return null;
    EngineInfo ei = engine_map.get(sa);
    if (ei == null) {
-      ei = new EngineInfo(sa);
+      ei = new EngineInfo(sa,name);
       EngineInfo nei = engine_map.putIfAbsent(sa,ei);
       if (nei != null) ei = nei;
       else {
          ei.sendQueryAboutMessage();
-         ei.sendQueryStateMessage();
        }
     }
    
@@ -968,9 +1034,12 @@ private class ControllerInfo {
 private class EngineInfo {
 
    private SocketAddress net_address;
+   @SuppressWarnings("unused")
+   private String engine_name;
    
-   EngineInfo(SocketAddress net) {
+   EngineInfo(SocketAddress net,String name) {
       net_address = net;
+      engine_name = name;
       String mac = getMacAddress(net);
       if (mac != null) {
          ShoreLog.logD("NETWORK","Found engine with mac address " + mac);
@@ -981,12 +1050,17 @@ private class EngineInfo {
    
    void sendQueryStateMessage() {
       byte [] msg = LOCOFI_QUERY_LOCO_STATE_CMD;
+      notification_handler.handleReply(net_address,new StateReply());
       sendMessage(net_address,msg,0,msg.length);
+      // wait for reply
     }
    
    void sendQueryAboutMessage() {
       byte [] msg = LOCOFI_QUERY_ABOUT_LOCO_CMD;
+      notification_handler.handleReply(net_address,new AboutReply());
       sendMessage(net_address,msg,0,msg.length);
+      
+      // wait for reply
     }
    
    void sendEmergencyStop() {
@@ -1008,6 +1082,25 @@ private class EngineInfo {
       byte [] msg = LOCOFI_START_ENGINE_CMD;
       sendMessage(net_address,msg,0,msg.length);
     }
+   
+   private final class AboutReply implements MessageHandler {
+      
+      @Override public void handleMessage(DatagramPacket msg) {
+         String msgtxt = decodeMessage(msg.getData(),msg.getOffset(),msg.getLength());
+         ShoreLog.logD("NETWORK","About engine reply: " + msgtxt);
+         sendQueryStateMessage();
+       }
+      
+    }   // end of inner inner class AboutReply
+   
+   private final class StateReply implements MessageHandler {
+      
+      @Override public void handleMessage(DatagramPacket msg) {
+         String msgtxt = decodeMessage(msg.getData(),msg.getOffset(),msg.getLength());
+         ShoreLog.logD("NETWORK","Engine state reply: " + msgtxt);
+       }
+      
+    }   // end of inner inner class StateReply
    
    
 }       // end of inner class EngineInfo
@@ -1031,7 +1124,6 @@ public class ServiceFinder implements ServiceListener, ServiceTypeListener {
 
    @Override public void serviceAdded(ServiceEvent event) {
       ShoreLog.logI("NETWORK","Service added: " + finder_id + "> " + event.getInfo().getName());
-//    broadcastInfo();
     }
 
    @Override public void serviceRemoved(ServiceEvent event) {
@@ -1039,14 +1131,15 @@ public class ServiceFinder implements ServiceListener, ServiceTypeListener {
     }
 
    @Override public void serviceResolved(ServiceEvent event) {
-      ShoreLog.logI("NETWORK","Service resolved: " + finder_id + "> " + event.getInfo());
       ServiceInfo si = event.getInfo();
       String nm = si.getName();
+      ShoreLog.logI("NETWORK","Service resolved: " + finder_id + "> " + event.getInfo() + " " + nm);
       if (nm.startsWith("controller") || nm.startsWith("tower")) {
          ShoreLog.logD("NETWORK","Found controller: " + finder_id + "> " + nm);
          findController(si);
        }    
-      else if (nm.equals("loco") || nm.equals("consist")) {
+      else if (nm.startsWith("LOCO") || nm.equals("CONSIST")) {
+         ShoreLog.logD("NETWORK","Found engine: " + finder_id + "> " + nm);
          setupEngine(si);
        }
       else if (nm.equals("engineer")) {
@@ -1066,14 +1159,6 @@ public class ServiceFinder implements ServiceListener, ServiceTypeListener {
     }
    
 }	// end of inner class ServiceFinder
-
-
-
-
-
-
-
-
 
 
 

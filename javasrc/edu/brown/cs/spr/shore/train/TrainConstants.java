@@ -36,11 +36,17 @@
 package edu.brown.cs.spr.shore.train;
 
 import edu.brown.cs.spr.shore.iface.IfaceConstants;
+import javafx.scene.paint.Color;
 
 public interface TrainConstants extends IfaceConstants
 {
-
-
+ 
+Color [] ENGINE_COLORS = {
+      Color.rgb(0xcd,0xcb,0xfc),
+      Color.rgb(0xae,0xf6,0xf5),
+      Color.rgb(0x92,0xf5,0xd7),
+      Color.rgb(0xed,0xfe,0xc6),
+};
 
 
 }       // end of interface TrainConstants

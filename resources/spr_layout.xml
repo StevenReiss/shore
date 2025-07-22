@@ -337,7 +337,5 @@
      <SIGNAL ID="UNUSED_2" TOWER='4' INDEX='4' TYPE='RG' UNUSED='T' />
      <SIGNAL ID="UNUSED_3" TOWER='4' INDEX='5' TYPE='RG' UNUSED='T' />
    </DIAGRAM>
-   <ENGINE ID='Train1' />
-   <ENGINE ID='Train2' />
-   <ENGINE ID='Train3' />
+   <ENGINE NAME='Union Pacific' ID='d77932' />
 </LAYOUT>

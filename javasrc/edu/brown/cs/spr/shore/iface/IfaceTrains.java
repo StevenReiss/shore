@@ -54,7 +54,7 @@ public interface IfaceTrains
  *      Create a new train with the given name if it doesn't exist.
  *      Returns the train with that name if it does.
  **/
-IfaceEngine createTrain(String name);
+IfaceEngine createTrain(String name,String id);
 
 
 /**

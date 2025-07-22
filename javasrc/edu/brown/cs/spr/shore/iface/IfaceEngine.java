@@ -38,6 +38,8 @@ package edu.brown.cs.spr.shore.iface;
 import java.net.SocketAddress;
 import java.util.Collection;
 
+import javafx.scene.paint.Color;
+
 /**
  *      representation of an engine, possibly pulling a train.  This tracks the
  *      current location of thr train and provides hooks for controlling the
@@ -45,6 +47,13 @@ import java.util.Collection;
  **/
 public interface IfaceEngine
 {
+
+enum EngineState {
+   IDLE,
+   STARTUP,
+   READY,
+   SHUTDOWN,
+}
 
 IfaceBlock getEngineBlock();
 IfaceBlock getCabooseBlock();
@@ -57,13 +66,25 @@ boolean isEmergencyStopped();
 void stopTrain();
 void emergencyStopTrain();
 void startTrain();
+boolean isBellOn();
+boolean isReverse();
+double getSpeed();
+double getRpm();
+double getThrottle();
+boolean isFwdLightOn();
+boolean isRevLightOn();
+EngineState getEngineState();
+Color getEngineColor();
+String getEngineId();
 
 String getTrainName();
 SocketAddress getEngineAddress();
 
 void setSpeed(int speed);
 void blowHorn();
-void ringBell();
+void toggleBell(); 
+void setFwdLight(boolean on);
+void setRevLight(boolean on);
 
 
 
