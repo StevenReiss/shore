@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.TreeSet;
 
 import org.w3c.dom.Element;
 
@@ -110,12 +111,12 @@ public TrainEngine createTrain(String name,String id)
    if (name == null) return null; 
    
    TrainEngine eng = known_trains.get(name);
-   if (eng == null) eng = known_trains.get(id);
+   if (eng == null && id != null) eng = known_trains.get(id);
    if (eng == null) { 
       int idx = known_trains.size();
       eng = new TrainEngine(this,name,id,ENGINE_COLORS[idx]);  
       known_trains.put(name,eng); 
-      known_trains.put(id,eng);
+      if (id != null) known_trains.put(id,eng);
     }
    return eng;
 }
@@ -169,7 +170,7 @@ IfaceModel getLayoutModel()                     { return layout_model; }
 
 @Override public Collection<IfaceEngine> getAllEngines()
 {
-   return new ArrayList<>(known_trains.values());
+   return new TreeSet<>(known_trains.values());
 }
 
 

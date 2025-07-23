@@ -691,6 +691,7 @@ private final class NotificationHandler implements MessageHandler {
          return;
        }
       EngineInfo ei = setupEngine(sa,null);
+      ShoreLog.logD("NETWORK","Use engine " + ei);
       
       switch (data[0]) {
          default :

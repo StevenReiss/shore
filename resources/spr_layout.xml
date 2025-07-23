@@ -338,4 +338,6 @@
      <SIGNAL ID="UNUSED_3" TOWER='4' INDEX='5' TYPE='RG' UNUSED='T' />
    </DIAGRAM>
    <ENGINE NAME='Union Pacific' ID='d77932' />
+   <ENGINE NAME='Engine 2' />
+   <ENGINE NAME='Engine 3' />
 </LAYOUT>

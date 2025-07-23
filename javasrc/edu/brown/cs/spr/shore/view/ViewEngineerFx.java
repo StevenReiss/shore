@@ -42,20 +42,23 @@ import java.net.URL;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import eu.hansolo.medusa.Gauge;
 import eu.hansolo.medusa.Gauge.SkinType;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.event.Event;
+import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.HPos;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.GridPane;
@@ -87,8 +90,19 @@ ViewEngineerFx(IfaceEngine engine)
 {
    for_engine = engine;
    
-   Background bkg = new Background(new BackgroundFill(Color.WHEAT,null,null));
-   setBackground(bkg);
+   Color bkgcol = Color.GRAY;
+   if (for_engine != null && for_engine.getEngineId() != null) {
+      bkgcol = for_engine.getEngineColor();
+    }
+   bkgcol = bkgcol.desaturate().desaturate();
+   String s = bkgcol.toString();
+   s = s.replace("0x","");
+   s = s.substring(0,6);
+   s = "-fx-background-color: #" + s;
+   setStyle(s);
+// Background bkg = new Background(new BackgroundFill(bkgcol,null,null));
+// setBackground(bkg);
+// getStyleClass().add("gridpane-background");
    
    URL r = getClass().getClassLoader().getResource("engineer.css");
    getStylesheets().add(r.toExternalForm());
@@ -119,6 +133,7 @@ ViewEngineerFx(IfaceEngine engine)
    setHalignment(tach,HPos.CENTER);
    Label spacer1 = new Label();
    spacer1.setMinHeight(100);
+   spacer1.getStyleClass().add(".clearButton");
    add(spacer1,4,2,1,1);
    
    Button horn = getHornButton();
@@ -130,11 +145,11 @@ ViewEngineerFx(IfaceEngine engine)
    ToggleButton light1 = getReadLightButton();
    add(light1,1,4,1,1);
    
-   Button bell = getBellButton();
+   ToggleButton bell = getBellButton();
    add(bell,4,4,1,1);
    setHalignment(bell,HPos.CENTER);
    
-   FwdRevSwitch rev = getFwdReverse();
+   Node rev = getFwdReverse();
    add(rev,0,5,3,1);
    
    Button stop = getStopButton();
@@ -234,52 +249,31 @@ private Button getHornButton()
    imgv.setSmooth(true);
    imgv.setCache(true);
    
-   return new Button("",imgv);
+   Button b = new Button("",imgv);
+   b.getStyleClass().add("clearButton");
+   
+   return b;
 }
 
 
 
-private Button getBellButton()
+private ToggleButton getBellButton()
 {
-   Image img = new Image("images/bell.png");
-   ImageView imgv = new ImageView();
-   imgv.setImage(img);
-   imgv.setFitWidth(40);
-   imgv.setFitHeight(40);
-   imgv.setSmooth(true);
-   imgv.setCache(true);
-   
-   return new Button("",imgv);
+   IconToggle it = new IconToggle("","bell");
+// it.getStyleClass().add("clearButton");
+   return it;
 }
 
 
 private ToggleButton getFrontLightButton()
 {
-   Image img = new Image("images/light.png");
-   ImageView imgv = new ImageView();
-   imgv.setImage(img);
-   imgv.setFitWidth(40);
-   imgv.setFitHeight(40);
-   imgv.setSmooth(true);
-   imgv.setCache(true);
-   
-   return new ToggleButton("Front",imgv);
+   return new IconToggle("Front","light");
 }
-
-
 
 
 private ToggleButton getReadLightButton()
 {
-   Image img = new Image("images/light.png");
-   ImageView imgv = new ImageView();
-   imgv.setImage(img);
-   imgv.setFitWidth(40);
-   imgv.setFitHeight(40);
-   imgv.setSmooth(true);
-   imgv.setCache(true);
-   
-   return new ToggleButton("Rear",imgv);
+   return new IconToggle("Rear","light");
 }
 
 
@@ -313,8 +307,57 @@ private Button getStopButton()
 
 private FwdRevSwitch getFwdReverse()
 {
-   return new FwdRevSwitch();
+   FwdRevSwitch rslt = new FwdRevSwitch();
+   
+   return rslt;
 }
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Icon Toggle                                                             */
+/*                                                                              */
+/********************************************************************************/
+
+private class IconToggle extends ToggleButton implements EventHandler<ActionEvent> {
+   
+   private ImageView off_view;
+   private ImageView on_view;
+
+   IconToggle(String label,String name) {
+      super(label);
+      String nm1 = "images/" + name + ".png";
+      String nm2 = "images/" + name + "_on.png";
+      Image img1 = new Image(nm1);
+      off_view = new ImageView();
+      off_view.setImage(img1);
+      off_view.setFitWidth(40);
+      off_view.setFitHeight(40);
+      off_view.setSmooth(true);
+      off_view.setCache(true);
+      Image img2 = new Image(nm2);
+      on_view = new ImageView();
+      on_view.setImage(img2);
+      on_view.setFitWidth(40);
+      on_view.setFitHeight(40);
+      on_view.setSmooth(true);
+      on_view.setCache(true);
+      setOnAction(this);
+      handle(null);
+      getStyleClass().add("clearButton");
+    }
+   
+   @Override public void handle(ActionEvent evt) {
+      if (isSelected()) {
+         setGraphic(off_view);
+       }
+      else {
+         setGraphic(on_view);
+       }
+    }
+   
+}       // end of inner class IconToggle
 
 
 
@@ -324,9 +367,7 @@ private FwdRevSwitch getFwdReverse()
 /*                                                                              */
 /********************************************************************************/
 
-@SuppressWarnings("rawtypes")
-private class FwdRevSwitch extends HBox implements ChangeListener<Boolean>,
-      EventHandler {
+private class FwdRevSwitch extends HBox implements ChangeListener<Boolean> {
 
    private Label fwdrev_label;
    private Button fwdrev_button;
@@ -343,23 +384,23 @@ private class FwdRevSwitch extends HBox implements ChangeListener<Boolean>,
       switched_on.addListener(this);
     }
    
-   SimpleBooleanProperty switchOnProperty() { return switched_on; }
+   BooleanProperty switchOnProperty() { return switched_on; }
    
-   @SuppressWarnings("unchecked")
    private void init() {
       fwdrev_label.setText(OFF_LABEL);
       getChildren().addAll(fwdrev_label, fwdrev_button);	
-      fwdrev_button.setOnAction(this);
-      fwdrev_label.setOnMouseClicked(this);
+      fwdrev_button.setOnAction(new ActionHandler());
+      fwdrev_label.setOnMouseClicked(new MouseHandler());
       setStyle(); 
       bindProperties();
+      setToggle();
     }
    
    private void setStyle() {
       //Default Width
       setWidth(80);
       fwdrev_label.setAlignment(Pos.CENTER);
-      setStyle("-fx-background-color: lightgreen; -fx-text-fill:black; -fx-background-radius: 4;");
+      setStyle("-fx-background-color: gray; -fx-text-fill:black; -fx-background-radius: 4;");
       setAlignment(Pos.CENTER_LEFT);
     }
    
@@ -371,23 +412,39 @@ private class FwdRevSwitch extends HBox implements ChangeListener<Boolean>,
     }
    
    @Override public void changed(ObservableValue<? extends Boolean> obs,Boolean oldval,Boolean newval) {
-      if (newval) {
+      setToggle();
+    } 
+   
+   private void setToggle() {
+      if (switched_on.get()) {
          fwdrev_label.setText(ON_LABEL);
-         setStyle("-fx-background-color: yellow;");
+         fwdrev_label.setStyle("-fx-background-color: yellow;");
          fwdrev_label.toFront();
        }
       else {
          fwdrev_label.setText(OFF_LABEL);
-         setStyle("-fx-background-color: lightgreen;");
+         fwdrev_label.setStyle("-fx-background-color: lightgreen;");
          fwdrev_button.toFront();
        }
-    } 
+    }
    
-   @Override public void handle(Event evt) {
+   private void toggle() {
       switched_on.set(!switched_on.get());
     }
    
-}
+   private final class ActionHandler implements EventHandler<ActionEvent> {
+      @Override public void handle(ActionEvent evt) {
+         toggle();
+       }
+    }
+   
+   private final class MouseHandler implements EventHandler<MouseEvent> {
+      @Override public void handle(MouseEvent evt) {
+         toggle();
+       }
+    }
+   
+}       // end of inner class FwdRevSwitch
 
 }       // end of class ViewEngineerFx
 

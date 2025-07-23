@@ -44,7 +44,7 @@ import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import javafx.scene.paint.Color;
 
-class TrainEngine implements TrainConstants, IfaceEngine
+class TrainEngine implements TrainConstants, IfaceEngine, Comparable<IfaceEngine>
 {
 
 
@@ -109,7 +109,7 @@ TrainEngine(TrainFactory fac,String name,String id,Color color)
 
 @Override public String getTrainName()                  { return engine_name; }
 
-@Override public String getEngineId()                    { return engine_id; }
+@Override public String getEngineId()                    { return engine_id; } 
 
 @Override public SocketAddress getEngineAddress()       { return socket_address; }
 
@@ -238,6 +238,18 @@ public void exitBlock(IfaceBlock blk)
 {
    rev_light = on; 
    // send message
+}
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Comparizon methods                                                      */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public int compareTo(IfaceEngine e) 
+{
+   return getTrainName().compareTo(e.getTrainName());
 }
 
 
