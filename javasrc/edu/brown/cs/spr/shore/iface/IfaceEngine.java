@@ -88,6 +88,13 @@ void setRevLight(boolean on);
 
 
 
+interface EngineCallback {
+   default void engineUpdated(IfaceEngine e)            { }
+   default void enginePositionUpdated(IfaceEngine e)    { }
+}       // end of inner class EngineCallback
+
+
+
 }       // end of interface IfaceTrain
 
 
