@@ -64,12 +64,6 @@ IfaceEngine createTrain(String name,String id);
 IfaceEngine findTrain(String name);
 
 
-/*
- *      Find the train given a socket address. Returns null if the
- *      train is not known.
- **/
-IfaceEngine findTrain(SocketAddress sa);
-
 /**
  *      Return the set of all entines that are known
  **/
@@ -95,6 +89,11 @@ void addTrainCallback(TrainCallback cb);
  **/
 void removeTrainCallback(TrainCallback cb);
 
+
+/**
+ *      Define the network model -- used for initialization
+ **/
+void setNetworkModel(IfaceNetwork net);
 
 
 /**

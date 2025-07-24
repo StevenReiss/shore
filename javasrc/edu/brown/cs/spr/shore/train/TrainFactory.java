@@ -36,7 +36,6 @@
 package edu.brown.cs.spr.shore.train;
 
 import java.net.SocketAddress;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -81,9 +80,9 @@ private SwingEventListenerList<TrainCallback> train_listeners;
 /*                                                                              */
 /********************************************************************************/
 
-public TrainFactory(IfaceNetwork net,IfaceModel mdl)
+public TrainFactory(IfaceModel mdl)
 {
-   network_model = net;
+   network_model = null;
    layout_model = mdl;
    known_trains = new LinkedHashMap<>();
    assigned_trains = new HashMap<>();
@@ -143,17 +142,10 @@ public TrainEngine setEngineSocket(IfaceEngine engine0,SocketAddress sa)
 }
 
 
-@Override public TrainEngine findTrain(String name)
+@Override public TrainEngine findTrain(String nameorid)
 {
-   if (name == null) return null;
-   return known_trains.get(name);
-}
-
-
-@Override public TrainEngine findTrain(SocketAddress sa)
-{
-   if (sa == null) return null;
-   return assigned_trains.get(sa);
+   if (nameorid == null) return null;
+   return known_trains.get(nameorid);
 }
 
 
@@ -163,6 +155,11 @@ public TrainEngine setEngineSocket(IfaceEngine engine0,SocketAddress sa)
 /*      Access methods                                                          */
 /*                                                                              */
 /********************************************************************************/
+ 
+@Override public void setNetworkModel(IfaceNetwork net)                          
+{
+   network_model = net;
+}
 
 IfaceNetwork getNetworkModel()                  { return network_model; }
 

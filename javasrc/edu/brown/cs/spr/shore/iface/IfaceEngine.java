@@ -77,7 +77,7 @@ EngineState getEngineState();
 Color getEngineColor();
 String getEngineId();
 
-String getTrainName();
+String getEngineName();
 SocketAddress getEngineAddress();
 
 void setSpeed(int speed);

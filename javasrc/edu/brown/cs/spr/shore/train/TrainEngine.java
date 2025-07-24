@@ -96,7 +96,10 @@ TrainEngine(TrainFactory fac,String name,String id,Color color)
    rev_light = false;
    engine_state = EngineState.IDLE;
    engine_color = color;
-   engine_id = id;
+   if (id != null) {
+      engine_id = id.toUpperCase();
+    }
+   else engine_id = null;
 }
 
 
@@ -107,7 +110,7 @@ TrainEngine(TrainFactory fac,String name,String id,Color color)
 /*                                                                              */
 /********************************************************************************/
 
-@Override public String getTrainName()                  { return engine_name; }
+@Override public String getEngineName()                  { return engine_name; }
 
 @Override public String getEngineId()                    { return engine_id; } 
 
@@ -249,7 +252,7 @@ public void exitBlock(IfaceBlock blk)
 
 @Override public int compareTo(IfaceEngine e) 
 {
-   return getTrainName().compareTo(e.getTrainName());
+   return getEngineName().compareTo(e.getEngineName());
 }
 
 

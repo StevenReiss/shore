@@ -61,31 +61,13 @@ import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
+import edu.brown.cs.spr.shore.iface.IfaceTrains;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 public class NetworkMonitor implements NetworkConstants, NetworkControlMessages,
       NetworkLocoFiMessages, IfaceNetwork 
 { 
-
-
-
-/********************************************************************************/
-/*										*/
-/*	Main program (for testing/standalone use)				*/
-/*										*/
-/********************************************************************************/
-
-public static void main(String [] args)
-{
-   ShoreLog.setup();
-
-   NetworkMonitor mon = new NetworkMonitor(null);
-   // possibly handle args
-
-   mon.start();
-}
-
 
 
 /********************************************************************************/
@@ -97,6 +79,7 @@ public static void main(String [] args)
 private DatagramSocket	our_socket;
 private DatagramSocket  alt_socket;
 private IfaceModel layout_model;
+private IfaceTrains engine_model;
 private NotificationHandler notification_handler;
 
 private Map<SocketAddress,ControllerInfo>  controller_map;
@@ -111,7 +94,7 @@ private Map<SocketAddress,EngineInfo>      engine_map;
 /*										*/
 /********************************************************************************/
 
-public NetworkMonitor(IfaceModel model)
+public NetworkMonitor(IfaceModel model,IfaceTrains trains)
 {
    controller_map = new ConcurrentHashMap<>();
    id_map = new ConcurrentHashMap<>();
@@ -119,6 +102,7 @@ public NetworkMonitor(IfaceModel model)
    notification_handler = new NotificationHandler();
    
    layout_model = model;
+   engine_model = trains;
    
    if (our_socket != null) {
       try {
@@ -431,6 +415,26 @@ private boolean sendDefSignal(IfaceSignal sig)
 }
 
 
+
+/********************************************************************************/
+/*                                                                              */
+/*      Locomotive (engine/train) messages                                      */
+/*                                                                              */
+/********************************************************************************/
+
+private IfaceEngine findEngine(String nameid)
+{
+   if (nameid == null) return null;
+   
+   for (IfaceEngine eng : engine_model.getAllEngines()) {
+      if (nameid.equals(eng.getEngineId())) return eng;
+      if (nameid.equals(eng.getEngineName())) return eng;  
+    }
+   return null;
+}
+
+
+
 @Override 
 public void sendStopTrain(IfaceEngine tr,boolean emergency) 
 {
@@ -565,7 +569,7 @@ static String decodeMessage(byte [] msg,int off,int len)
 {
    StringBuffer buf = new StringBuffer();
    for (int i = 0; i <len; ++i) {
-      int v = msg[off+i];
+      int v = msg[off+i] & 0xff;
       String vs = Integer.toHexString(v);
       if (vs.length() == 1) vs = "0" + vs;
       buf.append(vs);
@@ -690,7 +694,7 @@ private final class NotificationHandler implements MessageHandler {
          ShoreLog.logD("NETWORK","Ignoring ACK message");
          return;
        }
-      EngineInfo ei = setupEngine(sa,null);
+      EngineInfo ei = setupEngine(sa);
       ShoreLog.logD("NETWORK","Use engine " + ei);
       
       switch (data[0]) {
@@ -879,16 +883,16 @@ private ControllerInfo findController(SocketAddress sa)
 private EngineInfo setupEngine(ServiceInfo si)
 {
    SocketAddress sa = getServiceSocket(si,engine_map);
-   return setupEngine(sa,si.getName());
+   return setupEngine(sa);
 }
  
 
-private EngineInfo setupEngine(SocketAddress sa,String name)
+private EngineInfo setupEngine(SocketAddress sa)
 {
    if (sa == null) return null;
    EngineInfo ei = engine_map.get(sa);
    if (ei == null) {
-      ei = new EngineInfo(sa,name);
+      ei = new EngineInfo(sa);
       EngineInfo nei = engine_map.putIfAbsent(sa,ei);
       if (nei != null) ei = nei;
       else {
@@ -1036,11 +1040,11 @@ private class EngineInfo {
 
    private SocketAddress net_address;
    @SuppressWarnings("unused")
-   private String engine_name;
+   private String engine_id;
    
-   EngineInfo(SocketAddress net,String name) {
+   EngineInfo(SocketAddress net) {
       net_address = net;
-      engine_name = name;
+      engine_id = null;
       String mac = getMacAddress(net);
       if (mac != null) {
          ShoreLog.logD("NETWORK","Found engine with mac address " + mac);
@@ -1089,6 +1093,12 @@ private class EngineInfo {
       @Override public void handleMessage(DatagramPacket msg) {
          String msgtxt = decodeMessage(msg.getData(),msg.getOffset(),msg.getLength());
          ShoreLog.logD("NETWORK","About engine reply: " + msgtxt);
+         
+         byte[] data = msg.getData();
+         String id = new String(data,0,7);
+         id = id.replace("\0","");
+         id = id.toUpperCase();
+         engine_id = id;
          sendQueryStateMessage();
        }
       
@@ -1099,6 +1109,28 @@ private class EngineInfo {
       @Override public void handleMessage(DatagramPacket msg) {
          String msgtxt = decodeMessage(msg.getData(),msg.getOffset(),msg.getLength());
          ShoreLog.logD("NETWORK","Engine state reply: " + msgtxt);
+         byte [] data = msg.getData();
+         IfaceEngine eng = findEngine(engine_id);
+         if (eng != null) {
+            boolean front = data[0] != 0;
+            boolean back = data[1] != 0;
+            boolean bell = data[2] != 0;
+            // eng.setBell(bell);
+            boolean rev = data[3] != 0;
+            byte engsts = data[4];
+            int speedstep = data[6] & 0xff + data[5]*16;
+            int rpmstep = data[7] & 0xff + data[8]*16;
+            int speed = data[9] & 0xff + data[10]*16;
+            boolean estop = data[11] != 0;
+            boolean mute = data[12] == 0;
+            // NEED TO SETUP ENGINE WITH GIVEN PARAMETERS THEN TRIGGER ENGINE CALLBACK
+//          eng.setFwdLight(front);
+//          eng.setRevLight(back);
+//          eng.setSpeed(speed);
+            // need to set other parameters
+            
+            
+          }
        }
       
     }   // end of inner inner class StateReply

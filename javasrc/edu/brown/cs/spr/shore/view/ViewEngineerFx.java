@@ -59,8 +59,6 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -109,7 +107,7 @@ ViewEngineerFx(IfaceEngine engine)
    
    // top row for labels
    Label hdr1 = new Label("CONTROL ID   ");
-   Label hdr2 = new Label("Engine " + for_engine.getTrainName());
+   Label hdr2 = new Label("Engine " + for_engine.getEngineName());
    add(hdr1,0,0,2,1);
    add(hdr2,2,0,3,1);
    

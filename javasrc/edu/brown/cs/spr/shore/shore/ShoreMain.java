@@ -112,8 +112,10 @@ private void process()
    if (report_file != null) {
       model_base.createReport(report_file); 
     }
-   network_monitor = new NetworkMonitor(model_base);
-   train_base = new TrainFactory(network_monitor,model_base);
+   train_base = new TrainFactory(model_base); 
+   network_monitor = new NetworkMonitor(model_base,train_base);
+   train_base.setNetworkModel(network_monitor);
+   
    safety_base = new SafetyFactory(network_monitor,model_base,train_base); 
    view_base = new ViewFactory(safety_base,model_base,train_base); 
   
