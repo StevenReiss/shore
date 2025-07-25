@@ -80,14 +80,14 @@ IfaceEngine setEngineSocket(IfaceEngine engine,SocketAddress sa);
 /**
  *      Add a callback to listen for train changes
  **/
-void addTrainCallback(TrainCallback cb);
+void addTrainCallback(EngineCallback cb);
 
 
 /**
  *      Remove a callback.  Has no effect if the callback has not
  *      been added or has been previously removed.
  **/
-void removeTrainCallback(TrainCallback cb);
+void removeTrainCallback(EngineCallback cb);
 
 
 /**
@@ -100,9 +100,10 @@ void setNetworkModel(IfaceNetwork net);
  *      Callback that is invoked when information about an engine
  *      or train is changed.
  **/
-interface TrainCallback extends EventListener {
+interface EngineCallback extends EventListener {
    
-   default void trainChanged(IfaceEngine engine)        { }
+   default void engineChanged(IfaceEngine engine)        { }
+   default void enginePositionChanged(IfaceEngine e)   { }
    
 }
 

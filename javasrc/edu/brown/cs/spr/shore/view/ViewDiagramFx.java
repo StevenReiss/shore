@@ -50,7 +50,7 @@ import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceModel.ModelCallback;
-import edu.brown.cs.spr.shore.iface.IfaceTrains.TrainCallback;
+import edu.brown.cs.spr.shore.iface.IfaceTrains.EngineCallback;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
@@ -187,7 +187,6 @@ ViewDiagramFx(ViewFactory fac,IfaceDiagram dgm)
    
    CallbackHandler hdlr = new CallbackHandler();
    fac.getLayoutModel().addModelCallback(hdlr);
-   
 }
 
 
@@ -1016,7 +1015,7 @@ private Point2D getCoords(IfacePoint pt)
 /*                                                                              */
 /********************************************************************************/
 
-private class CallbackHandler implements ModelCallback, TrainCallback {
+private class CallbackHandler implements ModelCallback, EngineCallback {
    
    CallbackHandler() { }
    

@@ -70,11 +70,6 @@ void setSensor(IfaceSensor sen,ShoreSensorState set);
 
 
 
-
-
-
-
-
 /**
  *      Sends a message to stop the given engine, either with a normal
  *      stop or with an emergency stop.
@@ -87,6 +82,12 @@ void sendStopTrain(IfaceEngine train,boolean emergency);
  *      the last stop was an emergency or normal stop.
  **/
 void sendStartTrain(IfaceEngine train);
+
+
+/**
+ *      Sends a message to turn on or off the appropriate light.
+ **/
+void sendLight(IfaceEngine eng,boolean front);
 
 
 

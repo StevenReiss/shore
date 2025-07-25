@@ -40,9 +40,9 @@ package edu.brown.cs.spr.shore.view;
 import java.net.URL;
 
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
+import edu.brown.cs.spr.shore.iface.IfaceTrains.EngineCallback;
 import eu.hansolo.medusa.Gauge;
 import eu.hansolo.medusa.Gauge.SkinType;
-import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -51,7 +51,6 @@ import javafx.event.EventHandler;
 import javafx.geometry.HPos;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
@@ -74,7 +73,12 @@ class ViewEngineerFx extends GridPane implements ViewConstants
 /*                                                                              */
 /********************************************************************************/
 
-private IfaceEngine    for_engine;
+private ViewFactory     view_factory;
+private IfaceEngine     for_engine;
+private IconToggle      front_light;
+private IconToggle      back_light;
+private IconToggle      train_bell;
+private FwdRevSwitch    reverse_switch;
 
 
 
@@ -84,8 +88,9 @@ private IfaceEngine    for_engine;
 /*                                                                              */
 /********************************************************************************/
 
-ViewEngineerFx(IfaceEngine engine)
+ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
 {
+   view_factory = fac;
    for_engine = engine;
    
    Color bkgcol = Color.GRAY;
@@ -138,17 +143,17 @@ ViewEngineerFx(IfaceEngine engine)
    add(horn,4,3,1,1);
    setHalignment(horn,HPos.CENTER);
    
-   ToggleButton light0 = getFrontLightButton();
-   add(light0,0,4,1,1);  
-   ToggleButton light1 = getReadLightButton();
-   add(light1,1,4,1,1);
+   front_light = getFrontLightButton();
+   add(front_light,0,4,1,1);  
+   back_light = getRearLightButton();
+   add(back_light,1,4,1,1);
    
-   ToggleButton bell = getBellButton();
-   add(bell,4,4,1,1);
-   setHalignment(bell,HPos.CENTER);
+   train_bell = getBellButton();
+   add(train_bell,4,4,1,1);
+   setHalignment(train_bell,HPos.CENTER);
    
-   Node rev = getFwdReverse();
-   add(rev,0,5,3,1);
+   reverse_switch = getFwdReverse();
+   add(reverse_switch,0,5,3,1);
    
    Button stop = getStopButton();
    add(stop,0,6,1,1);
@@ -162,6 +167,9 @@ ViewEngineerFx(IfaceEngine engine)
    
    setVgap(5.0);
    setHgap(5.0);
+   
+   CallbackHandler hdlr = new CallbackHandler();
+   fac.getTrainModel().addTrainCallback(hdlr);
 }
 
 
@@ -255,23 +263,22 @@ private Button getHornButton()
 
 
 
-private ToggleButton getBellButton()
+private IconToggle getBellButton()
 {
    IconToggle it = new IconToggle("","bell");
-// it.getStyleClass().add("clearButton");
    return it;
 }
 
 
-private ToggleButton getFrontLightButton()
+private IconToggle getFrontLightButton()
 {
-   return new IconToggle("Front","light");
+   return new FrontLightToggle();
 }
 
 
-private ToggleButton getReadLightButton()
+private IconToggle getRearLightButton()
 {
-   return new IconToggle("Rear","light");
+   return new RearLightToggle();
 }
 
 
@@ -280,8 +287,8 @@ private Button getPowerButton()
    Image img = new Image("images/power.png");
    ImageView imgv = new ImageView();
    imgv.setImage(img);
-   imgv.setFitWidth(60);
-   imgv.setFitHeight(60);
+   imgv.setFitWidth(100);
+   imgv.setFitHeight(100);
    imgv.setSmooth(true);
    imgv.setCache(true);
    
@@ -358,6 +365,39 @@ private class IconToggle extends ToggleButton implements EventHandler<ActionEven
 }       // end of inner class IconToggle
 
 
+private class FrontLightToggle extends IconToggle implements EventHandler<ActionEvent> {
+   
+   FrontLightToggle() {
+      super("Front","light");
+    }
+   
+   @Override public void handle(ActionEvent evt) {
+      if (for_engine != null) {
+         for_engine.setFwdLight(isSelected());
+       }
+      super.handle(evt);
+    }
+   
+}       // end of inner class FrontLightToggle
+
+
+
+private class RearLightToggle extends IconToggle implements EventHandler<ActionEvent> {
+   
+   RearLightToggle() {
+      super("Front","light");
+    }
+   
+   @Override public void handle(ActionEvent evt) {
+      if (for_engine != null) {
+         for_engine.setRevLight(isSelected());
+       }
+      super.handle(evt);
+    }
+   
+}       // end of inner class FrontLightToggle
+
+
 
 /********************************************************************************/
 /*                                                                              */
@@ -382,7 +422,9 @@ private class FwdRevSwitch extends HBox implements ChangeListener<Boolean> {
       switched_on.addListener(this);
     }
    
-   BooleanProperty switchOnProperty() { return switched_on; }
+   void setSwtich(boolean on) {
+      switched_on.set(on);
+    }
    
    private void init() {
       fwdrev_label.setText(OFF_LABEL);
@@ -443,6 +485,26 @@ private class FwdRevSwitch extends HBox implements ChangeListener<Boolean> {
     }
    
 }       // end of inner class FwdRevSwitch
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Train update handler                                                    */
+/*                                                                              */
+/********************************************************************************/
+
+private final class CallbackHandler implements EngineCallback {
+
+   @Override public void engineChanged(IfaceEngine e) {
+      if (e != for_engine) return;
+      front_light.setSelected(e.isFwdLightOn());
+      back_light.setSelected(e.isRevLightOn());
+      train_bell.setSelected(e.isBellOn());
+      reverse_switch.setSwtich(e.isReverse());
+    }
+}
+
 
 }       // end of class ViewEngineerFx
 

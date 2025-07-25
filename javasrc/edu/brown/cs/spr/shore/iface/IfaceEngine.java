@@ -86,12 +86,9 @@ void toggleBell();
 void setFwdLight(boolean on);
 void setRevLight(boolean on);
 
-
-
-interface EngineCallback {
-   default void engineUpdated(IfaceEngine e)            { }
-   default void enginePositionUpdated(IfaceEngine e)    { }
-}       // end of inner class EngineCallback
+void setupEngine(boolean fwdlight,boolean revlight,
+      boolean bell,boolean reverse,EngineState status,
+      int speedstep,int rpmstep,int speed,boolean estop,boolean mute);
 
 
 

@@ -154,7 +154,7 @@ private class EngineerPanel extends Pane {
       Node [] engarr = new Node[engs.size()];
       int i = 0;
       for (IfaceEngine eng : engs) {
-         ViewEngineerFx n = new ViewEngineerFx(eng);
+         ViewEngineerFx n = new ViewEngineerFx(view_factory,eng);   
          SplitPane.setResizableWithParent(n,true);
          engarr[i++] = n;
        }

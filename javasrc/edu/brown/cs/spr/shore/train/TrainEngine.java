@@ -143,6 +143,30 @@ void setEngineAddress(SocketAddress sa)                 { socket_address = sa; }
 
 @Override public Color getEngineColor()                 { return engine_color; }
 
+
+/********************************************************************************/
+/*                                                                              */
+/*      Setup methods                                                           */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public void setupEngine(boolean fwdlight,boolean revlight,
+      boolean bell,boolean reverse,EngineState status,
+      int speedstep,int rpmstep,int speed,boolean estop,boolean mute)
+{
+   fwd_light = fwdlight;
+   rev_light = revlight;
+   bell_on = bell;
+   reverse_on = reverse;
+   engine_state = status;
+   engine_speed = speed;
+   if (estop) {
+      is_emergency = true;
+      is_stopped = true;
+    }
+   
+   train_factory.fireEngineChanged(this);
+}
   
 
 /********************************************************************************/
@@ -150,7 +174,6 @@ void setEngineAddress(SocketAddress sa)                 { socket_address = sa; }
 /*      Block tracking methods                                                  */
 /*                                                                              */
 /********************************************************************************/
-
 
 @Override public Collection<IfaceBlock> getAllBlocks()
 {
@@ -233,14 +256,14 @@ public void exitBlock(IfaceBlock blk)
 @Override public void setFwdLight(boolean on)
 {
    fwd_light = on;
-   // send message
+   train_factory.getNetworkModel().sendLight(this,true);
 }
 
 
 @Override public void setRevLight(boolean on)
 {
    rev_light = on; 
-   // send message
+   train_factory.getNetworkModel().sendLight(this,false);
 }
 
 

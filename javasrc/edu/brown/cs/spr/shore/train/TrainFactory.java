@@ -70,7 +70,7 @@ private Map<String,TrainEngine> known_trains;
 private Map<SocketAddress,TrainEngine> assigned_trains;
 private Map<IfaceBlock,TrainEngine> train_locations;
 private Map<IfaceBlock,TrainEngine> expected_trains;
-private SwingEventListenerList<TrainCallback> train_listeners; 
+private SwingEventListenerList<EngineCallback> train_listeners; 
 
 
 
@@ -89,7 +89,7 @@ public TrainFactory(IfaceModel mdl)
    train_locations = new HashMap<>();
    expected_trains = new HashMap<>();
    
-   train_listeners = new SwingEventListenerList<>(TrainCallback.class);
+   train_listeners = new SwingEventListenerList<>(EngineCallback.class);
    
    loadTrains();
    
@@ -195,23 +195,31 @@ private void loadTrains()
 /*                                                                              */
 /********************************************************************************/
 
-@Override public void addTrainCallback(TrainCallback cb)
+@Override public void addTrainCallback(EngineCallback cb)
 {
    train_listeners.add(cb);
 }
  
-@Override public void removeTrainCallback(TrainCallback cb)
+@Override public void removeTrainCallback(EngineCallback cb)
 {
    train_listeners.remove(cb);
 }
 
 
-void fireTrainChanged(TrainEngine eng)
+void fireEngineChanged(TrainEngine eng)
 {
-   for (TrainCallback cb : train_listeners) {
-      cb.trainChanged(eng);
+   for (EngineCallback cb : train_listeners) {
+      cb.engineChanged(eng);
     }
 }
+
+void fireEnginePositionChanged(TrainEngine eng)
+{
+   for (EngineCallback cb : train_listeners) {
+      cb.enginePositionChanged(eng);
+    } 
+}
+
 
 
 
