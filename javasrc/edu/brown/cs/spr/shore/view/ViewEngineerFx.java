@@ -37,12 +37,15 @@ package edu.brown.cs.spr.shore.view;
 
 
 
+import java.awt.event.ActionListener;
 import java.net.URL;
 
+import javax.swing.Timer;
+
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
-import edu.brown.cs.spr.shore.iface.IfaceTrains.EngineCallback;
+import edu.brown.cs.spr.shore.iface.IfaceEngine.EngineState;
+
 import eu.hansolo.medusa.Gauge;
-import eu.hansolo.medusa.Gauge.SkinType;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -60,12 +63,11 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
+import javafx.scene.layout.Priority; 
 import javafx.scene.paint.Color;
 
-class ViewEngineerFx extends GridPane implements ViewConstants
+class ViewEngineerFx extends GridPane implements ViewConstants 
 {
-
 
 /********************************************************************************/
 /*                                                                              */
@@ -76,9 +78,15 @@ class ViewEngineerFx extends GridPane implements ViewConstants
 private ViewFactory     view_factory;
 private IfaceEngine     for_engine;
 private IconToggle      front_light;
-private IconToggle      back_light;
+private IconToggle      rear_light;
 private IconToggle      train_bell;
 private FwdRevSwitch    reverse_switch;
+private IconToggle      mute_button;
+private Gauge           speed_gauge;
+private Gauge           tach_gauge;
+private Slider          throttle_slider;
+private PowerButton     power_button;
+private IconToggle      emergency_stop;
 
 
 
@@ -111,29 +119,29 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
    getStylesheets().add(r.toExternalForm());
    
    // top row for labels
-   Label hdr1 = new Label("CONTROL ID   ");
+   Label hdr1 = new Label("ID: " + for_engine.getEngineId() + "   ");
    Label hdr2 = new Label("Engine " + for_engine.getEngineName());
    add(hdr1,0,0,2,1);
    add(hdr2,2,0,3,1);
    
    // next row for speedometer, speed control, tach
-   Gauge speed = getSpeedometer();
-   add(speed,0,1,3,2);
-   setHgrow(speed,Priority.ALWAYS);
-   setVgrow(speed,Priority.ALWAYS);
-   setFillHeight(speed,true);
+   speed_gauge = getSpeedometer();
+   add(speed_gauge,0,1,3,2);
+   setHgrow(speed_gauge,Priority.ALWAYS);
+   setVgrow(speed_gauge,Priority.ALWAYS);
+   setFillHeight(speed_gauge,true);
    
-   Slider accel = getAccelerator();
-   add(accel,3,1,1,4);
-   setVgrow(accel,Priority.ALWAYS);
-   setHalignment(accel,HPos.CENTER);
-   setFillHeight(accel,true);
+   throttle_slider = getThrottle();
+   add(throttle_slider,3,1,1,4);
+   setVgrow(throttle_slider,Priority.ALWAYS);
+   setHalignment(throttle_slider,HPos.CENTER);
+   setFillHeight(throttle_slider,true);
    
-   Gauge tach = getTachometer();
-   add(tach,4,1,1,1);
+   tach_gauge = getTachometer();
+   add(tach_gauge,4,1,1,1);
 // setVgrow(tach,Priority.ALWAYS);
-   setFillHeight(tach,true);
-   setHalignment(tach,HPos.CENTER);
+   setFillHeight(tach_gauge,true);
+   setHalignment(tach_gauge,HPos.CENTER);
    Label spacer1 = new Label();
    spacer1.setMinHeight(100);
    spacer1.getStyleClass().add(".clearButton");
@@ -145,8 +153,8 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
    
    front_light = getFrontLightButton();
    add(front_light,0,4,1,1);  
-   back_light = getRearLightButton();
-   add(back_light,1,4,1,1);
+   rear_light = getRearLightButton();
+   add(rear_light,1,4,1,1);
    
    train_bell = getBellButton();
    add(train_bell,4,4,1,1);
@@ -155,11 +163,14 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
    reverse_switch = getFwdReverse();
    add(reverse_switch,0,5,3,1);
    
-   Button stop = getStopButton();
-   add(stop,0,6,1,1);
+   emergency_stop = getStopButton();
+   add(emergency_stop,0,6,1,1);
    
-   Button pwer = getPowerButton();
-   add(pwer,3,6,1,1);
+   power_button = getPowerButton();
+   add(power_button,3,6,1,1);
+   
+   mute_button = getMuteButton();
+   add(mute_button,4,6,1,1);
    
    Label spacer2 = new Label();
    spacer2.setMinHeight(3.0);
@@ -169,7 +180,7 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
    setHgap(5.0);
    
    CallbackHandler hdlr = new CallbackHandler();
-   fac.getTrainModel().addTrainCallback(hdlr);
+   for_engine.addEngineCallback(hdlr);
 }
 
 
@@ -180,18 +191,32 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
 /*                                                                              */
 /********************************************************************************/
 
-private Slider getAccelerator()
+private Slider getThrottle()
 {
-   Slider accel = new Accelerator();
+// return new Throttle();
    
-   return accel;
+   Slider s = new Slider();
+   s.setMin(0);
+   s.setMax(100);
+   s.setValue(0);
+   s.setShowTickMarks(true);
+   s.setShowTickLabels(false);
+   s.setMajorTickUnit(50);
+   s.setMinorTickCount(5);
+   s.setBlockIncrement(10);
+   s.setOrientation(Orientation.VERTICAL);
+   s.setValueChanging(true);
+// String style = "-fx-fill: linear-gradient(to right,#ff0000 0,#00ff00 100)";
+// s.setStyle(style);
+// s.getStyleClass().add("throttle");
+   
+   return s;
 }
 
 
-private class Accelerator extends Slider {
+private class Throttle extends Slider {
    
-   Accelerator() {
-      setMin(0);
+   Throttle() {
       setMax(100);
       setValue(0);
       setShowTickMarks(true);
@@ -203,9 +228,12 @@ private class Accelerator extends Slider {
       setValueChanging(true);
       String style = "-fx-fill: linear-gradient(to right,#ff0000 0,#00ff00 100)";
       setStyle(style);
-      
+      getStyleClass().add("throttle");
     }
-}
+   
+}       // end of inner class Accelerator
+
+
 
 /********************************************************************************/
 /*                                                                              */
@@ -215,12 +243,10 @@ private class Accelerator extends Slider {
 
 private Gauge getSpeedometer()
 {
-   Gauge gauge = new Gauge();
-   gauge.setSkinType(SkinType.MODERN);
-   
-   return gauge;
+   Gauge g = new Gauge();
+   g.setSkinType(Gauge.SkinType.MODERN);
+   return g;
 }
-
 
 
 /********************************************************************************/
@@ -231,12 +257,14 @@ private Gauge getSpeedometer()
 
 private Gauge getTachometer()
 {
-   Gauge gauge = new Gauge();
-   gauge.setSkinType(SkinType.MODERN);
-   gauge.setPrefSize(100,100);
+   Gauge g = new Gauge();
+   // can't subclass because of resource loading
+   g.setSkinType(Gauge.SkinType.MODERN);
+   g.setPrefSize(100,100);
    
-   return gauge;
+   return g;
 }
+
 
 
 /********************************************************************************/
@@ -247,26 +275,151 @@ private Gauge getTachometer()
 
 private Button getHornButton()
 {
-   Image img = new Image("images/horn.png");
-   ImageView imgv = new ImageView();
-   imgv.setImage(img);
-   imgv.setFitWidth(85);
-   imgv.setFitHeight(60);
-   imgv.setSmooth(true);
-   imgv.setCache(true);
-   
-   Button b = new Button("",imgv);
-   b.getStyleClass().add("clearButton");
-   
-   return b;
+   return new Horn();
 }
 
 
+private class Horn extends Button implements EventHandler<ActionEvent>, ActionListener {
+   
+   Horn() {
+      Image img = new Image("images/horn.png");
+      ImageView imgv = new ImageView();
+      imgv.setImage(img);
+      imgv.setFitWidth(85);
+      imgv.setFitHeight(60);
+      imgv.setSmooth(true);
+      imgv.setCache(true);
+      setGraphic(imgv);
+      getStyleClass().add("clearButton");
+      setOnAction(this);
+    }
+   
+   @Override public void handle(ActionEvent evt) {
+      if (for_engine.isHornOn()) return;
+      Timer t = new Timer(HORN_TIME,this);
+      t.setRepeats(false);
+      t.start();
+      for_engine.setHorn(true);
+    }
+   
+   @Override public void actionPerformed(java.awt.event.ActionEvent evt) {
+      for_engine.setHorn(false);
+    }
+    
+}       // end of inner class Horn
+
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Power buttons                                                           */
+/*                                                                              */
+/********************************************************************************/
+
+private PowerButton getPowerButton()
+{
+   return new PowerButton();
+}
+
+
+private final class PowerButton extends Button implements EventHandler<ActionEvent>, ActionListener {
+
+   private ImageView idle_view;
+   private ImageView startup_view;
+   private ImageView ready_view;
+   private ImageView shutdown_view;
+   
+   PowerButton() {
+      idle_view = loadImage("off");
+      startup_view = loadImage("up");
+      ready_view = loadImage("on");
+      shutdown_view = loadImage("down");
+      noteState(for_engine.getEngineState());
+    }
+   
+   private ImageView loadImage(String sfx) {
+      String res = "images/power_" + sfx + ".png";
+      Image img = new Image(res);
+      ImageView imgv = new ImageView();
+      imgv.setImage(img);
+      imgv.setFitWidth(100);
+      imgv.setFitHeight(100);
+      imgv.setSmooth(true);
+      imgv.setCache(true);
+      return imgv;
+    }
+   
+   void noteState(EngineState st) {
+      ImageView iv = null;
+      switch (st) {
+         case IDLE :
+            iv = idle_view;
+            break;
+         case STARTUP :
+            iv = startup_view;
+            break;
+         case READY :
+            iv = ready_view;
+            break;
+         case SHUTDOWN :
+            iv = shutdown_view;
+            break;
+       }
+      setGraphic(iv);
+    }
+
+   
+   @Override public void handle(ActionEvent evt) {
+      EngineState next = null;
+      int time = 0;
+      switch (for_engine.getEngineState()) {
+         case IDLE :
+            next = EngineState.STARTUP;
+            time = STARTUP_TIME;
+            break;
+         case READY :
+            next = EngineState.SHUTDOWN;
+            time = SHUTDOWN_TIME;
+            break;
+         default :
+            return;
+       }
+      Timer t = new Timer(time,this);
+      t.setRepeats(false);
+      t.start();
+      for_engine.setState(next);
+    }
+   
+   @Override public void actionPerformed(java.awt.event.ActionEvent evt) {
+      EngineState next = null;
+      switch (for_engine.getEngineState()) {
+         case STARTUP :
+            next = EngineState.READY;
+            break;
+         case SHUTDOWN :
+            next = EngineState.IDLE;
+            break;
+         default :
+            return;
+       }
+      for_engine.setState(next);
+    }
+   
+}       // end of inner class PowerButton
+
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Toggles                                                                 */
+/*                                                                              */
+/********************************************************************************/
 
 private IconToggle getBellButton()
 {
-   IconToggle it = new IconToggle("","bell");
-   return it;
+   return new BellToggle();
 }
 
 
@@ -282,48 +435,17 @@ private IconToggle getRearLightButton()
 }
 
 
-private Button getPowerButton()
+private IconToggle getMuteButton()
 {
-   Image img = new Image("images/power.png");
-   ImageView imgv = new ImageView();
-   imgv.setImage(img);
-   imgv.setFitWidth(100);
-   imgv.setFitHeight(100);
-   imgv.setSmooth(true);
-   imgv.setCache(true);
-   
-   return new Button("",imgv);
+   return new MuteToggle();
+}
+
+private IconToggle getStopButton()
+{
+   return new StopToggle();
 }
 
 
-private Button getStopButton()
-{
-   Image img = new Image("images/stopbutton.png");
-   ImageView imgv = new ImageView();
-   imgv.setImage(img);
-   imgv.setFitWidth(40);
-   imgv.setFitHeight(40);
-   imgv.setSmooth(true);
-   imgv.setCache(true);
-   
-   return new Button("",imgv);
-}
-
-
-private FwdRevSwitch getFwdReverse()
-{
-   FwdRevSwitch rslt = new FwdRevSwitch();
-   
-   return rslt;
-}
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Icon Toggle                                                             */
-/*                                                                              */
-/********************************************************************************/
 
 private class IconToggle extends ToggleButton implements EventHandler<ActionEvent> {
    
@@ -365,6 +487,25 @@ private class IconToggle extends ToggleButton implements EventHandler<ActionEven
 }       // end of inner class IconToggle
 
 
+
+private class BellToggle extends IconToggle implements EventHandler<ActionEvent> {
+   
+   BellToggle() {
+      super("","bell");
+    }
+   
+   @Override public void handle(ActionEvent evt) {
+      if (for_engine != null) {
+         for_engine.setBell(isSelected());
+       }
+      super.handle(evt);
+    }
+   
+}       // end of inner class FrontLightToggle
+
+
+
+
 private class FrontLightToggle extends IconToggle implements EventHandler<ActionEvent> {
    
    FrontLightToggle() {
@@ -373,7 +514,7 @@ private class FrontLightToggle extends IconToggle implements EventHandler<Action
    
    @Override public void handle(ActionEvent evt) {
       if (for_engine != null) {
-         for_engine.setFwdLight(isSelected());
+         for_engine.setFrontLight(isSelected());
        }
       super.handle(evt);
     }
@@ -385,17 +526,50 @@ private class FrontLightToggle extends IconToggle implements EventHandler<Action
 private class RearLightToggle extends IconToggle implements EventHandler<ActionEvent> {
    
    RearLightToggle() {
-      super("Front","light");
+      super("Rear","light");
     }
    
    @Override public void handle(ActionEvent evt) {
       if (for_engine != null) {
-         for_engine.setRevLight(isSelected());
+         for_engine.setRearLight(isSelected());
        }
       super.handle(evt);
     }
    
-}       // end of inner class FrontLightToggle
+}       // end of inner class RearLightToggle
+
+
+private class MuteToggle extends IconToggle implements EventHandler<ActionEvent> {
+   
+   MuteToggle() {
+      super("","mute");
+    }
+   
+   @Override public void handle(ActionEvent evt) {
+      if (for_engine != null) {
+         for_engine.setMute(isSelected());
+       }
+      super.handle(evt);
+    }
+
+}       // end of inner class MuteToggle
+
+
+
+private class StopToggle extends IconToggle implements EventHandler<ActionEvent> {
+
+   StopToggle() {
+      super("","stopbutton");
+    }
+   
+   @Override public void handle(ActionEvent evt) {
+      if (for_engine != null) {
+         for_engine.setEmergencyStop(isSelected());
+       }
+      super.handle(evt);
+    }
+   
+}       // end of inner class StopToggle
 
 
 
@@ -404,6 +578,14 @@ private class RearLightToggle extends IconToggle implements EventHandler<ActionE
 /*      Forward-reverse toggle                                                  */
 /*                                                                              */
 /********************************************************************************/
+
+private FwdRevSwitch getFwdReverse()
+{
+   FwdRevSwitch rslt = new FwdRevSwitch();
+   
+   return rslt;
+}
+
 
 private class FwdRevSwitch extends HBox implements ChangeListener<Boolean> {
 
@@ -453,6 +635,7 @@ private class FwdRevSwitch extends HBox implements ChangeListener<Boolean> {
    
    @Override public void changed(ObservableValue<? extends Boolean> obs,Boolean oldval,Boolean newval) {
       setToggle();
+      for_engine.setReverse(newval); 
     } 
    
    private void setToggle() {
@@ -494,16 +677,31 @@ private class FwdRevSwitch extends HBox implements ChangeListener<Boolean> {
 /*                                                                              */
 /********************************************************************************/
 
-private final class CallbackHandler implements EngineCallback {
+private final class CallbackHandler implements IfaceEngine.EngineCallback {
 
    @Override public void engineChanged(IfaceEngine e) {
       if (e != for_engine) return;
-      front_light.setSelected(e.isFwdLightOn());
-      back_light.setSelected(e.isRevLightOn());
+      front_light.setSelected(e.isFrontLightOn());
+      rear_light.setSelected(e.isRearLightOn());
       train_bell.setSelected(e.isBellOn());
       reverse_switch.setSwtich(e.isReverse());
+      mute_button.setSelected(e.isMuted());
+      speed_gauge.setValue(e.getSpeed());
+      tach_gauge.setValue(e.getRpm());
+      power_button.noteState(e.getEngineState());
+      emergency_stop.setSelected(e.isEmergencyStopped());
+      
+      if (e.getEngineState() != EngineState.READY) {
+         throttle_slider.setValue(0);
+         throttle_slider.setDisable(true);
+       }
+      else {
+         throttle_slider.setDisable(false);
+         throttle_slider.setValue(e.getThrottle());
+       }
     }
-}
+   
+}       // end of inner class CallbackHandler
 
 
 }       // end of class ViewEngineerFx

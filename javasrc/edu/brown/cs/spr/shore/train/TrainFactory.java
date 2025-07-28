@@ -38,21 +38,24 @@ package edu.brown.cs.spr.shore.train;
 import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 
 import org.w3c.dom.Element;
 
-import edu.brown.cs.ivy.swing.SwingEventListenerList;
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceNetwork;
+import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
+import edu.brown.cs.spr.shore.iface.IfaceEngine.EngineState;
 
 public class TrainFactory implements TrainConstants, IfaceTrains 
 {
@@ -68,9 +71,7 @@ private IfaceNetwork    network_model;
 private IfaceModel      layout_model;
 private Map<String,TrainEngine> known_trains;
 private Map<SocketAddress,TrainEngine> assigned_trains;
-private Map<IfaceBlock,TrainEngine> train_locations;
-private Map<IfaceBlock,TrainEngine> expected_trains;
-private SwingEventListenerList<EngineCallback> train_listeners; 
+private Map<IfaceBlock,TrainData> train_locations;
 
 
 
@@ -87,9 +88,6 @@ public TrainFactory(IfaceModel mdl)
    known_trains = new LinkedHashMap<>();
    assigned_trains = new HashMap<>();
    train_locations = new HashMap<>();
-   expected_trains = new HashMap<>();
-   
-   train_listeners = new SwingEventListenerList<>(EngineCallback.class);
    
    loadTrains();
    
@@ -189,41 +187,8 @@ private void loadTrains()
 }
 
 
-/********************************************************************************/
-/*                                                                              */
-/*      Callback methods                                                        */
-/*                                                                              */
-/********************************************************************************/
 
-@Override public void addTrainCallback(EngineCallback cb)
-{
-   train_listeners.add(cb);
-}
- 
-@Override public void removeTrainCallback(EngineCallback cb)
-{
-   train_listeners.remove(cb);
-}
-
-
-void fireEngineChanged(TrainEngine eng)
-{
-   for (EngineCallback cb : train_listeners) {
-      cb.engineChanged(eng);
-    }
-}
-
-void fireEnginePositionChanged(TrainEngine eng)
-{
-   for (EngineCallback cb : train_listeners) {
-      cb.enginePositionChanged(eng);
-    } 
-}
-
-
-
-
-/********************************************************************************/
+/**************************Cur******************************************************/
 /*                                                                              */
 /*      Handle model changes that might affect trains                           */
 /*                                                                              */
@@ -232,46 +197,14 @@ void fireEnginePositionChanged(TrainEngine eng)
 private final class TrainModelUpdater implements IfaceModel.ModelCallback {
    
    @Override public void blockChanged(IfaceBlock blk) {
-      TrainEngine eng = null;
-      
       switch (blk.getBlockState()) {
          case EMPTY :
-            eng = train_locations.get(blk);
-            if (eng != null) eng.exitBlock(blk);
-            expected_trains.remove(blk);
+            TrainData td = train_locations.remove(blk);
+            if (td != null) td.getEngine().exitBlock(blk);
             break;
          case INUSE :
-            eng = train_locations.get(blk); 
-            if (eng != null) break;
-            eng = expected_trains.remove(blk);
-            if (eng == null) {
-               for (IfaceConnection conn : blk.getConnections()) {
-                  IfaceSensor xsen = conn.getExitSensor(blk);
-                  IfaceSensor esen = conn.getEntrySensor(blk);
-                  if (xsen != null && esen != null && 
-                        xsen.getSensorState() == ShoreSensorState.ON &&
-                        esen.getSensorState() == ShoreSensorState.ON) {
-                     IfaceBlock prev = xsen.getBlock();
-                     eng = train_locations.get(prev);
-                     if (eng != null) {
-                        train_locations.put(blk,eng);
-                        eng.enterBlock(blk);
-                        break;
-                      }
-                   }
-                }
-             }
-            if (eng != null) {
-               train_locations.put(blk,eng);
-               eng.enterBlock(blk);
-             }
             break;
          case PENDING :
-            IfaceBlock prev = blk.getPendingFrom();
-            if (prev != null) {
-               eng = train_locations.get(prev);
-               if (eng != null) expected_trains.put(blk,eng);
-             }
             break;
          case UNKNOWN :
             break;
@@ -279,11 +212,74 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
     }
    
    @Override public void sensorChanged(IfaceSensor s) {
-      // update train's location to the most forward sensor in the block
-      // if at signal sensor and signal is red, stop the train (see SafetySignal)
+      if (s.getSensorState() != ShoreSensorState.ON)  return;
+      IfaceBlock blk = s.getBlock();
+      TrainData td = train_locations.get(blk);
+      if (td == null) {
+         IfaceConnection conn = s.getConnection();
+         if (conn != null) {
+            IfaceBlock prev = conn.getOtherBlock(blk);
+            td = train_locations.get(prev);
+            if (td != null) {
+               td.setBlock(blk);
+               td.setCurrentPoints(s.getAtPoint(),conn.getGapPoint());
+             }
+          }
+         if (td == null) {
+            for (TrainEngine e1 : assigned_trains.values()) {
+               if (e1.getEngineState() == EngineState.READY &&
+                     e1.getSpeed() > 0 &&
+                     e1.getEngineBlock() == null) {
+                  td = new TrainData(e1);
+                  td.setBlock(blk);
+                  td.setCurrentPoints(s.getAtPoint(),null);
+                  break;
+                }
+             }
+          }
+         else {
+            if (blk == td.getBlock()) {
+               IfacePoint prior = td.getEngine().getCurrentPoint();
+               td.setCurrentPoints(s.getAtPoint(),prior);
+             }
+          }
+       }
     }
    
-}
+}       //  end of inner class TrainModelUpdater
+
+
+
+private class TrainData {
+
+   private TrainEngine for_engine;
+   private IfaceBlock active_block;
+   private Set<IfacePoint> block_points;
+    
+   TrainData(TrainEngine eng) {
+      for_engine = eng;
+      active_block = null;
+      block_points = new HashSet<>();
+    }
+   
+   TrainEngine getEngine()                      { return for_engine; }
+   IfaceBlock getBlock()                        { return active_block; }
+   
+   void setBlock(IfaceBlock blk) {
+      active_block = blk;
+      block_points.clear();
+    }
+   
+   void setCurrentPoints(IfacePoint cur,IfacePoint prior) {
+      if (cur.getBlock() == active_block) {
+         if (block_points.contains(cur)) return;
+         block_points.add(cur);
+         if (prior != null) block_points.add(prior);
+         for_engine.setCurrentPoints(cur,prior);
+       }
+    }
+   
+}       // end of inner class TrainData
 
 }       // end of class TrainFactory
 

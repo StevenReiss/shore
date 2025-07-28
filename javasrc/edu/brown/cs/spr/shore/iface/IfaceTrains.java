@@ -37,7 +37,6 @@ package edu.brown.cs.spr.shore.iface;
 
 import java.net.SocketAddress;
 import java.util.Collection;
-import java.util.EventListener;
 
 /**
  *      This ineterface represents the manager for the active
@@ -77,17 +76,10 @@ Collection<IfaceEngine> getAllEngines();
 IfaceEngine setEngineSocket(IfaceEngine engine,SocketAddress sa);
 
 
-/**
- *      Add a callback to listen for train changes
- **/
-void addTrainCallback(EngineCallback cb);
 
 
-/**
- *      Remove a callback.  Has no effect if the callback has not
- *      been added or has been previously removed.
- **/
-void removeTrainCallback(EngineCallback cb);
+
+
 
 
 /**
@@ -96,16 +88,7 @@ void removeTrainCallback(EngineCallback cb);
 void setNetworkModel(IfaceNetwork net);
 
 
-/**
- *      Callback that is invoked when information about an engine
- *      or train is changed.
- **/
-interface EngineCallback extends EventListener {
-   
-   default void engineChanged(IfaceEngine engine)        { }
-   default void enginePositionChanged(IfaceEngine e)   { }
-   
-}
+
 
 
 }       // end of interface IfaceTrains

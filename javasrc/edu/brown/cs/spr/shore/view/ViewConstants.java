@@ -40,7 +40,23 @@ import edu.brown.cs.spr.shore.iface.IfaceConstants;
 public interface ViewConstants extends IfaceConstants 
 {
 
+/**
+ *      Time horn is on
+ **/
+int HORN_TIME = 1500;
 
+
+/**
+ *      Time to start engine
+ **/
+int STARTUP_TIME = 2000;
+
+
+
+/**
+ *      Time to shutdown engine
+ **/
+int SHUTDOWN_TIME = 1000;
 
 
 }       // end of interface ViewConstants

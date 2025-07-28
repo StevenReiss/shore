@@ -36,7 +36,7 @@
 package edu.brown.cs.spr.shore.iface;
 
 import java.net.SocketAddress;
-import java.util.Collection;
+import java.util.EventListener;
 
 import javafx.scene.paint.Color;
 
@@ -56,23 +56,18 @@ enum EngineState {
 }
 
 IfaceBlock getEngineBlock();
-IfaceBlock getCabooseBlock();
-Collection<IfaceBlock> getAllBlocks();
-void enterBlock(IfaceBlock blk);
-void exitBlock(IfaceBlock blk);
 
-boolean isStopped();
 boolean isEmergencyStopped();
-void stopTrain();
-void emergencyStopTrain();
-void startTrain();
 boolean isBellOn();
+boolean isHornOn();
 boolean isReverse();
 double getSpeed();
 double getRpm();
 double getThrottle();
-boolean isFwdLightOn();
-boolean isRevLightOn();
+boolean isFrontLightOn();
+boolean isRearLightOn();
+boolean isMuted();
+
 EngineState getEngineState();
 Color getEngineColor();
 String getEngineId();
@@ -80,16 +75,46 @@ String getEngineId();
 String getEngineName();
 SocketAddress getEngineAddress();
 
-void setSpeed(int speed);
-void blowHorn();
-void toggleBell(); 
-void setFwdLight(boolean on);
-void setRevLight(boolean on);
+void setHorn(boolean on);
+void setBell(boolean on); 
+void setFrontLight(boolean on);
+void setRearLight(boolean on);
+void setMute(boolean on);
+void setThrottle(double v);
+void setReverse(boolean fg);
+void setState(EngineState state);
+void setEmergencyStop(boolean on);
 
 void setupEngine(boolean fwdlight,boolean revlight,
-      boolean bell,boolean reverse,EngineState status,
+      boolean bell,boolean reverse,int status,
       int speedstep,int rpmstep,int speed,boolean estop,boolean mute);
 
+
+IfacePoint getCurrentPoint();
+IfacePoint getPriorPoint();
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Callback handling                                                       */
+/*                                                                              */
+/********************************************************************************/
+
+
+void addEngineCallback(EngineCallback cb);
+void removeEngineCallback(EngineCallback cb);
+
+
+/**
+ *      Callback that is invoked when information about an engine
+ *      or train is changed.
+ **/
+interface EngineCallback extends EventListener {
+
+   default void engineChanged(IfaceEngine engine)        { }
+   default void enginePositionChanged(IfaceEngine e)   { }
+   
+}
 
 
 }       // end of interface IfaceTrain

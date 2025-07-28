@@ -55,6 +55,7 @@ private IfaceSafety     safety_model;
 
 
 
+
 /********************************************************************************/
 /*										*/
 /*	Constructors								*/
@@ -66,6 +67,7 @@ public ViewFactory(IfaceSafety safe,IfaceModel mdl,IfaceTrains trns)
    safety_model = safe;
    layout_model = mdl;
    train_model = trns;
+
 }
 
 

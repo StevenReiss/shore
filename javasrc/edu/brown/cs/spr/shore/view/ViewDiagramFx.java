@@ -45,12 +45,13 @@ import java.util.Set;
 
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceDiagram;
+import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
+import edu.brown.cs.spr.shore.iface.IfaceTrains;
 import edu.brown.cs.spr.shore.iface.IfaceModel.ModelCallback;
-import edu.brown.cs.spr.shore.iface.IfaceTrains.EngineCallback;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
@@ -94,6 +95,7 @@ class ViewDiagramFx extends Pane implements ViewConstants
 
 private ViewFactory view_factory;
 private IfaceDiagram for_diagram;
+private IfaceTrains for_trains;
 private Rectangle2D display_bounds;
 private boolean invert_y;
 private double scale_value;
@@ -102,6 +104,7 @@ private Map<IfaceSwitch,SwitchDrawData> switch_map;
 private Map<IfaceSignal,SignalDrawData> signal_map;
 private Map<IfaceSensor,SensorDrawData> sensor_map;
 private Map<IfaceBlock,BlockDrawData> block_map;
+private Map<IfaceEngine,EngineDrawData> engine_map;
 
 
 private static final double BORDER_SPACE = 30;
@@ -155,10 +158,11 @@ static {
 /*                                                                              */
 /********************************************************************************/
 
-ViewDiagramFx(ViewFactory fac,IfaceDiagram dgm)
+ViewDiagramFx(ViewFactory fac,IfaceDiagram dgm,IfaceTrains trains)
 {
    view_factory = fac;
    for_diagram = dgm;
+   for_trains = trains;
    invert_y = false;
    double minx = Integer.MAX_VALUE;
    double maxx = 0;
@@ -184,6 +188,7 @@ ViewDiagramFx(ViewFactory fac,IfaceDiagram dgm)
    signal_map = new HashMap<>();
    sensor_map = new HashMap<>();
    block_map = new HashMap<>();
+   engine_map = new HashMap<>();
    
    CallbackHandler hdlr = new CallbackHandler();
    fac.getLayoutModel().addModelCallback(hdlr);
@@ -301,6 +306,7 @@ private void drawDiagram()
    drawSignals();
    drawSensors();
    drawBlocks();
+   drawEngines();
    
    // drawTurntables(); -- we need to know the state of the turntables
    
@@ -816,6 +822,56 @@ private class SensorHandler implements EventHandler<MouseEvent> {
 
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      Engine drawing                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+private void drawEngines()
+{
+   engine_map.clear();
+   
+   for (IfaceEngine en : for_trains.getAllEngines()) {
+      EngineDrawData ed = new EngineDrawData(en);
+      Shape sh = ed.getShape();
+      if (sh != null) getChildren().add(sh);
+      engine_map.put(en,ed);
+    }
+}
+
+
+private class EngineDrawData {
+   
+   private IfaceEngine for_engine;
+   
+   EngineDrawData(IfaceEngine eng) {
+      for_engine = eng;
+//    EngineHandler hdlr = new EngineHandler(for_engine);
+// sh.setOnMouseClicked(hdlr);
+// sh.setOnMousePressed(hdlr);
+      doSetEngine();
+    }
+   
+   void setEngine() {
+      if (Platform.isFxApplicationThread()) {
+         doSetEngine();
+       }
+      else {
+         Platform.runLater(() -> doSetEngine());
+       }
+    }
+   
+   Shape getShape() {
+      return null;
+    }
+   
+   void doSetEngine() {
+    }
+   
+}       // end of inner class SensorDrawData
+
+
 
 /********************************************************************************/
 /*                                                                              */
@@ -1015,7 +1071,7 @@ private Point2D getCoords(IfacePoint pt)
 /*                                                                              */
 /********************************************************************************/
 
-private class CallbackHandler implements ModelCallback, EngineCallback {
+private class CallbackHandler implements ModelCallback {
    
    CallbackHandler() { }
    

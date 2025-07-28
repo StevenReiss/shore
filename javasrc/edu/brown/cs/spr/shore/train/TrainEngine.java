@@ -37,11 +37,12 @@ package edu.brown.cs.spr.shore.train;
 
 import java.net.SocketAddress;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
+import edu.brown.cs.ivy.swing.SwingEventListenerList;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
+import edu.brown.cs.spr.shore.iface.IfacePoint;
 import javafx.scene.paint.Color;
 
 class TrainEngine implements TrainConstants, IfaceEngine, Comparable<IfaceEngine>
@@ -56,20 +57,26 @@ class TrainEngine implements TrainConstants, IfaceEngine, Comparable<IfaceEngine
 
 private TrainFactory            train_factory;
 private String                  engine_name;
-private List<IfaceBlock>        train_blocks;
 private SocketAddress           socket_address;
-private boolean                 is_stopped;
 private boolean                 is_emergency;
 private boolean                 bell_on;
+private boolean                 horn_on;
 private boolean                 reverse_on;
+private boolean                 mute_on;
 private double                  engine_speed;
 private double                  engine_rpm;
 private double                  engine_throttle; 
-private boolean                 fwd_light;
-private boolean                 rev_light;
+private boolean                 fromt_light;
+private boolean                 rear_light;
 private EngineState             engine_state;
 private Color                   engine_color;
 private String                  engine_id;
+
+private List<IfaceBlock>        train_blocks;
+private IfacePoint              current_point;
+private IfacePoint              prior_point;
+
+private SwingEventListenerList<EngineCallback> engine_listeners;
 
 
 
@@ -84,22 +91,29 @@ TrainEngine(TrainFactory fac,String name,String id,Color color)
    train_factory = fac;
    engine_name = name;
    train_blocks = new ArrayList<>();
+   current_point = null;
+   prior_point = null;
    socket_address = null;
-   is_stopped = true;
    is_emergency = false;
    bell_on = false;
+   horn_on = false;
    reverse_on = false;
+   mute_on = false;
    engine_speed = 0;
    engine_rpm = 0;
    engine_throttle = 0;
-   fwd_light = false;
-   rev_light = false;
+   fromt_light = false;
+   rear_light = false;
    engine_state = EngineState.IDLE;
    engine_color = color;
    if (id != null) {
       engine_id = id.toUpperCase();
     }
    else engine_id = null;
+   current_point = null;
+   prior_point = null;
+   
+   engine_listeners = new SwingEventListenerList<>(EngineCallback.class);
 }
 
 
@@ -113,19 +127,16 @@ TrainEngine(TrainFactory fac,String name,String id,Color color)
 @Override public String getEngineName()                  { return engine_name; }
 
 @Override public String getEngineId()                    { return engine_id; } 
+ 
+@Override public SocketAddress getEngineAddress()        { return socket_address; }
 
-@Override public SocketAddress getEngineAddress()       { return socket_address; }
+void setEngineAddress(SocketAddress sa)                  { socket_address = sa; }  
 
-void setEngineAddress(SocketAddress sa)                 { socket_address = sa; }  
-
-@Override public boolean isStopped()                    { return is_stopped; }
-
-@Override public boolean isEmergencyStopped()
-{
-   return is_stopped && is_emergency;
-}
+@Override public boolean isEmergencyStopped()           { return is_emergency; }
 
 @Override public boolean isBellOn()                     { return bell_on; }
+
+@Override public boolean isHornOn()                     { return horn_on; }
 
 @Override public boolean isReverse()                    { return reverse_on; } 
 
@@ -135,13 +146,16 @@ void setEngineAddress(SocketAddress sa)                 { socket_address = sa; }
 
 @Override public double getThrottle()                   { return engine_throttle; }
 
-@Override public boolean isFwdLightOn()                 { return fwd_light; }
+@Override public boolean isFrontLightOn()               { return fromt_light; }
 
-@Override public boolean isRevLightOn()                 { return rev_light; }
+@Override public boolean isRearLightOn()                { return rear_light; }
+
+@Override public boolean isMuted()                      { return mute_on; }
 
 @Override public EngineState getEngineState()           { return engine_state; }
 
 @Override public Color getEngineColor()                 { return engine_color; }
+
 
 
 /********************************************************************************/
@@ -151,21 +165,23 @@ void setEngineAddress(SocketAddress sa)                 { socket_address = sa; }
 /********************************************************************************/
 
 @Override public void setupEngine(boolean fwdlight,boolean revlight,
-      boolean bell,boolean reverse,EngineState status,
+      boolean bell,boolean reverse,int state,
       int speedstep,int rpmstep,int speed,boolean estop,boolean mute)
 {
-   fwd_light = fwdlight;
-   rev_light = revlight;
+   fromt_light = fwdlight;
+   rear_light = revlight;
    bell_on = bell;
+   horn_on = false;
    reverse_on = reverse;
-   engine_state = status;
+   if (state == 0) engine_state = EngineState.IDLE;
    engine_speed = speed;
-   if (estop) {
+   if (estop) { 
       is_emergency = true;
-      is_stopped = true;
+      engine_state = EngineState.IDLE;
+      engine_throttle = 0;
     }
    
-   train_factory.fireEngineChanged(this);
+   fireEngineChanged();
 }
   
 
@@ -175,35 +191,47 @@ void setEngineAddress(SocketAddress sa)                 { socket_address = sa; }
 /*                                                                              */
 /********************************************************************************/
 
-@Override public Collection<IfaceBlock> getAllBlocks()
-{
-   return new ArrayList<>(train_blocks);
-}
-
 @Override public IfaceBlock getEngineBlock()
 {
-   if (train_blocks.isEmpty()) return null;
-   return train_blocks.get(train_blocks.size()-1);
-}
-
-@Override public IfaceBlock getCabooseBlock()
-{
-   if (train_blocks.isEmpty()) return null;
-   return train_blocks.get(0);
+   if (current_point == null) return null;
+   return current_point.getBlock();
 }
 
 
-@Override public void enterBlock(IfaceBlock blk)
+@Override public IfacePoint getCurrentPoint() 
 {
+   return current_point; 
+}
+ 
+
+@Override public IfacePoint getPriorPoint()
+{
+   return prior_point;
+}
+
+
+void enterBlock(IfaceBlock blk) 
+{
+   if (blk == null) return;
    if (getEngineBlock() == blk) return;
    train_blocks.add(blk);
 }
 
-@Override 
+
 public void exitBlock(IfaceBlock blk)
 {
    train_blocks.remove(blk);
 }
+
+void setCurrentPoints(IfacePoint cur,IfacePoint prior)
+{
+   current_point = cur;
+   prior_point = prior;
+   enterBlock(cur.getBlock());
+   fireEnginePositionChanged();
+}
+
+
 
 
 
@@ -213,57 +241,139 @@ public void exitBlock(IfaceBlock blk)
 /*                                                                              */
 /********************************************************************************/
 
-@Override public void stopTrain()
+@Override public void setEmergencyStop(boolean stop)
 {
-   is_stopped = true;
-   is_emergency = false;
-   train_factory.getNetworkModel().sendStopTrain(this,false);
+   boolean chng = is_emergency != stop;
+   
+   is_emergency = stop;
+   
+   train_factory.getNetworkModel().sendEmergencyStop(this);
+   
+   if (chng) fireEngineChanged();
 }
 
 
-@Override public void emergencyStopTrain()
+@Override public void setThrottle(double v) 
 {
-   is_stopped = true;
-   is_emergency = true;
-   train_factory.getNetworkModel().sendStopTrain(this,true);
+   boolean chng = engine_throttle != v;
+   
+   engine_throttle = v;
+   train_factory.getNetworkModel().sendThrottle(this);
+   
+   if (chng) fireEngineChanged();
 }
 
 
-@Override public void startTrain()
+@Override public void setBell(boolean on)  
 {
-   is_stopped = false;
-   train_factory.getNetworkModel().sendStartTrain(this);
+   boolean chng = bell_on != on;
+   
+   bell_on = on;
+   train_factory.getNetworkModel().sendBell(this);
+   
+   if (chng) fireEngineChanged();
+}
+
+@Override public void setHorn(boolean on)
+{
+   boolean chng = horn_on != on;
+   
+   horn_on = on;
+   train_factory.getNetworkModel().sendHorn(this);
+   
+   if (chng) fireEngineChanged();
 }
 
 
-@Override public void setSpeed(int arg0)
+@Override public void setFrontLight(boolean on)
 {
-   // set engine_throttle
-   // method body goes here
-}
-
-@Override public void toggleBell() 
-{
-   // set bell_on
-   // method body goes here
-}
-
-@Override public void blowHorn()
-{
-   // method body goes here
-}
-
-@Override public void setFwdLight(boolean on)
-{
-   fwd_light = on;
+   boolean chng = fromt_light != on;
+   
+   fromt_light = on;
    train_factory.getNetworkModel().sendLight(this,true);
+   
+   if (chng) fireEngineChanged();
 }
 
 
-@Override public void setRevLight(boolean on)
+@Override public void setRearLight(boolean on) 
 {
-   rev_light = on; 
+   boolean chng = rear_light != on;
+   
+   rear_light = on; 
    train_factory.getNetworkModel().sendLight(this,false);
+   
+   if (chng) fireEngineChanged();
+}
+
+
+@Override public void setMute(boolean on)
+{
+   boolean chng = mute_on != on;
+   
+   mute_on = on;
+   train_factory.getNetworkModel().sendMute(this);
+   
+   if (chng) fireEngineChanged();
+}
+
+
+@Override public void setReverse(boolean on)
+{
+   boolean chng = reverse_on != on;
+   
+   reverse_on = on;
+   train_factory.getNetworkModel().sendReverse(this);
+   
+   if (chng) fireEngineChanged();
+}
+
+
+@Override public void setState(EngineState st)
+{
+   boolean chng = engine_state != st;
+   
+   engine_state = st;
+   switch (st) {
+      case STARTUP :
+      case SHUTDOWN :
+         train_factory.getNetworkModel().sendStartEngine(this);
+         break;
+    }
+   
+   if (chng) fireEngineChanged();
+}
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Callback Methods                                                        */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public void addEngineCallback(EngineCallback cb)
+{
+   engine_listeners.add(cb);
+}
+
+@Override public void removeEngineCallback(EngineCallback cb)
+{
+   engine_listeners.remove(cb);
+}
+
+
+private void fireEngineChanged()
+{
+   for (EngineCallback cb : engine_listeners) {
+      cb.engineChanged(this);
+    }
+}
+
+private void fireEnginePositionChanged()
+{
+   for (EngineCallback cb : engine_listeners) {
+      cb.enginePositionChanged(this);
+    }
 }
 
 

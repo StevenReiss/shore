@@ -262,15 +262,9 @@ public void setSensor(IfaceSensor sen,ShoreSensorState set)
 /********************************************************************************/
 
 @Override 
-public void sendStopTrain(IfaceEngine tr,boolean emergency) 
+public void sendEmergencyStop(IfaceEngine tr) 
 {
-   locofi_processor.sendStopTrain(tr,emergency);
-}
-
-
-@Override public void sendStartTrain(IfaceEngine tr)
-{
-   locofi_processor.sendStartTrain(tr);
+   locofi_processor.sendEmergencyStop(tr);
 }
 
 
@@ -279,6 +273,41 @@ public void sendStopTrain(IfaceEngine tr,boolean emergency)
    locofi_processor.sendLight(eng,front);
 }
 
+
+@Override public void sendBell(IfaceEngine eng) 
+{
+   locofi_processor.sendBell(eng);
+}
+
+
+@Override public void sendHorn(IfaceEngine eng) 
+{
+   locofi_processor.sendHorn(eng); 
+}
+
+
+@Override public void sendMute(IfaceEngine eng) 
+{
+   locofi_processor.sendMute(eng);
+}
+
+
+@Override public void sendThrottle(IfaceEngine eng) 
+{
+   locofi_processor.sendThrottle(eng);
+}
+
+
+@Override public void sendReverse(IfaceEngine eng)
+{
+   locofi_processor.sendReverse(eng);
+}
+
+
+@Override public void sendStartEngine(IfaceEngine eng)
+{
+   locofi_processor.sendStartEngine(eng);
+}
 
 
 /********************************************************************************/

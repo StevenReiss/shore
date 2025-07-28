@@ -40,6 +40,7 @@ import java.util.List;
 
 import edu.brown.cs.spr.shore.iface.IfaceDiagram;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
+import edu.brown.cs.spr.shore.iface.IfaceTrains;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 import javafx.application.Application;
 import javafx.geometry.Orientation;
@@ -183,12 +184,13 @@ private class LayoutPanel extends BorderPane {
 
    LayoutPanel() {
       Collection<IfaceDiagram> dgms = view_factory.getLayoutModel().getDiagrams();
+      IfaceTrains trains = view_factory.getTrainModel();
       Node [] pnls = new Node[dgms.size()+1];
       int i = 0;
       double totx = 0;
       double toty = 0;
       for (IfaceDiagram dgm : dgms) {
-         ViewDiagramFx vd = new ViewDiagramFx(view_factory,dgm);
+         ViewDiagramFx vd = new ViewDiagramFx(view_factory,dgm,trains);
          SplitPane.setResizableWithParent(vd,true);
          totx = Math.max(totx,vd.getPrefWidth());
          toty += vd.getPrefHeight();

@@ -68,20 +68,12 @@ void setSignal(IfaceSignal sig,ShoreSignalState set);
 void setSensor(IfaceSensor sen,ShoreSensorState set);
 
 
-
-
 /**
  *      Sends a message to stop the given engine, either with a normal
  *      stop or with an emergency stop.
  **/
-void sendStopTrain(IfaceEngine train,boolean emergency);
+void sendEmergencyStop(IfaceEngine train);
 
-
-/**
- *      Sends a message to restart the given engine.  This remembers whether
- *      the last stop was an emergency or normal stop.
- **/
-void sendStartTrain(IfaceEngine train);
 
 
 /**
@@ -89,6 +81,41 @@ void sendStartTrain(IfaceEngine train);
  **/
 void sendLight(IfaceEngine eng,boolean front);
 
+        
+/**
+ *      Send a message to turn on/off bell
+ **/
+void sendBell(IfaceEngine eng);
+
+
+/**
+ *      Send a message to turn on/off horm
+ ***/
+void sendHorn(IfaceEngine eng);
+
+
+/**
+ *      Sends a message to turn on or off muting
+ **/
+void sendMute(IfaceEngine eng);
+
+
+/**
+ *      Sends a message to set the engine throttle
+ **/
+void sendThrottle(IfaceEngine e);
+
+
+/**
+ *      Sends a message to set engine direction
+ **/
+void sendReverse(IfaceEngine e);
+
+
+/**
+ *      Sends a message to start/stop engine
+ **/
+void sendStartEngine(IfaceEngine e);
 
 
 }	// end of interface IfaceNetwork

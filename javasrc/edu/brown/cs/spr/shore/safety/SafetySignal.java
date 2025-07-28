@@ -273,7 +273,7 @@ private class SignalData {
    
    void stopTrain() {
       if (for_train != null) {
-         for_train.stopTrain();
+         for_train.setThrottle(0);
        }
     } 
    

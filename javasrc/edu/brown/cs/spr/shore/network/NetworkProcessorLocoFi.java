@@ -45,7 +45,6 @@ import javax.jmdns.ServiceInfo;
 
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
-import edu.brown.cs.spr.shore.iface.IfaceEngine.EngineState;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 class NetworkProcessorLocoFi extends NetworkProcessor implements NetworkLocoFiMessages
@@ -85,44 +84,23 @@ NetworkProcessorLocoFi(DatagramSocket sock,IfaceTrains trains)
 /*                                                                              */
 /********************************************************************************/
 
-void sendStopTrain(IfaceEngine tr,boolean emergency) 
-{
-   EngineInfo ei = findEngineInfo(tr);
-   if (ei == null) return;
-   
-   if (emergency) {
-      ei.sendEmergencyStop();
-    }
-   else {
-      ei.sendStopEngine();
-    }
-}
-
-
-void sendStartTrain(IfaceEngine tr)
-{
-   EngineInfo ei = findEngineInfo(tr);
-   if (ei == null) return;
-   
-   boolean emergency = tr.isEmergencyStopped();
-   
-   if (emergency) {
-      ei.sendEmergencyStart();
-    }
-   else {
-      ei.sendStartEngine();
-    }
-}
-
-
 void sendLight(IfaceEngine eng,boolean front) 
 {
    EngineInfo ei = findEngineInfo(eng);
    if (ei == null) return;
    
-   boolean sts = (front ? eng.isFwdLightOn() : eng.isRevLightOn());
+   boolean sts = (front ? eng.isFrontLightOn() : eng.isRearLightOn());
    
    ei.sendLight(front,sts);
+}
+
+
+void sendMute(IfaceEngine eng)
+{
+   EngineInfo ei = findEngineInfo(eng);
+   if (ei == null) return;
+   
+   ei.setMute(eng.isMuted());
 }
 
 
@@ -132,6 +110,64 @@ void sendBell(IfaceEngine eng)
    if (ei == null) return;
    
    ei.sendBell(eng.isBellOn());
+}
+
+
+void sendHorn(IfaceEngine eng)
+{
+   EngineInfo ei = findEngineInfo(eng);
+   if (ei == null) return;
+    
+   ei.sendHorn(eng.isHornOn());
+}
+
+
+void sendThrottle(IfaceEngine eng)
+{
+   EngineInfo ei = findEngineInfo(eng);
+   if (ei == null) return;
+   
+   double v = eng.getThrottle();
+   int vint = (int) v;
+   ei.sendThrottle(vint);
+}
+
+void sendReverse(IfaceEngine eng)
+{
+   EngineInfo ei = findEngineInfo(eng);
+   if (ei == null) return;
+   
+   ei.sendReverse(eng.isReverse());
+}
+
+
+void sendStartEngine(IfaceEngine eng)
+{
+   EngineInfo ei = findEngineInfo(eng);
+   if (ei == null) return;
+   
+   boolean start = false;
+   switch (eng.getEngineState()) {
+      case STARTUP :
+         start = true;
+         break;
+      case SHUTDOWN :
+         start = false;
+         break;
+      default :
+         return;
+    }
+   
+   ei.sendStartEngine(start);
+}
+
+
+void sendEmergencyStop(IfaceEngine eng)
+{
+   EngineInfo ei = findEngineInfo(eng);
+   if (ei == null) return;
+   
+   ei.sendEmergencyStop(eng.isEmergencyStopped());
 }
 
 
@@ -330,14 +366,14 @@ private class EngineInfo {
       boolean bell = data[2] != 0;
       // eng.setBell(bell);
       boolean rev = data[3] != 0;
-      EngineState state = getState(data[4],EngineState.IDLE);
+      int sts = data[4];
       int speedstep = data[5] & 0xff + data[6]*16;
       int rpmstep = data[6] & 0xff + data[7]*16;
       int speed = data[10] & 0xff + data[9]*16;
       boolean estop = data[11] != 0;
       boolean mute = data[12] == 0;
-      eng.setupEngine(front,back,bell,rev,state,
-            speedstep,rpmstep,speed,estop,mute); 
+      eng.setupEngine(front,back,bell,rev,sts,
+            speedstep,rpmstep,speed,estop,mute);  
       return true;
     }
    
@@ -372,26 +408,8 @@ private class EngineInfo {
       return ack != null;
     }
    
-   boolean sendEmergencyStop() {
-      byte [] msg = LOCOFI_EMERGENCY_STOP_CMD;
-      byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
-      return ack != null;
-    }
-   
-   boolean sendEmergencyStart() {
-      byte [] msg = LOCOFI_EMERGENCY_START_CMD;
-      byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
-      return ack != null;
-    }
-   
-   boolean sendStopEngine() {
-      byte [] msg = LOCOFI_STOP_ENGINE_CMD;
-      byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
-      return ack != null;
-    }
-   
-   boolean sendStartEngine() {
-      byte [] msg = LOCOFI_START_ENGINE_CMD;
+   boolean sendEmergencyStop(boolean stop) {
+      byte [] msg = (stop ? LOCOFI_EMERGENCY_STOP_CMD : LOCOFI_EMERGENCY_START_CMD);
       byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
       return ack != null;
     }
@@ -419,11 +437,23 @@ private class EngineInfo {
       return ack != null;
     }
    
-   boolean setSpeed(int v) {
+   boolean sendThrottle(int v) {
       byte [] msg = new byte[3];
       msg[0] = LOCOFI_SET_SPEED_CMD[0];
       msg[1] = (byte) (v & 0xff);
       msg[2] = (byte) ((v & 0xff00) >> 8);
+      byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
+      return ack != null;
+    }
+   
+   boolean sendReverse(boolean rev) {
+      byte [] msg = (rev ? LOCOFI_REV_DIR_CMD : LOCOFI_FWD_DIR_CMD);
+      byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
+      return ack != null;
+    }
+   
+   boolean sendStartEngine(boolean start) {
+      byte [] msg = (start ? LOCOFI_START_ENGINE_CMD : LOCOFI_STOP_ENGINE_CMD);
       byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
       return ack != null;
     }
@@ -460,7 +490,7 @@ private final class ReplyHandler {
    byte [] getReply() {
       // only wait for reply data time
       if (reply_data == null) {
-         synchronized(this) {
+         synchronized (this) {
             try {
                wait(REPLY_DELAY);
              }
