@@ -56,6 +56,7 @@ import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
 import edu.brown.cs.spr.shore.iface.IfaceEngine.EngineState;
+import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 public class TrainFactory implements TrainConstants, IfaceTrains 
 {
@@ -215,33 +216,48 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
       if (s.getSensorState() != ShoreSensorState.ON)  return;
       IfaceBlock blk = s.getBlock();
       TrainData td = train_locations.get(blk);
+      ShoreLog.logD("TRAIN","Train sensor changed " + s + " " + blk + " " + td);
       if (td == null) {
          IfaceConnection conn = s.getConnection();
+         ShoreLog.logD("TRAIN","Use connection " + conn);
          if (conn != null) {
             IfaceBlock prev = conn.getOtherBlock(blk);
             td = train_locations.get(prev);
             if (td != null) {
                td.setBlock(blk);
+               ShoreLog.logD("TRAIN","Get train from previous block " + blk +
+                     " " + prev + " " + td.getEngine().getEngineName());
+               train_locations.put(blk,td);
                td.setCurrentPoints(s.getAtPoint(),conn.getGapPoint());
              }
           }
          if (td == null) {
+            ShoreLog.logD("TRAIN","No connection found");
             for (TrainEngine e1 : assigned_trains.values()) {
                if (e1.getEngineState() == EngineState.READY &&
-                     e1.getSpeed() > 0 &&
+   //                e1.getSpeed() > 0 &&
                      e1.getEngineBlock() == null) {
                   td = new TrainData(e1);
                   td.setBlock(blk);
+                  train_locations.put(blk,td);
                   td.setCurrentPoints(s.getAtPoint(),null);
+                  ShoreLog.logD("TRAIN","Add new train " + blk + " " + 
+                        td.getEngine().getEngineName());
                   break;
                 }
              }
+            ShoreLog.logD("TRAIN","Can't find train for block " + blk);
+          }
+       }
+      else {
+         if (blk == td.getBlock()) {
+            ShoreLog.logD("TRAIN","Engine in same block");
+            IfacePoint prior = td.getEngine().getCurrentPoint();
+            td.setCurrentPoints(s.getAtPoint(),prior);
           }
          else {
-            if (blk == td.getBlock()) {
-               IfacePoint prior = td.getEngine().getCurrentPoint();
-               td.setCurrentPoints(s.getAtPoint(),prior);
-             }
+            ShoreLog.logD("TRAIN","Unknown block " + blk + " " +
+                  td.getBlock() + " " + td.getEngine().getEngineName());
           }
        }
     }

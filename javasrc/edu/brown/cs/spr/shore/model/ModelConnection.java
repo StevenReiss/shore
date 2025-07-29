@@ -172,16 +172,18 @@ void normalizeConnection(ModelBase mdl)
     }
    if (from_sensor != null) from_sensor.setConnection(this); 
    if (to_sensor != null) to_sensor.setConnection(this);
-   if (from_signal != null) {
-      for (ModelSensor ss: from_signal.getModelStopSensors()) {
-         ss.setConnection(this);
-       }
-    }
-   if (to_signal != null && to_signal.getModelStopSensors() != null) {
-      for (ModelSensor ss : to_signal.getModelStopSensors()) {
-         ss.setConnection(this);
-       }
-    }
+   
+   // Can't do this since some sensors are both gap separators and signal detectors
+// if (from_signal != null) {
+//    for (ModelSensor ss: from_signal.getModelStopSensors()) {
+//       ss.setConnection(this);
+//     }
+//  }
+// if (to_signal != null && to_signal.getModelStopSensors() != null) {
+//    for (ModelSensor ss : to_signal.getModelStopSensors()) {
+//       ss.setConnection(this);
+//     }
+//  }
    
    from_block.addConnection(this);
    to_block.addConnection(this);

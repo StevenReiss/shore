@@ -49,14 +49,14 @@ int HORN_TIME = 1500;
 /**
  *      Time to start engine
  **/
-int STARTUP_TIME = 2000;
+int STARTUP_TIME = 6000;
 
 
 
 /**
  *      Time to shutdown engine
  **/
-int SHUTDOWN_TIME = 1000;
+int SHUTDOWN_TIME = 4000;
 
 
 }       // end of interface ViewConstants

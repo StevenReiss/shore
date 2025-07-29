@@ -234,7 +234,10 @@ private EngineInfo setupEngine(SocketAddress sa)
       EngineInfo nei = engine_map.putIfAbsent(sa,ei);
       if (nei != null) ei = nei;
       else {
+         ShoreLog.logD("NETWORK","New engine " + ei.getEngineId());
          ei.sendQueryAboutMessage();
+         IfaceEngine eng = findEngine(ei.getEngineId());
+         engine_model.setEngineSocket(eng,sa);
          ei.sendQueryStateMessage();
          ei.sendQueryVersionMessage();
          ei.sendHeartbeatMessage(true);
@@ -253,7 +256,7 @@ private EngineInfo setupEngine(SocketAddress sa)
 /*                                                                              */
 /********************************************************************************/
 
-private byte [] sendReplyMessage(SocketAddress who,byte[] msg,int off,int len)
+private synchronized byte [] sendReplyMessage(SocketAddress who,byte[] msg,int off,int len)
 {
    ReplyHandler rh = new ReplyHandler();
    reply_map.put(who,rh);
@@ -273,7 +276,9 @@ protected void handleMessage(DatagramPacket msg)
    SocketAddress sa = msg.getSocketAddress();
    ReplyHandler rh = reply_map.remove(sa);
    if (rh != null) {
-      rh.handleReply(msg.getData());
+      byte [] rslt = new byte[msg.getLength()];
+      System.arraycopy(msg.getData(),msg.getOffset(),rslt,0,msg.getLength());
+      rh.handleReply(rslt);
     }
    else {
       ShoreLog.logD("NETWORK","Unsolicited message from engine");

@@ -173,6 +173,7 @@ void setEngineAddress(SocketAddress sa)                  { socket_address = sa; 
    bell_on = bell;
    horn_on = false;
    reverse_on = reverse;
+   mute_on = mute;
    if (state == 0) engine_state = EngineState.IDLE;
    engine_speed = speed;
    if (estop) { 

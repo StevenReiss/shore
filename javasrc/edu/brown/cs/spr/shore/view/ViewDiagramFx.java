@@ -43,6 +43,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.opencv.core.Point;
+
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceDiagram;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
@@ -61,6 +63,7 @@ import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
 import javafx.scene.Node;
+import javafx.scene.effect.BlendMode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
@@ -74,6 +77,7 @@ import javafx.scene.shape.LineTo;
 import javafx.scene.shape.MoveTo;
 import javafx.scene.shape.Path;
 import javafx.scene.shape.PathElement;
+import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.scene.shape.StrokeLineCap;
@@ -117,6 +121,9 @@ private static final double SIGNAL_DISTANCE = 20;
 private static final double SIGNAL_LIGHT = 8;           
 private static final double SIGNAL_GAP = 2;
 private static final double SENSOR_RADIUS = 3;
+private static final double ENGINE_WIDTH = 5;
+private static final double ENGINE_LENGTH = 10;
+private static final double ENGINE_POINT = 3;
 
 private static final Color BACKGROUND_COLOR = new Color(0.8,1.0,0.8,0.5);
 private static final Color TRACK_COLOR;
@@ -841,16 +848,28 @@ private void drawEngines()
 }
 
 
-private class EngineDrawData {
+private class EngineDrawData implements IfaceEngine.EngineCallback {
    
    private IfaceEngine for_engine;
+   private Polygon engine_shape;
    
    EngineDrawData(IfaceEngine eng) {
       for_engine = eng;
-//    EngineHandler hdlr = new EngineHandler(for_engine);
-// sh.setOnMouseClicked(hdlr);
-// sh.setOnMousePressed(hdlr);
+      engine_shape = new Polygon(0,0,0,0,0,0,0,0,0,0);
+      engine_shape.setVisible(false);
+      Color c = eng.getEngineColor().darker();
+      engine_shape.setFill(c);
+      engine_shape.setBlendMode(BlendMode.SRC_OVER);
       doSetEngine();
+      for_engine.addEngineCallback(this);
+    }
+   
+   Shape getShape() {
+      return engine_shape;
+    }
+   
+   @Override public void enginePositionChanged(IfaceEngine eng) {
+      setEngine();
     }
    
    void setEngine() {
@@ -862,11 +881,69 @@ private class EngineDrawData {
        }
     }
    
-   Shape getShape() {
-      return null;
+   void doSetEngine() {
+      IfacePoint pt0 = for_engine.getCurrentPoint();
+      ShoreLog.logD("VIEW","Recompute engine at " + pt0);
+      if (pt0 != null) {
+         IfaceBlock blk = pt0.getBlock();
+         if (!for_diagram.getBlocks().contains(blk)) pt0 = null;
+       }
+      if (pt0 == null) {
+         engine_shape.setVisible(false);
+         return;
+       }
+      IfacePoint pt1 = for_engine.getPriorPoint();
+      IfacePoint ptback = null;
+      IfacePoint ptfront = null;
+      
+      if (pt1 == null) {
+         for (IfacePoint npt : pt0.getConnectedTo()) {
+            if (ptback == null) ptback = npt;
+            else if (ptfront == null) ptfront = npt;
+          }
+       }
+      else {
+         Set<IfacePoint> prior = view_factory.getLayoutModel().findPriorPoints(pt0,pt1);
+         for (IfacePoint npt : pt0.getConnectedTo()) {
+            if (prior.contains(npt)) ptback = npt;
+            else ptfront = npt;
+          }
+       }
+      if (ptback == null) ptback = pt0;
+      if (ptfront == null) ptfront = pt0;
+      Point2D back = new Point2D(ptback.getX(),ptback.getY());
+      Point2D front = new Point2D(ptfront.getX(),ptfront.getY());
+      double bfdist = back.distance(front);
+      double dxl = ENGINE_LENGTH * (front.getX() - back.getX())/bfdist / 2;
+      double dyw = ENGINE_WIDTH * (front.getX() - back.getX())/bfdist / 2;
+      double dyl = ENGINE_LENGTH * (front.getY() - back.getY())/bfdist / 2;
+      double dxw = ENGINE_WIDTH * (front.getY() - back.getY())/bfdist / 2;
+      ShoreLog.logD("VIEW","Engine coords " + back + " " + front + "\n\t" +
+         dxl + " " + dyw + " " + dyl + " " + dxw + " " + "\n\t" +
+         pt0.getX() + " " + pt0.getY());
+      setPoint(0,-dxl-dxw,-dyl+dyw);
+      setPoint(1,dxl+dxw,dyl+dyw);
+      if (pt1 != null) {
+         double dzl = dxl * (ENGINE_LENGTH+ENGINE_POINT)/ENGINE_LENGTH;
+         double dzw = dyl * (ENGINE_LENGTH+ENGINE_POINT)/ENGINE_LENGTH;
+         setPoint(2,dzl,dzw);
+       }
+      else {
+         setPoint(2,dxl,dyl);
+       }
+      setPoint(3,dxl-dxw,dyl-dyw);
+      setPoint(4,-dxl+dxw,-dyl-dyw);
+      ShoreLog.logD("VIEW","Draw engine " + engine_shape.getPoints());
+      engine_shape.setVisible(true);
     }
    
-   void doSetEngine() {
+      private void setPoint(int n,double dx,double dy) {
+      
+      IfacePoint pt0 = for_engine.getCurrentPoint();  
+      List<Double> points = engine_shape.getPoints();
+      Point2D cpt = getCoords(pt0.getX() + dx,pt0.getY() + dy);
+      points.set(n*2,cpt.getX());
+      points.set(n*2+1,cpt.getY());
     }
    
 }       // end of inner class SensorDrawData
@@ -1032,6 +1109,12 @@ private Point2D getCoords(IfacePoint pt)
 {
    double x = pt.getX();
    double y = pt.getY();
+   return getCoords(x,y);
+}
+
+
+private Point2D getCoords(double x,double y)
+{
    x = x - display_bounds.getMinX();
    if (invert_y) {
       double y0 = display_bounds.getMinY();
@@ -1058,9 +1141,11 @@ private Point2D getCoords(IfacePoint pt)
 @Override public boolean isResizable()               { return true; }
 
 @Override public void resize(double w,double h) {
+   if (w != getWidth() || h != getHeight()) {
       super.setWidth(w);
       super.setHeight(h);
       drawDiagram();
+    }
 }
    
 

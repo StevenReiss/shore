@@ -46,6 +46,11 @@ import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfaceEngine.EngineState;
 
 import eu.hansolo.medusa.Gauge;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -65,6 +70,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority; 
 import javafx.scene.paint.Color;
+import javafx.util.Duration;
 
 class ViewEngineerFx extends GridPane implements ViewConstants 
 {
@@ -111,9 +117,6 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
    s = s.substring(0,6);
    s = "-fx-background-color: #" + s;
    setStyle(s);
-// Background bkg = new Background(new BackgroundFill(bkgcol,null,null));
-// setBackground(bkg);
-// getStyleClass().add("gridpane-background");
    
    URL r = getClass().getClassLoader().getResource("engineer.css");
    getStylesheets().add(r.toExternalForm());
@@ -139,7 +142,6 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
    
    tach_gauge = getTachometer();
    add(tach_gauge,4,1,1,1);
-// setVgrow(tach,Priority.ALWAYS);
    setFillHeight(tach_gauge,true);
    setHalignment(tach_gauge,HPos.CENTER);
    Label spacer1 = new Label();
@@ -181,6 +183,7 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
    
    CallbackHandler hdlr = new CallbackHandler();
    for_engine.addEngineCallback(hdlr);
+   doEngineChanged();
 }
 
 
@@ -206,32 +209,29 @@ private Slider getThrottle()
    s.setBlockIncrement(10);
    s.setOrientation(Orientation.VERTICAL);
    s.setValueChanging(true);
-// String style = "-fx-fill: linear-gradient(to right,#ff0000 0,#00ff00 100)";
-// s.setStyle(style);
-// s.getStyleClass().add("throttle");
    
    return s;
 }
 
 
-private class Throttle extends Slider {
-   
-   Throttle() {
-      setMax(100);
-      setValue(0);
-      setShowTickMarks(true);
-      setShowTickLabels(false);
-      setMajorTickUnit(50);
-      setMinorTickCount(5);
-      setBlockIncrement(10);
-      setOrientation(Orientation.VERTICAL);
-      setValueChanging(true);
-      String style = "-fx-fill: linear-gradient(to right,#ff0000 0,#00ff00 100)";
-      setStyle(style);
-      getStyleClass().add("throttle");
-    }
-   
-}       // end of inner class Accelerator
+// private class Throttle extends Slider {
+// 
+// Throttle() {
+//    setMax(100);
+//    setValue(0);
+//    setShowTickMarks(true);
+//    setShowTickLabels(false);
+//    setMajorTickUnit(50);
+//    setMinorTickCount(5);
+//    setBlockIncrement(10);
+//    setOrientation(Orientation.VERTICAL);
+//    setValueChanging(true);
+//    String style = "-fx-fill: linear-gradient(to right,#ff0000 0,#00ff00 100)";
+//    setStyle(style);
+//    getStyleClass().add("throttle");
+//  }
+// 
+// }       // end of inner class Accelerator
 
 
 
@@ -329,13 +329,15 @@ private final class PowerButton extends Button implements EventHandler<ActionEve
    private ImageView startup_view;
    private ImageView ready_view;
    private ImageView shutdown_view;
+   private Timeline blink_timer;
    
    PowerButton() {
       idle_view = loadImage("off");
       startup_view = loadImage("up");
       ready_view = loadImage("on");
       shutdown_view = loadImage("down");
-      noteState(for_engine.getEngineState());
+      updateButtonImage(for_engine.getEngineState());
+      setOnAction(this);
     }
    
    private ImageView loadImage(String sfx) {
@@ -350,25 +352,40 @@ private final class PowerButton extends Button implements EventHandler<ActionEve
       return imgv;
     }
    
-   void noteState(EngineState st) {
+   void updateButtonImage(EngineState st) {
       ImageView iv = null;
+      boolean blink = false;
       switch (st) {
          case IDLE :
             iv = idle_view;
             break;
          case STARTUP :
             iv = startup_view;
+            blink = true;
             break;
          case READY :
             iv = ready_view;
             break;
          case SHUTDOWN :
             iv = shutdown_view;
+            blink = true;
             break;
        }
       setGraphic(iv);
+      if (blink && blink_timer == null) {
+          blink_timer = new Timeline(
+               new KeyFrame(Duration.seconds(0.6),
+                     new KeyValue(graphicProperty(),iv)),
+               new KeyFrame(Duration.seconds(0.4),
+                     new KeyValue(graphicProperty(),idle_view)));
+          blink_timer.setCycleCount(Animation.INDEFINITE);
+          blink_timer.play();
+       }
+      else if (!blink && blink_timer != null) {
+         blink_timer.stop();
+         blink_timer = null;
+       }
     }
-
    
    @Override public void handle(ActionEvent evt) {
       EngineState next = null;
@@ -447,7 +464,8 @@ private IconToggle getStopButton()
 
 
 
-private class IconToggle extends ToggleButton implements EventHandler<ActionEvent> {
+private class IconToggle extends ToggleButton implements EventHandler<ActionEvent>,
+        ChangeListener<Boolean> {
    
    private ImageView off_view;
    private ImageView on_view;
@@ -471,16 +489,25 @@ private class IconToggle extends ToggleButton implements EventHandler<ActionEven
       on_view.setSmooth(true);
       on_view.setCache(true);
       setOnAction(this);
-      handle(null);
+      updateGraphic();
       getStyleClass().add("clearButton");
+      selectedProperty().addListener(this);
     }
    
    @Override public void handle(ActionEvent evt) {
+      updateGraphic();
+    }
+   
+   @Override public void changed(ObservableValue<? extends Boolean> obs,Boolean oldv,Boolean newv) {
+      updateGraphic();
+    }
+   
+   void updateGraphic() {
       if (isSelected()) {
-         setGraphic(off_view);
+         setGraphic(on_view);
        }
       else {
-         setGraphic(on_view);
+         setGraphic(off_view);
        }
     }
    
@@ -677,27 +704,39 @@ private class FwdRevSwitch extends HBox implements ChangeListener<Boolean> {
 /*                                                                              */
 /********************************************************************************/
 
+private void doEngineChanged()
+{
+   front_light.setSelected(for_engine.isFrontLightOn());
+   rear_light.setSelected(for_engine.isRearLightOn());
+   train_bell.setSelected(for_engine.isBellOn());
+   reverse_switch.setSwtich(for_engine.isReverse());
+   mute_button.setSelected(for_engine.isMuted());
+   speed_gauge.setValue(for_engine.getSpeed());
+   tach_gauge.setValue(for_engine.getRpm());
+   mute_button.setSelected(for_engine.isMuted());
+   power_button.updateButtonImage(for_engine.getEngineState());
+   emergency_stop.setSelected(for_engine.isEmergencyStopped());
+   
+   if (for_engine.getEngineState() != EngineState.READY) {
+      throttle_slider.setValue(0);
+      throttle_slider.setDisable(true);
+    }
+   else {
+      throttle_slider.setDisable(false);
+//    throttle_slider.setValue(for_engine.getThrottle());
+    }
+}
+
+
 private final class CallbackHandler implements IfaceEngine.EngineCallback {
 
    @Override public void engineChanged(IfaceEngine e) {
       if (e != for_engine) return;
-      front_light.setSelected(e.isFrontLightOn());
-      rear_light.setSelected(e.isRearLightOn());
-      train_bell.setSelected(e.isBellOn());
-      reverse_switch.setSwtich(e.isReverse());
-      mute_button.setSelected(e.isMuted());
-      speed_gauge.setValue(e.getSpeed());
-      tach_gauge.setValue(e.getRpm());
-      power_button.noteState(e.getEngineState());
-      emergency_stop.setSelected(e.isEmergencyStopped());
-      
-      if (e.getEngineState() != EngineState.READY) {
-         throttle_slider.setValue(0);
-         throttle_slider.setDisable(true);
+      if (Platform.isFxApplicationThread()) {
+         doEngineChanged();
        }
       else {
-         throttle_slider.setDisable(false);
-         throttle_slider.setValue(e.getThrottle());
+         Platform.runLater(() -> doEngineChanged());
        }
     }
    
