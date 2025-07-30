@@ -43,8 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.opencv.core.Point;
-
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceDiagram;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
@@ -922,7 +920,7 @@ private class EngineDrawData implements IfaceEngine.EngineCallback {
          dxl + " " + dyw + " " + dyl + " " + dxw + " " + "\n\t" +
          pt0.getX() + " " + pt0.getY());
       setPoint(0,-dxl-dxw,-dyl+dyw);
-      setPoint(1,dxl+dxw,dyl+dyw);
+      setPoint(1,dxl-dxw,dyl+dyw);
       if (pt1 != null) {
          double dzl = dxl * (ENGINE_LENGTH+ENGINE_POINT)/ENGINE_LENGTH;
          double dzw = dyl * (ENGINE_LENGTH+ENGINE_POINT)/ENGINE_LENGTH;
@@ -931,7 +929,7 @@ private class EngineDrawData implements IfaceEngine.EngineCallback {
       else {
          setPoint(2,dxl,dyl);
        }
-      setPoint(3,dxl-dxw,dyl-dyw);
+      setPoint(3,dxl+dxw,dyl-dyw);
       setPoint(4,-dxl+dxw,-dyl-dyw);
       ShoreLog.logD("VIEW","Draw engine " + engine_shape.getPoints());
       engine_shape.setVisible(true);

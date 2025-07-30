@@ -81,7 +81,6 @@ class ViewEngineerFx extends GridPane implements ViewConstants
 /*                                                                              */
 /********************************************************************************/
 
-private ViewFactory     view_factory;
 private IfaceEngine     for_engine;
 private IconToggle      front_light;
 private IconToggle      rear_light;
@@ -104,7 +103,6 @@ private IconToggle      emergency_stop;
 
 ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
 {
-   view_factory = fac;
    for_engine = engine;
    
    Color bkgcol = Color.GRAY;
