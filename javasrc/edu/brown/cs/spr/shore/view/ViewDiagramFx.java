@@ -80,6 +80,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.shape.StrokeLineJoin;
+import javafx.scene.shape.StrokeType;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
@@ -858,6 +859,9 @@ private class EngineDrawData implements IfaceEngine.EngineCallback {
       Color c = eng.getEngineColor().darker();
       engine_shape.setFill(c);
       engine_shape.setBlendMode(BlendMode.SRC_OVER);
+      engine_shape.setStroke(Color.BLACK);
+      engine_shape.setStrokeWidth(1);
+      engine_shape.setStrokeType(StrokeType.CENTERED);
       doSetEngine();
       for_engine.addEngineCallback(this);
     }
