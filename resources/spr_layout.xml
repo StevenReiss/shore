@@ -104,7 +104,7 @@
      <POINT ID='C12' X='116' Y='68' TYPE='GAP' />
      <POINT ID='C13' X='110' Y='68' TYPE='SENSOR' REF='120A' />
      <POINT ID='C14' X='100' Y='68' TYPE='BLOCK' REF='14' />
-     <POINT ID='C15' X='83' Y='68' TYPE='LABEL' REF='To Yard' />
+     <POINT ID='C15' X='83' Y='68' TYPE='BLOCK' REF='To Yard' />
      <POINT ID='C16' X='70' Y='68' TYPE='DIAGRAM' />
      <!-- Connect the dots -->
      <CONNECT POINTS='M1 M2 M3 M4 M5 M6 M6a M7 M8 M9 M9a M10 M11 M12 M13 M14 M15 M15a M16' />
@@ -338,6 +338,6 @@
      <SIGNAL ID="UNUSED_3" TOWER='4' INDEX='5' TYPE='RG' UNUSED='T' />
    </DIAGRAM>
    <ENGINE NAME='Union Pacific' ID='d77932' />
-   <ENGINE NAME='Engine 2' />
+   <ENGINE NAME='Santa Fe' ID='d77946' REARLIGHT='false' />
    <ENGINE NAME='Engine 3' />
 </LAYOUT>

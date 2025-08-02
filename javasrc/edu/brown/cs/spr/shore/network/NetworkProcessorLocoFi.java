@@ -38,6 +38,8 @@ package edu.brown.cs.spr.shore.network;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -242,6 +244,8 @@ private EngineInfo setupEngine(SocketAddress sa)
          ei.sendQueryVersionMessage();
          ei.sendHeartbeatMessage(true);
          ei.sendQuerySettingsMessage();
+         ei.sendSpeedReportMessage();
+         ei.sendRpmReportMessage();
        }
     }
    
@@ -278,7 +282,9 @@ protected void handleMessage(DatagramPacket msg)
    if (rh != null) {
       byte [] rslt = new byte[msg.getLength()];
       System.arraycopy(msg.getData(),msg.getOffset(),rslt,0,msg.getLength());
-      rh.handleReply(rslt);
+      if (!rh.handleReply(rslt)) {
+         ShoreLog.logD("NETWORK","Late message from engine");
+       }
     }
    else {
       ShoreLog.logD("NETWORK","Unsolicited message from engine");
@@ -312,6 +318,10 @@ private final class LocoFiStatusUpdater extends Thread {
             if (ei.sendQueryStateMessage()) {
                delay();
              }
+            else {
+               // check if engine is dead
+             }
+   //       ei.sendSpeedReportMessage();
           }
          finalDelay();
        }
@@ -365,6 +375,10 @@ private class EngineInfo {
       if (eng == null) {
          return false;
        }
+      if (data.length < 13) {
+         ShoreLog.logD("NETWORK","BAD STATUS MESSAGE");
+         return true;
+       }
       
       boolean front = data[0] != 0;
       boolean back = data[1] != 0;
@@ -372,15 +386,17 @@ private class EngineInfo {
       // eng.setBell(bell);
       boolean rev = data[3] != 0;
       int sts = data[4];
-      int speedstep = data[5] & 0xff + data[6]*16;
-      int rpmstep = data[6] & 0xff + data[7]*16;
-      int speed = data[10] & 0xff + data[9]*16;
+      int speedstep = getShort(data,5);
+      int rpmstep = getShort(data,7);
+      int speed = getShort(data,9);
       boolean estop = data[11] != 0;
       boolean mute = data[12] == 0;
+      ShoreLog.logD("NETWORK","Engine speed " + speedstep + " " + rpmstep + " " + speed);
       eng.setupEngine(front,back,bell,rev,sts,
             speedstep,rpmstep,speed,estop,mute);  
       return true;
     }
+   
    
    boolean sendQueryAboutMessage() {
       byte [] msg = LOCOFI_QUERY_ABOUT_LOCO_CMD;
@@ -404,7 +420,66 @@ private class EngineInfo {
    boolean sendQuerySettingsMessage() {
       byte [] msg = LOCOFI_SETTINGS_READ_CMD;
       byte [] data = sendReplyMessage(net_address,msg,0,msg.length);
-      return data != null;
+      if (data == null) {
+         return false;
+       }
+      IfaceEngine eng = findEngine(engine_id);
+      if (eng == null) {
+         return false;
+       }
+      ShoreLog.logD("NETWORK: Engine " + engine_id + " SETTINGS:");
+      ShoreLog.logD("NETWORK","\tAuto Reverse Lights: " + (data[0] != 0));
+      ShoreLog.logD("NETWORK","\tReverse Lights: " + (data[1] != 0));
+      ShoreLog.logD("NETWORK","\tReverse Direction: " + (data[2] != 0));
+      int ntn = getShort(data,3);
+      ntn = (1 << ntn) * 8;
+      ShoreLog.logD("NETWORK","\tNum Throttle Notches: " + ntn);
+      int startstep = getShort(data,5);
+      ShoreLog.logD("NETWORK","\tStart Speed Step: " + startstep);
+      ShoreLog.logD("NETWORK","\tStart Delay: " + getShort(data,7));
+      int maxstep = getShort(data,9);
+      ShoreLog.logD("NETWORK","\tMax Speed Step: " + maxstep);
+      double maxscale = getFloat(data,11);
+      ShoreLog.logD("NETWORK","\tMax Scale Speed: " + maxscale);
+      int maxdisp = getShort(data,15);
+      ShoreLog.logD("NETWORK","\tMax Speed Display: " + maxdisp);
+      boolean kmph = (data[17] != 0);
+      ShoreLog.logD("NETWORK","\tSpeed Units (KMPH): " + kmph);
+      int mtm = data[18];
+      mtm = (1 << mtm) * 50;
+      ShoreLog.logD("NETWORK","\tMomentum: " + mtm);
+      int coast = data[19];
+      coast = (1 << coast) * 100;
+      ShoreLog.logD("NETWORK","\tCoast: " + coast);
+      ShoreLog.logD("NETWORK","\tAuto Stop on Lost Heartbeat: " + (data[20] != 0));
+      ShoreLog.logD("NETWORK","\tLock for Direct Connection: " + (data[21] != 0));
+      ShoreLog.logD("NETWORK","\tScale: " + getFloat(data,22));
+      ShoreLog.logD("NETWORK","\tSpeed Table: " + data[26]);
+      ShoreLog.logD("NETWORK","\tScale Wheel Diameter: " + getFloat(data,27));
+      ShoreLog.logD("NETWORK","\tVolume: " + data[31]);
+      ShoreLog.logD("NETWORK","\tHigh Frequency PWM: " + (data[32] != 0));
+      if (data.length > 33) {
+         ShoreLog.logD("NETWORK","\tNumber Cylinders: " + data[33]);
+         ShoreLog.logD("NETWORK","\tGear Ratio: " + getFloat(data,34));
+       }
+      
+      eng.setSpeedParameters(startstep,maxstep,ntn,maxdisp,kmph);
+      
+      return true;
+    }
+   
+   boolean sendSpeedReportMessage() {
+      byte [] msg = LOCOFI_SPEED_REPORT_CMD;
+      byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
+      
+      return ack != null;
+    }
+   
+   boolean sendRpmReportMessage() {
+      byte [] msg = LOCOFI_RPM_REPORT_CMD;
+      byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
+      
+      return ack != null;
     }
    
    boolean sendHeartbeatMessage(boolean on) {
@@ -469,6 +544,19 @@ private class EngineInfo {
       return ack != null;
     }
    
+   private int getShort(byte [] data,int offset) {
+      int d1 = data[offset] & 0xff;
+      int d2 = (data[offset+1] & 0xff) << 8;
+      return d1+d2;
+    }
+   
+   private double getFloat(byte [] data,int offset) {
+      ByteBuffer buf = ByteBuffer.wrap(data);
+      buf.order(ByteOrder.LITTLE_ENDIAN);
+      double v = buf.getFloat(offset);
+      return v;
+    }
+   
 }       // end of inner class EngineInfo
 
 
@@ -482,14 +570,19 @@ private class EngineInfo {
 private final class ReplyHandler {
    
    private byte [] reply_data;
+   private boolean is_done;
    
    ReplyHandler() {
       reply_data = null;
+      is_done = false;
     }
    
-   synchronized void handleReply(byte [] data) {
+   synchronized boolean handleReply(byte [] data) {
+      if (is_done) return false;
       reply_data = data;
+      is_done = true;
       notifyAll();
+      return true;
     }
    
    byte [] getReply() {
@@ -500,7 +593,11 @@ private final class ReplyHandler {
                wait(REPLY_DELAY);
              }
             catch (InterruptedException e) { }
+            is_done = true;
           }
+       }
+      if (reply_data == null) {
+         ShoreLog.logD("NETWORK","No reply recieved");
        }
       return reply_data;
     }

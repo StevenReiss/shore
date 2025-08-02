@@ -204,6 +204,9 @@ private class ReaderThread extends Thread {
             ShoreLog.logE("Problem reading UDP",e);
             // possibly recreate our_socket or set to null
           }
+         catch (Throwable t) {
+            ShoreLog.logE("Problem processing message",t);
+          }
          //    ShoreLog.logD("NETWORK","FINISH PACKET");
        }
     }

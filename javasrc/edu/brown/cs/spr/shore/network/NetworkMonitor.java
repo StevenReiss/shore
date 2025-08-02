@@ -367,8 +367,13 @@ public class ServiceFinder implements ServiceListener, ServiceTypeListener {
 
    @Override public void serviceResolved(ServiceEvent event) {
       ServiceInfo si = event.getInfo();
-      tower_processor.handleServiceResolved(si);
-      locofi_processor.handleServiceResolved(si);
+      try {
+         tower_processor.handleServiceResolved(si);
+         locofi_processor.handleServiceResolved(si);
+       }
+      catch (Throwable t) {
+         ShoreLog.logE("NETWORK","Problem resolving service",t);
+       }
       ShoreLog.logI("NETWORK","Service resolved: " + finder_id + "> " + event.getInfo() + " " +
             si.getName());
     }

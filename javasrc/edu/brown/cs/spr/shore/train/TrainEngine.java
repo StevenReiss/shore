@@ -63,6 +63,7 @@ private boolean                 bell_on;
 private boolean                 horn_on;
 private boolean                 reverse_on;
 private boolean                 mute_on;
+private boolean                 has_rear_light;
 private double                  engine_speed;
 private double                  engine_rpm;
 private double                  engine_throttle; 
@@ -71,6 +72,12 @@ private boolean                 rear_light;
 private EngineState             engine_state;
 private Color                   engine_color;
 private String                  engine_id;
+
+private int                     start_speed;
+private int                     max_speed;
+private double                  max_display;
+private boolean                 use_kmph;
+private int                     num_steps;
 
 private List<IfaceBlock>        train_blocks;
 private IfacePoint              current_point;
@@ -104,7 +111,8 @@ TrainEngine(TrainFactory fac,String name,String id,Color color)
    engine_throttle = 0;
    fromt_light = false;
    rear_light = false;
-   engine_state = EngineState.IDLE;
+   has_rear_light = true;
+   engine_state = EngineState.OFF;
    engine_color = color;
    if (id != null) {
       engine_id = id.toUpperCase();
@@ -112,7 +120,12 @@ TrainEngine(TrainFactory fac,String name,String id,Color color)
    else engine_id = null;
    current_point = null;
    prior_point = null;
-   
+   start_speed = 0;
+   max_speed = 1023;
+   max_display = 200;
+   num_steps = 8;
+   use_kmph = false;
+    
    engine_listeners = new SwingEventListenerList<>(EngineCallback.class);
 }
 
@@ -140,11 +153,7 @@ void setEngineAddress(SocketAddress sa)                  { socket_address = sa; 
 
 @Override public boolean isReverse()                    { return reverse_on; } 
 
-@Override public double getSpeed()                      { return engine_speed; }
-
 @Override public double getRpm()                        { return engine_rpm; }
-
-@Override public double getThrottle()                   { return engine_throttle; }
 
 @Override public boolean isFrontLightOn()               { return fromt_light; }
 
@@ -156,83 +165,48 @@ void setEngineAddress(SocketAddress sa)                  { socket_address = sa; 
 
 @Override public Color getEngineColor()                 { return engine_color; }
 
+void setNoRearLight()                                   { has_rear_light = false; }
 
-
-/********************************************************************************/
-/*                                                                              */
-/*      Setup methods                                                           */
-/*                                                                              */
-/********************************************************************************/
-
-@Override public void setupEngine(boolean fwdlight,boolean revlight,
-      boolean bell,boolean reverse,int state,
-      int speedstep,int rpmstep,int speed,boolean estop,boolean mute)
-{
-   fromt_light = fwdlight;
-   rear_light = revlight;
-   bell_on = bell;
-   horn_on = false;
-   reverse_on = reverse;
-   mute_on = mute;
-   if (state == 0) engine_state = EngineState.IDLE;
-   engine_speed = speed;
-   if (estop) { 
-      is_emergency = true;
-      engine_state = EngineState.IDLE;
-      engine_throttle = 0;
-    }
-   
-   fireEngineChanged();
-}
-  
-
-/********************************************************************************/
-/*                                                                              */
-/*      Block tracking methods                                                  */
-/*                                                                              */
-/********************************************************************************/
-
-@Override public IfaceBlock getEngineBlock()
-{
-   if (current_point == null) return null;
-   return current_point.getBlock();
-}
-
-
-@Override public IfacePoint getCurrentPoint() 
-{
-   return current_point; 
-}
+@Override public boolean hasRearLight()                 { return has_rear_light; }
  
 
-@Override public IfacePoint getPriorPoint()
+
+/********************************************************************************/
+/*                                                                              */
+/*      Throttle/speed control access methods                                   */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public double getThrottle()                   { return engine_throttle; }
+
+
+@Override public void setThrottle(double v) 
 {
-   return prior_point;
+   boolean chng = engine_throttle != v;
+   
+   engine_throttle = v;
+   train_factory.getNetworkModel().sendThrottle(this);
+   
+   if (chng) fireEngineChanged();
 }
 
 
-void enterBlock(IfaceBlock blk) 
+@Override public double getSpeed()                      { return engine_speed; }
+@Override public double getThrottleMax()                { return max_speed; }
+@Override public double getSpeedMax()                   { return max_display; }
+@Override public boolean isSpeedKMPH()                  { return use_kmph; }      
+@Override public int getThrottleSteps()                 { return num_steps; } 
+@Override public double getStartSpeed()                 { return start_speed; }
+
+
+@Override public void setSpeedParameters(int start,int max,int nstep,double maxdisplay,boolean kmph) 
 {
-   if (blk == null) return;
-   if (getEngineBlock() == blk) return;
-   train_blocks.add(blk);
-}
-
-
-public void exitBlock(IfaceBlock blk)
-{
-   train_blocks.remove(blk);
-}
-
-void setCurrentPoints(IfacePoint cur,IfacePoint prior)
-{
-   current_point = cur;
-   prior_point = prior;
-   enterBlock(cur.getBlock());
-   fireEnginePositionChanged();
-}
-
-
+   start_speed = start;
+   max_speed = max;
+   num_steps = nstep;
+   max_display = maxdisplay;
+   use_kmph = kmph;
+} 
 
 
 
@@ -249,17 +223,6 @@ void setCurrentPoints(IfacePoint cur,IfacePoint prior)
    is_emergency = stop;
    
    train_factory.getNetworkModel().sendEmergencyStop(this);
-   
-   if (chng) fireEngineChanged();
-}
-
-
-@Override public void setThrottle(double v) 
-{
-   boolean chng = engine_throttle != v;
-   
-   engine_throttle = v;
-   train_factory.getNetworkModel().sendThrottle(this);
    
    if (chng) fireEngineChanged();
 }
@@ -344,6 +307,100 @@ void setCurrentPoints(IfacePoint cur,IfacePoint prior)
    
    if (chng) fireEngineChanged();
 }
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Setup methods                                                           */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public void setupEngine(boolean fwdlight,boolean revlight,
+      boolean bell,boolean reverse,int state,
+      int speedstep,int rpmstep,int speed,boolean estop,boolean mute)
+{
+   fromt_light = fwdlight;
+   rear_light = revlight;
+   bell_on = bell;
+   horn_on = false;
+   reverse_on = reverse;
+   mute_on = mute;
+   if (state == 0) engine_state = EngineState.OFF;
+   // convert this if necessary  
+   engine_speed = speed;
+   if (estop) { 
+      is_emergency = true;
+      engine_state = EngineState.OFF;
+      engine_throttle = 0;
+    }
+   
+   switch (engine_state) {
+      case OFF :
+         engine_rpm = 0; 
+         break;
+      case STARTUP :
+      case SHUTDOWN :
+         engine_rpm = MIN_RPM;
+         break;
+      case RUNNING :
+          double v0 = (rpmstep - start_speed)/(max_speed - start_speed);
+          v0 = v0 * (MAX_RPM - MIN_RPM) + MIN_RPM;
+          engine_rpm = v0;
+          break;
+    } 
+   
+   fireEngineChanged();
+}
+  
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Block tracking methods                                                  */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public IfaceBlock getEngineBlock()
+{
+   if (current_point == null) return null;
+   return current_point.getBlock();
+}
+
+
+@Override public IfacePoint getCurrentPoint() 
+{
+   return current_point; 
+}
+ 
+
+@Override public IfacePoint getPriorPoint()
+{
+   return prior_point;
+}
+
+
+void enterBlock(IfaceBlock blk) 
+{
+   if (blk == null) return;
+   if (getEngineBlock() == blk) return;
+   train_blocks.add(blk);
+}
+
+
+public void exitBlock(IfaceBlock blk)
+{
+   train_blocks.remove(blk);
+}
+
+void setCurrentPoints(IfacePoint cur,IfacePoint prior)
+{
+   current_point = cur;
+   prior_point = prior;
+   enterBlock(cur.getBlock());
+   fireEnginePositionChanged();
+}
+
+
 
 
 /********************************************************************************/

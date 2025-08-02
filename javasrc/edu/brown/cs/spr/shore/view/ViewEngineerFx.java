@@ -44,7 +44,7 @@ import javax.swing.Timer;
 
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfaceEngine.EngineState;
-
+import edu.brown.cs.spr.shore.shore.ShoreLog;
 import eu.hansolo.medusa.Gauge;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -92,6 +92,7 @@ private Gauge           tach_gauge;
 private Slider          throttle_slider;
 private PowerButton     power_button;
 private IconToggle      emergency_stop;
+private boolean         first_setup;
 
 
 
@@ -104,6 +105,7 @@ private IconToggle      emergency_stop;
 ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
 {
    for_engine = engine;
+   first_setup = false;
    
    Color bkgcol = Color.GRAY;
    if (for_engine != null && for_engine.getEngineId() != null) {
@@ -155,6 +157,9 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
    add(front_light,0,4,1,1);  
    rear_light = getRearLightButton();
    add(rear_light,1,4,1,1);
+   if (!for_engine.hasRearLight()) {
+      rear_light.setDisable(true);
+    }
    
    train_bell = getBellButton();
    add(train_bell,4,4,1,1);
@@ -196,9 +201,11 @@ private Slider getThrottle()
 {
 // return new Throttle();
    
+   double max = for_engine.getThrottleMax() + 1;
+   
    Slider s = new Slider();
    s.setMin(0);
-   s.setMax(100);
+   s.setMax(max);
    s.setValue(0);
    s.setShowTickMarks(true);
    s.setShowTickLabels(false);
@@ -209,6 +216,17 @@ private Slider getThrottle()
    s.setValueChanging(true);
    
    return s;
+}
+
+
+void setupThrottle()
+{
+   double max = for_engine.getThrottleMax();
+   throttle_slider.setMax(max);
+   int nstep = for_engine.getThrottleSteps();
+   double delta = (max+1) / nstep;
+   throttle_slider.setMajorTickUnit(delta);
+   throttle_slider.setBlockIncrement(delta);
 }
 
 
@@ -243,7 +261,31 @@ private Gauge getSpeedometer()
 {
    Gauge g = new Gauge();
    g.setSkinType(Gauge.SkinType.MODERN);
+   g.setTickLabelDecimals(0); 
+   speed_gauge = g;
+   setupSpeedometer();
+   
    return g;
+}
+
+
+private boolean setupSpeedometer()
+{
+   ShoreLog.logD("VIEW","SETUP SPEEDOMETER " + for_engine.getSpeedMax());
+   speed_gauge.setSubTitle(for_engine.isSpeedKMPH() ? "KmPH" : "MPH");
+   double max = for_engine.getSpeedMax();
+   if (max == 0) return false;
+   
+   int incr = (max > 100) ? 20 : 10;
+   int xincr = (max > 100) ? 5 : 1;
+   
+   speed_gauge.setMaxValue(max);
+   speed_gauge.setMajorTickSpace(incr);
+   speed_gauge.setMinorTickSpace(xincr);
+   speed_gauge.setMinorTickMarksVisible(true);
+   speed_gauge.setTickLabelDecimals(0); 
+   
+   return true;
 }
 
 
@@ -259,7 +301,11 @@ private Gauge getTachometer()
    // can't subclass because of resource loading
    g.setSkinType(Gauge.SkinType.MODERN);
    g.setPrefSize(100,100);
-   
+   g.setSubTitle("RPM x 100");
+   g.setMaxValue(10);
+   g.setMajorTickSpace(1);
+   g.setTickLabelDecimals(0);
+  
    return g;
 }
 
@@ -354,14 +400,14 @@ private final class PowerButton extends Button implements EventHandler<ActionEve
       ImageView iv = null;
       boolean blink = false;
       switch (st) {
-         case IDLE :
+         case OFF :
             iv = idle_view;
             break;
          case STARTUP :
             iv = startup_view;
             blink = true;
             break;
-         case READY :
+         case RUNNING :
             iv = ready_view;
             break;
          case SHUTDOWN :
@@ -389,11 +435,11 @@ private final class PowerButton extends Button implements EventHandler<ActionEve
       EngineState next = null;
       int time = 0;
       switch (for_engine.getEngineState()) {
-         case IDLE :
+         case OFF :
             next = EngineState.STARTUP;
             time = STARTUP_TIME;
             break;
-         case READY :
+         case RUNNING :
             next = EngineState.SHUTDOWN;
             time = SHUTDOWN_TIME;
             break;
@@ -410,10 +456,10 @@ private final class PowerButton extends Button implements EventHandler<ActionEve
       EngineState next = null;
       switch (for_engine.getEngineState()) {
          case STARTUP :
-            next = EngineState.READY;
+            next = EngineState.RUNNING;
             break;
          case SHUTDOWN :
-            next = EngineState.IDLE;
+            next = EngineState.OFF;
             break;
          default :
             return;
@@ -704,6 +750,13 @@ private class FwdRevSwitch extends HBox implements ChangeListener<Boolean> {
 
 private void doEngineChanged()
 {
+   if (!first_setup) {
+      if (setupSpeedometer()) {
+         setupThrottle();
+         first_setup = true;
+       }
+    }
+   
    front_light.setSelected(for_engine.isFrontLightOn());
    rear_light.setSelected(for_engine.isRearLightOn());
    train_bell.setSelected(for_engine.isBellOn());
@@ -715,7 +768,7 @@ private void doEngineChanged()
    power_button.updateButtonImage(for_engine.getEngineState());
    emergency_stop.setSelected(for_engine.isEmergencyStopped());
    
-   if (for_engine.getEngineState() != EngineState.READY) {
+   if (for_engine.getEngineState() != EngineState.RUNNING) {
       throttle_slider.setValue(0);
       throttle_slider.setDisable(true);
     }

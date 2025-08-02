@@ -183,7 +183,10 @@ private void loadTrains()
    for (Element telt : IvyXml.children(xml,"ENGINE")) {
       String name = IvyXml.getAttrString(telt,"NAME");
       String id = IvyXml.getAttrString(telt,"ID");
-      createTrain(name,id);
+      TrainEngine eng = createTrain(name,id);
+      if (!IvyXml.getAttrBool(telt,"REARLIGHT",true)) {
+         eng.setNoRearLight(); 
+       }
     }
 }
 
@@ -234,7 +237,7 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
          if (td == null) {
             ShoreLog.logD("TRAIN","No connection found");
             for (TrainEngine e1 : assigned_trains.values()) {
-               if (e1.getEngineState() == EngineState.READY &&
+               if (e1.getEngineState() == EngineState.RUNNING &&
    //                e1.getSpeed() > 0 &&
                      e1.getEngineBlock() == null) {
                   td = new TrainData(e1);

@@ -53,14 +53,14 @@ int	UDP_PORT = 2390;
 int     ALT_PORT = 8266;
 int	CONTROLER_PORT = 2390;
 
-int	BUFFER_SIZE = 40;
+int	BUFFER_SIZE = 256;
 
 long    STATUS_DELAY = 1000;            // delay between status messages
 int     FINAL_DELAY = 10;               // Multiplier for final delay (of STATUS_DELAY)
 long    HEARTBEAT_TIME = 70000;         // heartbeat check (should be 30000 after updates)
 
-long    REPLY_DELAY = 1000;
-long    LOCOFI_STATUS_DELAY = 250;
+long    REPLY_DELAY = 4000;
+long    LOCOFI_STATUS_DELAY = 100;
 int     LOCOFI_FINAL_DELAY = 1;
 
 

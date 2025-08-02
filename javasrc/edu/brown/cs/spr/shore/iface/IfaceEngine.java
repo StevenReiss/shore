@@ -49,9 +49,9 @@ public interface IfaceEngine
 {
 
 enum EngineState {
-   IDLE,
+   OFF,
    STARTUP,
-   READY,
+   RUNNING,
    SHUTDOWN,
 }
 
@@ -61,11 +61,10 @@ boolean isEmergencyStopped();
 boolean isBellOn();
 boolean isHornOn();
 boolean isReverse();
-double getSpeed();
 double getRpm();
-double getThrottle();
 boolean isFrontLightOn();
 boolean isRearLightOn();
+boolean hasRearLight();
 boolean isMuted();
 
 EngineState getEngineState();
@@ -80,7 +79,6 @@ void setBell(boolean on);
 void setFrontLight(boolean on);
 void setRearLight(boolean on);
 void setMute(boolean on);
-void setThrottle(double v);
 void setReverse(boolean fg);
 void setState(EngineState state);
 void setEmergencyStop(boolean on);
@@ -89,9 +87,21 @@ void setupEngine(boolean fwdlight,boolean revlight,
       boolean bell,boolean reverse,int status,
       int speedstep,int rpmstep,int speed,boolean estop,boolean mute);
 
-
 IfacePoint getCurrentPoint();
 IfacePoint getPriorPoint();
+
+void setSpeedParameters(int start,int max,int nstep,double maxdisplay,boolean kmph);
+double getThrottleMax();
+double getThrottle();
+void setThrottle(double v);
+int getThrottleSteps();
+double getStartSpeed();
+
+double getSpeed();
+boolean isSpeedKMPH();
+double getSpeedMax();
+
+
 
 
 /********************************************************************************/
