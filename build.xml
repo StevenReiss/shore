@@ -39,6 +39,7 @@
      <fileset dir='${IVYLIB}' includes='ivy.jar' />
      <fileset dir='${IVYLIB}' includes='slf4j-api.jar' />
      <fileset dir='${SHORELIB}' includes='jmdns.jar' />
+     <fileset dir='${SHORELIB}' includes='medusa.jar' />
      <fileset dir='${OPENCV}' includes='opencv.jar' />
      <fileset dir='${JAVAFX}' includes='javafx.*.jar' />
   </path>
@@ -61,6 +62,7 @@
 	<zipfileset src='${IVYLIB}/ivy.jar' excludes='META-INF/*' />
 	<zipfileset src='${IVYLIB}/slf4j-api.jar' excludes='META-INF/*' />
 	<zipfileset src='${SHORELIB}/jmdns.jar' includes='**/*.class' />
+	<zipfileset src='${SHORELIB}/medusa.jar' includes='**/*.class' />
 	<zipfileset src='${OPENCV}/opencv.jar' includes='**/*.class' />
 	<zipfileset src='${JAVAFX}/javafx.base.jar' includes='**/*.class' />
 	<zipfileset src='${JAVAFX}/javafx.controls.jar' includes='**/*.class' />
