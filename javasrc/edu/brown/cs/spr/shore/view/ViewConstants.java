@@ -43,7 +43,7 @@ public interface ViewConstants extends IfaceConstants
 /**
  *      Time horn is on
  **/
-int HORN_TIME = 1500;
+int HORN_TIME = 500;
 
 
 /**

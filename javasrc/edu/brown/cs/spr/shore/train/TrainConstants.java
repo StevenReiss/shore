@@ -48,8 +48,8 @@ Color [] ENGINE_COLORS = {
       Color.rgb(0xed,0xfe,0xc6),
 };
 
-double MIN_RPM = 2000;
-double MAX_RPM = 12000;
+double MIN_RPM = 200;
+double MAX_RPM = 1024;
 
 }       // end of interface TrainConstants
 

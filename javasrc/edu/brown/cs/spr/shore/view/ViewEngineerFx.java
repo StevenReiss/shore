@@ -213,7 +213,8 @@ private Slider getThrottle()
    s.setMinorTickCount(5);
    s.setBlockIncrement(10);
    s.setOrientation(Orientation.VERTICAL);
-   s.setValueChanging(true);
+   s.setValueChanging(true); 
+   s.getStyleClass().add("throttle");
    
    return s;
 }
@@ -227,28 +228,18 @@ void setupThrottle()
    double delta = (max+1) / nstep;
    throttle_slider.setMajorTickUnit(delta);
    throttle_slider.setBlockIncrement(delta);
+   throttle_slider.valueProperty().addListener(new ThrottleChange());
 }
 
 
-// private class Throttle extends Slider {
-// 
-// Throttle() {
-//    setMax(100);
-//    setValue(0);
-//    setShowTickMarks(true);
-//    setShowTickLabels(false);
-//    setMajorTickUnit(50);
-//    setMinorTickCount(5);
-//    setBlockIncrement(10);
-//    setOrientation(Orientation.VERTICAL);
-//    setValueChanging(true);
-//    String style = "-fx-fill: linear-gradient(to right,#ff0000 0,#00ff00 100)";
-//    setStyle(style);
-//    getStyleClass().add("throttle");
-//  }
-// 
-// }       // end of inner class Accelerator
-
+private final class ThrottleChange implements ChangeListener<Number> {
+   
+   @Override public void changed(ObservableValue<? extends Number> obs,Number oldv,Number newv) {
+      ShoreLog.logD("VIEW","Set throttle " + newv);
+      for_engine.setThrottle(newv.doubleValue());
+    }
+   
+}
 
 
 /********************************************************************************/
@@ -262,6 +253,7 @@ private Gauge getSpeedometer()
    Gauge g = new Gauge();
    g.setSkinType(Gauge.SkinType.MODERN);
    g.setTickLabelDecimals(0); 
+   g.setTickLabelColor(Color.YELLOW);
    speed_gauge = g;
    setupSpeedometer();
    
@@ -275,6 +267,7 @@ private boolean setupSpeedometer()
    speed_gauge.setSubTitle(for_engine.isSpeedKMPH() ? "KmPH" : "MPH");
    double max = for_engine.getSpeedMax();
    if (max == 0) return false;
+   max *= 240.0/200.0;
    
    int incr = (max > 100) ? 20 : 10;
    int xincr = (max > 100) ? 5 : 1;
@@ -300,11 +293,14 @@ private Gauge getTachometer()
    Gauge g = new Gauge();
    // can't subclass because of resource loading
    g.setSkinType(Gauge.SkinType.MODERN);
-   g.setPrefSize(100,100);
+   g.setPrefSize(150,150);
    g.setSubTitle("RPM x 100");
-   g.setMaxValue(10);
+   g.setMaxValue(12);
    g.setMajorTickSpace(1);
+   g.setMinorTickSpace(0.5);
+   g.setMinorTickMarksVisible(true);
    g.setTickLabelDecimals(0);
+   g.setValue(0);
   
    return g;
 }
@@ -763,10 +759,15 @@ private void doEngineChanged()
    reverse_switch.setSwtich(for_engine.isReverse());
    mute_button.setSelected(for_engine.isMuted());
    speed_gauge.setValue(for_engine.getSpeed());
-   tach_gauge.setValue(for_engine.getRpm());
+   double rpm = for_engine.getRpm()/100;
+   tach_gauge.setValue(rpm);
+   if (rpm > 12) {
+      ShoreLog.logD("VIEW","RPM value too large " + rpm);
+    }
    mute_button.setSelected(for_engine.isMuted());
    power_button.updateButtonImage(for_engine.getEngineState());
    emergency_stop.setSelected(for_engine.isEmergencyStopped());
+   // might try to set throttle based on eengine speed
    
    if (for_engine.getEngineState() != EngineState.RUNNING) {
       throttle_slider.setValue(0);

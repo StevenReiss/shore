@@ -244,8 +244,8 @@ private EngineInfo setupEngine(SocketAddress sa)
          ei.sendQueryVersionMessage();
          ei.sendHeartbeatMessage(true);
          ei.sendQuerySettingsMessage();
-         ei.sendSpeedReportMessage();
-         ei.sendRpmReportMessage();
+//       ei.sendSpeedReportMessage();
+//       ei.sendRpmReportMessage();
        }
     }
    
@@ -283,11 +283,11 @@ protected void handleMessage(DatagramPacket msg)
       byte [] rslt = new byte[msg.getLength()];
       System.arraycopy(msg.getData(),msg.getOffset(),rslt,0,msg.getLength());
       if (!rh.handleReply(rslt)) {
-         ShoreLog.logD("NETWORK","Late message from engine");
+         ShoreLog.logE("NETWORK","Late message from engine");
        }
     }
    else {
-      ShoreLog.logD("NETWORK","Unsolicited message from engine");
+      ShoreLog.logE("NETWORK","Unsolicited message from engine");
       // if we get here, we should spawn a thread to handle the request
     }
 }
@@ -343,6 +343,50 @@ private final class LocoFiStatusUpdater extends Thread {
 }
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      General reply handler                                                   */
+/*                                                                              */
+/********************************************************************************/
+
+private final class ReplyHandler {
+
+   private byte [] reply_data;
+   private boolean is_done;
+   
+   ReplyHandler() {
+      reply_data = null;
+      is_done = false;
+    }
+   
+   synchronized boolean handleReply(byte [] data) {
+      if (is_done) return false;
+      reply_data = data;
+      is_done = true;
+      notifyAll();
+      return true;
+    }
+   
+   byte [] getReply() {
+      // only wait for reply data time
+      if (reply_data == null) {
+         synchronized (this) {
+            try {
+               wait(REPLY_DELAY);
+             }
+            catch (InterruptedException e) { }
+            is_done = true;
+          }
+       }
+      if (reply_data == null) {
+         ShoreLog.logE("NETWORK","No reply recieved");
+       }
+      return reply_data;
+    }
+
+}
+
+
 
 /********************************************************************************/
 /*                                                                              */
@@ -354,10 +398,12 @@ private class EngineInfo {
    
    private SocketAddress net_address;
    private String engine_id;
+   private int engine_status;
    
    EngineInfo(SocketAddress net) {
       net_address = net;
       engine_id = null;
+      engine_status = -1;
     }
    
    String getEngineId()                                 { return engine_id; }
@@ -394,6 +440,14 @@ private class EngineInfo {
       ShoreLog.logD("NETWORK","Engine speed " + speedstep + " " + rpmstep + " " + speed);
       eng.setupEngine(front,back,bell,rev,sts,
             speedstep,rpmstep,speed,estop,mute);  
+      
+      if (engine_status != sts) {
+         engine_status = sts;
+         if (sts == 2) {
+//          sendSpeedReportMessage();
+//          sendRpmReportMessage();
+          }
+       }
       return true;
     }
    
@@ -468,18 +522,22 @@ private class EngineInfo {
       return true;
     }
    
+   @SuppressWarnings("unused")
    boolean sendSpeedReportMessage() {
       byte [] msg = LOCOFI_SPEED_REPORT_CMD;
-      byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
-      
-      return ack != null;
+//    byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
+//    return ack != null;
+      sendMessage(net_address,msg,0,msg.length);
+      return true;
     }
    
+   @SuppressWarnings("unused")
    boolean sendRpmReportMessage() {
       byte [] msg = LOCOFI_RPM_REPORT_CMD;
-      byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
-      
-      return ack != null;
+//    byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
+//    return ack != null;
+      sendMessage(net_address,msg,0,msg.length);
+      return true;
     }
    
    boolean sendHeartbeatMessage(boolean on) {
@@ -490,8 +548,10 @@ private class EngineInfo {
    
    boolean sendEmergencyStop(boolean stop) {
       byte [] msg = (stop ? LOCOFI_EMERGENCY_STOP_CMD : LOCOFI_EMERGENCY_START_CMD);
-      byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
-      return ack != null;
+      sendMessage(net_address,msg,0,msg.length);
+      return true;
+   // byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
+   // return ack != null;
     }
    
    boolean sendLight(boolean front,boolean on) {
@@ -507,19 +567,23 @@ private class EngineInfo {
    
    boolean sendBell(boolean on) {
       byte [] msg = (on ? LOCOFI_BELL_ON_CMD : LOCOFI_BELL_OFF_CMD);
-      byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
-      return ack != null;
-    }
+   // byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
+   // return ack != null;
+      sendMessage(net_address,msg,0,msg.length);
+      return true;
+   }
    
    boolean sendHorn(boolean on) {
       byte [] msg = (on ? LOCOFI_HORN_ON_CMD : LOCOFI_HORN_OFF_CMD);
-      byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
-      return ack != null;
-    }
+   // byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
+   // return ack != null;
+      sendMessage(net_address,msg,0,msg.length);
+      return true;
+   }
    
    boolean sendThrottle(int v) {
       byte [] msg = new byte[3];
-      msg[0] = LOCOFI_SET_SPEED_CMD[0];
+      msg[0] = LOCLFI_SET_THROTTLE_CMD[0]; 
       msg[1] = (byte) (v & 0xff);
       msg[2] = (byte) ((v & 0xff00) >> 8);
       byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
@@ -559,50 +623,6 @@ private class EngineInfo {
    
 }       // end of inner class EngineInfo
 
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      General reply handler                                                   */
-/*                                                                              */
-/********************************************************************************/
-
-private final class ReplyHandler {
-   
-   private byte [] reply_data;
-   private boolean is_done;
-   
-   ReplyHandler() {
-      reply_data = null;
-      is_done = false;
-    }
-   
-   synchronized boolean handleReply(byte [] data) {
-      if (is_done) return false;
-      reply_data = data;
-      is_done = true;
-      notifyAll();
-      return true;
-    }
-   
-   byte [] getReply() {
-      // only wait for reply data time
-      if (reply_data == null) {
-         synchronized (this) {
-            try {
-               wait(REPLY_DELAY);
-             }
-            catch (InterruptedException e) { }
-            is_done = true;
-          }
-       }
-      if (reply_data == null) {
-         ShoreLog.logD("NETWORK","No reply recieved");
-       }
-      return reply_data;
-    }
-   
-}
 
 
 

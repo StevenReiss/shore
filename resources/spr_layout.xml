@@ -104,7 +104,7 @@
      <POINT ID='C12' X='116' Y='68' TYPE='GAP' />
      <POINT ID='C13' X='110' Y='68' TYPE='SENSOR' REF='120A' />
      <POINT ID='C14' X='100' Y='68' TYPE='BLOCK' REF='14' />
-     <POINT ID='C15' X='83' Y='68' TYPE='BLOCK' REF='To Yard' />
+     <POINT ID='C15' X='83' Y='68' TYPE='LABEL' REF='To Yard' />
      <POINT ID='C16' X='70' Y='68' TYPE='DIAGRAM' />
      <!-- Connect the dots -->
      <CONNECT POINTS='M1 M2 M3 M4 M5 M6 M6a M7 M8 M9 M9a M10 M11 M12 M13 M14 M15 M15a M16' />
@@ -115,7 +115,7 @@
      <CONNECT POINTS='M20 S1 S2' />
      <CONNECT POINTS='M26 R1 R2 R3 R4 R4a R5 R5a R6 R7 R8 R9 N12' />
      <CONNECT POINTS='N25 C1 C2 C4 C5 C7 C8' />
-     <CONNECT POINTS='C4 C9 C9a C10 C11 C12 C13 C14 C16' />
+     <CONNECT POINTS='C4 C9 C9a C10 C11 C12 C13 C14 C15 C16' />
      <!-- Define the blocks -->
      <BLOCK ID='1' POINT='N23' />
      <BLOCK ID='2' POINT='M22' />

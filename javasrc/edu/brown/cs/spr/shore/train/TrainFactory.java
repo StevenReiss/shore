@@ -71,6 +71,7 @@ public class TrainFactory implements TrainConstants, IfaceTrains
 private IfaceNetwork    network_model;
 private IfaceModel      layout_model;
 private Map<String,TrainEngine> known_trains;
+private int             train_index;
 private Map<SocketAddress,TrainEngine> assigned_trains;
 private Map<IfaceBlock,TrainData> train_locations;
 
@@ -89,6 +90,7 @@ public TrainFactory(IfaceModel mdl)
    known_trains = new LinkedHashMap<>();
    assigned_trains = new HashMap<>();
    train_locations = new HashMap<>();
+   train_index = 0;
    
    loadTrains();
    
@@ -111,7 +113,7 @@ public TrainEngine createTrain(String name,String id)
    TrainEngine eng = known_trains.get(name);
    if (eng == null && id != null) eng = known_trains.get(id);
    if (eng == null) { 
-      int idx = known_trains.size();
+      int idx = train_index++;
       eng = new TrainEngine(this,name,id,ENGINE_COLORS[idx]);  
       known_trains.put(name,eng); 
       if (id != null) known_trains.put(id,eng);
