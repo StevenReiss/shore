@@ -51,6 +51,19 @@ Color [] ENGINE_COLORS = {
 double MIN_RPM = 200;
 double MAX_RPM = 1024;
 
+
+/**
+ *      Time to start engine
+ **/
+int STARTUP_TIME = 6000;
+
+
+
+/**
+ *      Time to shutdown engine
+ **/
+int SHUTDOWN_TIME = 4000; 
+
 }       // end of interface TrainConstants
 
 

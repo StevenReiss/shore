@@ -46,17 +46,6 @@ public interface ViewConstants extends IfaceConstants
 int HORN_TIME = 500;
 
 
-/**
- *      Time to start engine
- **/
-int STARTUP_TIME = 6000;
-
-
-
-/**
- *      Time to shutdown engine
- **/
-int SHUTDOWN_TIME = 4000;
 
 
 }       // end of interface ViewConstants

@@ -40,6 +40,9 @@ import java.net.DatagramSocket;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -86,32 +89,30 @@ NetworkProcessorLocoFi(DatagramSocket sock,IfaceTrains trains)
 /*                                                                              */
 /********************************************************************************/
 
-void sendLight(IfaceEngine eng,boolean front) 
+void sendLight(IfaceEngine eng,boolean front,boolean sts) 
 {
    EngineInfo ei = findEngineInfo(eng);
    if (ei == null) return;
-   
-   boolean sts = (front ? eng.isFrontLightOn() : eng.isRearLightOn());
    
    ei.sendLight(front,sts);
 }
 
 
-void sendMute(IfaceEngine eng)
+void sendMute(IfaceEngine eng,boolean mute)
 {
    EngineInfo ei = findEngineInfo(eng);
    if (ei == null) return;
    
-   ei.setMute(eng.isMuted());
+   ei.setMute(mute);
 }
 
 
-void sendBell(IfaceEngine eng)
+void sendBell(IfaceEngine eng,boolean on)
 {
    EngineInfo ei = findEngineInfo(eng);
    if (ei == null) return;
    
-   ei.sendBell(eng.isBellOn());
+   ei.sendBell(on);
 }
 
 
@@ -134,22 +135,22 @@ void sendThrottle(IfaceEngine eng)
    ei.sendThrottle(vint);
 }
 
-void sendReverse(IfaceEngine eng)
+void sendReverse(IfaceEngine eng,boolean rev)
 {
    EngineInfo ei = findEngineInfo(eng);
    if (ei == null) return;
    
-   ei.sendReverse(eng.isReverse());
+   ei.sendReverse(rev);
 }
 
 
-void sendStartEngine(IfaceEngine eng)
+void sendStartEngine(IfaceEngine eng,IfaceEngine.EngineState state)
 {
    EngineInfo ei = findEngineInfo(eng);
    if (ei == null) return;
    
    boolean start = false;
-   switch (eng.getEngineState()) {
+   switch (state) {
       case STARTUP :
          start = true;
          break;
@@ -164,12 +165,12 @@ void sendStartEngine(IfaceEngine eng)
 }
 
 
-void sendEmergencyStop(IfaceEngine eng)
+void sendEmergencyStop(IfaceEngine eng,boolean stop)
 {
    EngineInfo ei = findEngineInfo(eng);
    if (ei == null) return;
    
-   ei.sendEmergencyStop(eng.isEmergencyStopped());
+   ei.sendEmergencyStop(stop);
 }
 
 
@@ -240,10 +241,10 @@ private EngineInfo setupEngine(SocketAddress sa)
          ei.sendQueryAboutMessage();
          IfaceEngine eng = findEngine(ei.getEngineId());
          engine_model.setEngineSocket(eng,sa);
-         ei.sendQueryStateMessage();
+         ei.sendQuerySettingsMessage();
          ei.sendQueryVersionMessage();
          ei.sendHeartbeatMessage(true);
-         ei.sendQuerySettingsMessage();
+         ei.sendQueryStateMessage();
 //       ei.sendSpeedReportMessage();
 //       ei.sendRpmReportMessage();
        }
@@ -277,6 +278,10 @@ protected void handleMessage(DatagramPacket msg)
          msg.getPort() + " " + msg.getLength() + " " + msg.getOffset() + ": " +
          msgtxt);
    
+   if (msg.getPort() != ALT_PORT) {
+      return;
+    }
+   
    SocketAddress sa = msg.getSocketAddress();
    ReplyHandler rh = reply_map.remove(sa);
    if (rh != null) {
@@ -307,21 +312,47 @@ protected void handleMessage(DatagramPacket msg)
 
 private final class LocoFiStatusUpdater extends Thread {
 
+   private Map<EngineInfo,Integer> bad_count;
+   
    LocoFiStatusUpdater() {
       super("ShoreLocoFiStatusUpdater");
       setDaemon(true);
+      bad_count = new HashMap<>();
     }
    
    @Override public void run() {
       for ( ; ; ) {
+         List<EngineInfo> todel = null;
          for (EngineInfo ei : engine_map.values()) {
             if (ei.sendQueryStateMessage()) {
+               bad_count.remove(ei);
                delay();
              }
             else {
                // check if engine is dead
+               Integer iv = bad_count.get(ei);
+               if (iv == null) iv = 0;
+               bad_count.put(ei,iv+1);
+               if (iv > MAX_NO_STATE_REPLY) { 
+                  IfaceEngine eng = findEngine(ei.getEngineId());
+                  if (eng != null) {
+                     engine_model.setEngineSocket(eng,null);
+                   }
+                  if (todel == null) todel = new ArrayList<>();
+                  todel.add(ei);
+                }
              }
    //       ei.sendSpeedReportMessage();
+          }
+         if (todel != null) {
+            for (EngineInfo ei : todel) {
+               ShoreLog.logD("NETWORK","Engine " + ei.getEngineId() + " not responsive");
+               engine_map.remove(ei.getSocketAddress());
+               IfaceEngine eng = findEngine(ei.getEngineId());
+               if (eng != null) {
+                  engine_model.setEngineSocket(eng,null);
+                }
+             }
           }
          finalDelay();
        }

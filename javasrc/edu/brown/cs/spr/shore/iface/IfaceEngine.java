@@ -49,10 +49,13 @@ public interface IfaceEngine
 {
 
 enum EngineState {
+   UNKNOWN,
    OFF,
    STARTUP,
+   READY,
    RUNNING,
    SHUTDOWN,
+   IDLE,
 }
 
 IfaceBlock getEngineBlock();

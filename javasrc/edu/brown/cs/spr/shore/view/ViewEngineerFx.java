@@ -57,6 +57,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.HPos;
+import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -66,6 +67,9 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority; 
@@ -106,17 +110,6 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
 {
    for_engine = engine;
    first_setup = false;
-   
-   Color bkgcol = Color.GRAY;
-   if (for_engine != null && for_engine.getEngineId() != null) {
-      bkgcol = for_engine.getEngineColor();
-    }
-   bkgcol = bkgcol.desaturate().desaturate();
-   String s = bkgcol.toString();
-   s = s.replace("0x","");
-   s = s.substring(0,6);
-   s = "-fx-background-color: #" + s;
-   setStyle(s);
    
    URL r = getClass().getClassLoader().getResource("engineer.css");
    getStylesheets().add(r.toExternalForm());
@@ -190,6 +183,34 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
 }
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      Set background color based on engine and connectivity                   */
+/*                                                                              */
+/********************************************************************************/
+
+private void setupBackground()
+{
+   Color bkgcol = Color.GRAY;
+   if (for_engine != null && for_engine.getEngineId() != null && 
+         for_engine.getEngineAddress() != null) {
+      bkgcol = for_engine.getEngineColor();
+      bkgcol = bkgcol.desaturate().desaturate();
+    }
+   else {
+      ShoreLog.logD("VIEW","USE default background "  + bkgcol);
+    }
+   
+   // background needs to apply to all components, not just top level
+   String s = bkgcol.toString();
+   s = s.replace("0x","");
+   s = s.substring(0,6);
+   s = "-fx-background-color: #" + s;
+   String s1 = getStyle();
+   if (!s.equals(s1)) setStyle(s);
+}
+
+
 
 /********************************************************************************/
 /*                                                                              */
@@ -222,7 +243,7 @@ private Slider getThrottle()
 
 void setupThrottle()
 {
-   double max = for_engine.getThrottleMax();
+   double max = for_engine.getThrottleMax()+1;
    throttle_slider.setMax(max);
    int nstep = for_engine.getThrottleSteps();
    double delta = (max+1) / nstep;
@@ -235,7 +256,7 @@ void setupThrottle()
 private final class ThrottleChange implements ChangeListener<Number> {
    
    @Override public void changed(ObservableValue<? extends Number> obs,Number oldv,Number newv) {
-      ShoreLog.logD("VIEW","Set throttle " + newv);
+      ShoreLog.logD("VIEW","Set throttle " + newv + " " + oldv);
       for_engine.setThrottle(newv.doubleValue());
     }
    
@@ -363,7 +384,7 @@ private PowerButton getPowerButton()
 }
 
 
-private final class PowerButton extends Button implements EventHandler<ActionEvent>, ActionListener {
+private final class PowerButton extends Button implements EventHandler<ActionEvent> {
 
    private ImageView idle_view;
    private ImageView startup_view;
@@ -397,12 +418,14 @@ private final class PowerButton extends Button implements EventHandler<ActionEve
       boolean blink = false;
       switch (st) {
          case OFF :
+         case IDLE :
             iv = idle_view;
             break;
          case STARTUP :
             iv = startup_view;
             blink = true;
             break;
+         case READY :
          case RUNNING :
             iv = ready_view;
             break;
@@ -429,33 +452,14 @@ private final class PowerButton extends Button implements EventHandler<ActionEve
    
    @Override public void handle(ActionEvent evt) {
       EngineState next = null;
-      int time = 0;
       switch (for_engine.getEngineState()) {
          case OFF :
+         case IDLE :
             next = EngineState.STARTUP;
-            time = STARTUP_TIME;
             break;
+         case READY :
          case RUNNING :
             next = EngineState.SHUTDOWN;
-            time = SHUTDOWN_TIME;
-            break;
-         default :
-            return;
-       }
-      Timer t = new Timer(time,this);
-      t.setRepeats(false);
-      t.start();
-      for_engine.setState(next);
-    }
-   
-   @Override public void actionPerformed(java.awt.event.ActionEvent evt) {
-      EngineState next = null;
-      switch (for_engine.getEngineState()) {
-         case STARTUP :
-            next = EngineState.RUNNING;
-            break;
-         case SHUTDOWN :
-            next = EngineState.OFF;
             break;
          default :
             return;
@@ -719,7 +723,8 @@ private class FwdRevSwitch extends HBox implements ChangeListener<Boolean> {
     }
    
    private void toggle() {
-      switched_on.set(!switched_on.get());
+      for_engine.setReverse(!switched_on.get());
+//    switched_on.set(!switched_on.get());
     }
    
    private final class ActionHandler implements EventHandler<ActionEvent> {
@@ -759,6 +764,11 @@ private void doEngineChanged()
    reverse_switch.setSwtich(for_engine.isReverse());
    mute_button.setSelected(for_engine.isMuted());
    speed_gauge.setValue(for_engine.getSpeed());
+   
+   boolean canreverse = true;
+   if (for_engine.getSpeed() > 0) canreverse = false;
+   reverse_switch.setDisable(!canreverse);
+   
    double rpm = for_engine.getRpm()/100;
    tach_gauge.setValue(rpm);
    if (rpm > 12) {
@@ -769,14 +779,22 @@ private void doEngineChanged()
    emergency_stop.setSelected(for_engine.isEmergencyStopped());
    // might try to set throttle based on eengine speed
    
-   if (for_engine.getEngineState() != EngineState.RUNNING) {
-      throttle_slider.setValue(0);
-      throttle_slider.setDisable(true);
+   switch (for_engine.getEngineState()) {
+      case UNKNOWN :
+      case OFF :
+      case IDLE :
+      case STARTUP :
+      case SHUTDOWN :
+         throttle_slider.setValue(0);
+         throttle_slider.setDisable(true);
+         break;
+      case READY :
+      case RUNNING :
+         throttle_slider.setDisable(false);
+         break;
     }
-   else {
-      throttle_slider.setDisable(false);
-//    throttle_slider.setValue(for_engine.getThrottle());
-    }
+   
+   setupBackground();
 }
 
 

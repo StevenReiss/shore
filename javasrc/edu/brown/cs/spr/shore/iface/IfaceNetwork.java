@@ -35,6 +35,7 @@
 
 package edu.brown.cs.spr.shore.iface;
 
+import edu.brown.cs.spr.shore.iface.IfaceEngine.EngineState;
 
 /**
  *      This class represents the wifi network connections.  It provides calls to
@@ -72,20 +73,20 @@ void setSensor(IfaceSensor sen,ShoreSensorState set);
  *      Sends a message to stop the given engine, either with a normal
  *      stop or with an emergency stop.
  **/
-void sendEmergencyStop(IfaceEngine train);
+void sendEmergencyStop(IfaceEngine train,boolean stop);
 
 
 
 /**
  *      Sends a message to turn on or off the appropriate light.
  **/
-void sendLight(IfaceEngine eng,boolean front);
+void sendLight(IfaceEngine eng,boolean front,boolean on);
 
         
 /**
  *      Send a message to turn on/off bell
  **/
-void sendBell(IfaceEngine eng);
+void sendBell(IfaceEngine eng,boolean on);
 
 
 /**
@@ -97,7 +98,7 @@ void sendHorn(IfaceEngine eng);
 /**
  *      Sends a message to turn on or off muting
  **/
-void sendMute(IfaceEngine eng);
+void sendMute(IfaceEngine eng,boolean mute);
 
 
 /**
@@ -109,13 +110,13 @@ void sendThrottle(IfaceEngine e);
 /**
  *      Sends a message to set engine direction
  **/
-void sendReverse(IfaceEngine e);
+void sendReverse(IfaceEngine e,boolean rev);
 
 
 /**
  *      Sends a message to start/stop engine
  **/
-void sendStartEngine(IfaceEngine e);
+void sendStartEngine(IfaceEngine e,EngineState state);
 
 
 }	// end of interface IfaceNetwork
