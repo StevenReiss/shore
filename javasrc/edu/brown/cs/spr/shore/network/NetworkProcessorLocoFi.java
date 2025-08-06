@@ -65,6 +65,8 @@ class NetworkProcessorLocoFi extends NetworkProcessor implements NetworkLocoFiMe
 private IfaceTrains     engine_model;
 private Map<SocketAddress,EngineInfo> engine_map;
 private Map<SocketAddress,ReplyHandler> reply_map;
+private DatagramSocket speed_socket;
+private DatagramSocket rpm_socket;
 
 
 /********************************************************************************/
@@ -73,12 +75,17 @@ private Map<SocketAddress,ReplyHandler> reply_map;
 /*                                                                              */
 /********************************************************************************/
 
-NetworkProcessorLocoFi(DatagramSocket sock,IfaceTrains trains)
+NetworkProcessorLocoFi(DatagramSocket sock,DatagramSocket speed,
+      DatagramSocket rpm,IfaceTrains trains)
 {
    super(sock);
    engine_model = trains;
    engine_map = new ConcurrentHashMap<>();
    reply_map = new ConcurrentHashMap<>();
+   speed_socket = speed;
+   rpm_socket = rpm;
+   startReader(speed,new SpeedHandler());
+   startReader(rpm,new RpmHandler());
 }
 
 
@@ -245,8 +252,8 @@ private EngineInfo setupEngine(SocketAddress sa)
          ei.sendQueryVersionMessage();
          ei.sendHeartbeatMessage(true);
          ei.sendQueryStateMessage();
-//       ei.sendSpeedReportMessage();
-//       ei.sendRpmReportMessage();
+         ei.sendSpeedReportMessage();
+         ei.sendRpmReportMessage();
        }
     }
    
@@ -271,7 +278,7 @@ private synchronized byte [] sendReplyMessage(SocketAddress who,byte[] msg,int o
 
 
 
-protected void handleMessage(DatagramPacket msg)
+@Override public void handleMessage(DatagramPacket msg)
 {
    String msgtxt = decodeMessage(msg.getData(),msg.getOffset(),msg.getLength());
    ShoreLog.logD("NETWORK","Received from " + msg.getAddress() + " " +
@@ -342,7 +349,6 @@ private final class LocoFiStatusUpdater extends Thread {
                   todel.add(ei);
                 }
              }
-   //       ei.sendSpeedReportMessage();
           }
          if (todel != null) {
             for (EngineInfo ei : todel) {
@@ -419,6 +425,40 @@ private final class ReplyHandler {
 
 
 
+private final class SpeedHandler implements MessageHandler {
+
+   @Override public void handleMessage(DatagramPacket msg) {
+      String msgtxt = decodeMessage(msg.getData(),msg.getOffset(),msg.getLength());
+      ShoreLog.logD("NETWORK","Received SPEED from " + msg.getAddress() + " " +
+            msg.getPort() + " " + msg.getLength() + " " + msg.getOffset() + ": " +
+            msgtxt);
+      
+      if (msg.getPort() != ALT_PORT) {
+         return;
+       }
+    }
+   
+}       // end of inner class SpeedHandler
+
+
+
+private final class RpmHandler implements MessageHandler {
+   
+   @Override public void handleMessage(DatagramPacket msg) {
+      String msgtxt = decodeMessage(msg.getData(),msg.getOffset(),msg.getLength());
+      ShoreLog.logD("NETWORK","Received RPM from " + msg.getAddress() + " " +
+            msg.getPort() + " " + msg.getLength() + " " + msg.getOffset() + ": " +
+            msgtxt);
+      
+      if (msg.getPort() != ALT_PORT) {
+         return;
+       }
+    }
+   
+}       // end of inner class RpmHandler
+
+
+
 /********************************************************************************/
 /*                                                                              */
 /*      Information for each connected engine                                   */
@@ -475,8 +515,8 @@ private class EngineInfo {
       if (engine_status != sts) {
          engine_status = sts;
          if (sts == 2) {
-//          sendSpeedReportMessage();
-//          sendRpmReportMessage();
+            sendSpeedReportMessage();
+            sendRpmReportMessage();
           }
        }
       return true;
@@ -553,21 +593,19 @@ private class EngineInfo {
       return true;
     }
    
-   @SuppressWarnings("unused")
    boolean sendSpeedReportMessage() {
       byte [] msg = LOCOFI_SPEED_REPORT_CMD;
 //    byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
 //    return ack != null;
-      sendMessage(net_address,msg,0,msg.length);
+//    sendMessage(speed_socket,net_address,msg,0,msg.length); 
       return true;
     }
    
-   @SuppressWarnings("unused")
    boolean sendRpmReportMessage() {
       byte [] msg = LOCOFI_RPM_REPORT_CMD;
 //    byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
 //    return ack != null;
-      sendMessage(net_address,msg,0,msg.length);
+//    sendMessage(rpm_socket,net_address,msg,0,msg.length);
       return true;
     }
    

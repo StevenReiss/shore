@@ -328,7 +328,7 @@ private ControllerInfo findController(SocketAddress sa)
 /*                                                                              */
 /********************************************************************************/
 
-@Override protected void handleMessage(DatagramPacket msg)
+@Override public void handleMessage(DatagramPacket msg)
 {
    String msgtxt = decodeMessage(msg.getData(),msg.getOffset(),msg.getLength());
    ShoreLog.logD("NETWORK","Received from " + msg.getAddress() + " " +

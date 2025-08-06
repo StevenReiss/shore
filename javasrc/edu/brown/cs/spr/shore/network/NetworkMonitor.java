@@ -71,6 +71,9 @@ public class NetworkMonitor implements NetworkConstants, NetworkControlMessages,
 
 private DatagramSocket	our_socket;
 private DatagramSocket  alt_socket;
+private DatagramSocket  speed_socket;
+private DatagramSocket  rpm_socket;
+
 private NetworkProcessorTower tower_processor;
 private NetworkProcessorLocoFi locofi_processor;
 
@@ -128,11 +131,24 @@ public NetworkMonitor(IfaceModel model,IfaceTrains trains)
       our_socket.setSendBufferSize(BUFFER_SIZE);
       our_socket.setSoTimeout(0);
       
-      alt_socket = new DatagramSocket(ALT_PORT,useaddr);
+//    alt_socket = new DatagramSocket(ALT_PORT,useaddr);
+      alt_socket = new DatagramSocket(0,useaddr);
       alt_socket.setReceiveBufferSize(BUFFER_SIZE);
       alt_socket.setReuseAddress(true);
       alt_socket.setSendBufferSize(BUFFER_SIZE);
       alt_socket.setSoTimeout(0);
+      
+      speed_socket = new DatagramSocket(0,useaddr);
+      speed_socket.setReceiveBufferSize(BUFFER_SIZE);
+      speed_socket.setReuseAddress(true);
+      speed_socket.setSendBufferSize(BUFFER_SIZE);
+      speed_socket.setSoTimeout(0);
+      
+      rpm_socket = new DatagramSocket(0,useaddr);
+      rpm_socket.setReceiveBufferSize(BUFFER_SIZE);
+      rpm_socket.setReuseAddress(true);
+      rpm_socket.setSendBufferSize(BUFFER_SIZE);
+      rpm_socket.setSoTimeout(0);
     }
    catch (IOException e) {
       ShoreLog.logE("NETWORK","Can't create Datagram Socket",e);
@@ -140,13 +156,16 @@ public NetworkMonitor(IfaceModel model,IfaceTrains trains)
       System.exit(1);
     }
    
-   ShoreLog.logD("NETWORK","Listening for datagrams on " + useaddr);
+   ShoreLog.logD("NETWORK","Listening for datagrams on " + useaddr + " " +
+         our_socket.getLocalPort() + " " + alt_socket.getLocalPort() + " " +
+         speed_socket.getLocalPort());
    
    tower_processor = new NetworkProcessorTower(our_socket,model);
-   locofi_processor = new NetworkProcessorLocoFi(alt_socket,trains);
+   locofi_processor = new NetworkProcessorLocoFi(alt_socket,speed_socket,
+         rpm_socket,trains); 
    
    try {
-      JmmDNS jmm = JmmDNS.Factory.getInstance();
+      JmmDNS jmm = JmmDNS.Factory.getInstance(); 
 //    jmm.addServiceTypeListener(new ServiceFinder("TYPE"));
       jmm.addServiceListener("_udp._udp.local.",new ServiceFinder("UDP"));
       jmm.addServiceListener("_loco._udp.local.",new ServiceFinder("LOCO"));

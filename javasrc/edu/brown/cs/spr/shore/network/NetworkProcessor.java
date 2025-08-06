@@ -49,7 +49,7 @@ import javax.jmdns.ServiceInfo;
 
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
-abstract class NetworkProcessor implements NetworkConstants
+abstract class NetworkProcessor implements NetworkConstants, NetworkConstants.MessageHandler
 {
 
 
@@ -82,14 +82,14 @@ protected NetworkProcessor(DatagramSocket sock)
 
 void start()
 {
-   ReaderThread rt = new ReaderThread(our_socket);
+   ReaderThread rt = new ReaderThread(our_socket,this);
    rt.start();
    Thread upd = getStatusUpdater();
    if (upd != null) upd.start();
 }
 
 
-protected abstract void handleMessage(DatagramPacket msg);
+@Override public abstract void handleMessage(DatagramPacket msg);
 protected abstract Thread getStatusUpdater();
 protected abstract void handleServiceResolved(ServiceInfo si);
 
@@ -102,17 +102,25 @@ protected abstract void handleServiceResolved(ServiceInfo si);
 
 protected synchronized void sendMessage(SocketAddress who,byte [] msg,int off,int len)
 {
-   if (our_socket == null) return;
+   sendMessage(our_socket,who,msg,off,len);
+}
+
+
+
+protected synchronized void sendMessage(DatagramSocket sock,
+      SocketAddress who,byte [] msg,int off,int len)
+{
+   if (sock == null) return;
    
    String msgtxt = decodeMessage(msg,off,len);
    ShoreLog.logD("NETWORK","Send " + msgtxt + " >> " + who);
    
    DatagramPacket packet = new DatagramPacket(msg,off,len,who);
    try {
-      our_socket.send(packet);
+      sock.send(packet);
     }
    catch (Throwable e) {
-      ShoreLog.logE("Problem sending packet " + who,e);
+      ShoreLog.logE("Problem sending packet " + who+ " " + sock,e);
     }
 }
 
@@ -176,6 +184,13 @@ protected SocketAddress getServiceSocket(ServiceInfo si,Map<?,?> known)
 }
 
 
+protected void startReader(DatagramSocket ds,MessageHandler hdlr)
+{
+   ReaderThread rt = new ReaderThread(ds,hdlr);
+   rt.start();
+}
+
+
 /********************************************************************************/
 /*                                                                              */
 /*      Reader Thread                                                           */
@@ -185,10 +200,13 @@ protected SocketAddress getServiceSocket(ServiceInfo si,Map<?,?> known)
 private class ReaderThread extends Thread {
 
    private DatagramSocket reader_socket;
+   private MessageHandler message_handler;
    
-   ReaderThread(DatagramSocket s) {
+   ReaderThread(DatagramSocket s,MessageHandler hdlr) {
       super("UDP_READER_" + s.getLocalPort());
       reader_socket = s;
+      message_handler = hdlr;
+      if (hdlr == null) hdlr = NetworkProcessor.this;
     }
    
    @Override public void run() {
@@ -197,7 +215,7 @@ private class ReaderThread extends Thread {
       while (reader_socket != null) {
          try {
             reader_socket.receive(packet);
-            handleMessage(packet);
+            message_handler.handleMessage(packet);
           }
          catch (SocketTimeoutException e) { }
          catch (IOException e) {
