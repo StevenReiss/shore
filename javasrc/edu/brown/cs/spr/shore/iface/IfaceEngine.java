@@ -86,6 +86,8 @@ void setReverse(boolean fg);
 void setState(EngineState state);
 void setEmergencyStop(boolean on);
 
+void doReboot();
+
 void setupEngine(boolean fwdlight,boolean revlight,
       boolean bell,boolean reverse,int status,
       int speedstep,int rpmstep,int speed,boolean estop,boolean mute);

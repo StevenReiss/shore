@@ -35,7 +35,6 @@
 
 package edu.brown.cs.spr.shore.iface;
 
-import edu.brown.cs.spr.shore.iface.IfaceEngine.EngineState;
 
 /**
  *      This class represents the wifi network connections.  It provides calls to
@@ -104,7 +103,7 @@ void sendMute(IfaceEngine eng,boolean mute);
 /**
  *      Sends a message to set the engine throttle
  **/
-void sendThrottle(IfaceEngine e);
+void sendThrottle(IfaceEngine e,double v);
 
 
 /**
@@ -116,8 +115,13 @@ void sendReverse(IfaceEngine e,boolean rev);
 /**
  *      Sends a message to start/stop engine
  **/
-void sendStartEngine(IfaceEngine e,EngineState state);
+void sendStartStopEngine(IfaceEngine e,boolean start);
 
+
+/**
+ *      Send reboot request to engine
+ **/
+void sendReboot(IfaceEngine e);
 
 }	// end of interface IfaceNetwork
 

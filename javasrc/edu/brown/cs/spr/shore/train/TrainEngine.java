@@ -35,18 +35,14 @@
 
 package edu.brown.cs.spr.shore.train;
 
-import java.awt.event.ActionListener;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.swing.Timer;
 
 import edu.brown.cs.ivy.swing.SwingEventListenerList;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
-import edu.brown.cs.spr.shore.shore.ShoreLog;
 import javafx.scene.paint.Color;
 
 class TrainEngine implements TrainConstants, IfaceEngine, Comparable<IfaceEngine>
@@ -147,7 +143,14 @@ TrainEngine(TrainFactory fac,String name,String id,Color color)
  
 @Override public SocketAddress getEngineAddress()        { return socket_address; }
 
-void setEngineAddress(SocketAddress sa)                  { socket_address = sa; }  
+void setEngineAddress(SocketAddress sa)                  
+{ 
+   if (socket_address == sa) return;
+   
+   socket_address = sa;
+   
+   fireEngineChanged();
+}  
 
 @Override public boolean isEmergencyStopped()           { return is_emergency; }
 
@@ -186,13 +189,14 @@ void setNoRearLight()                                   { has_rear_light = false
 
 @Override public void setThrottle(double v) 
 {
-   boolean chng = engine_throttle != v;
-   
-   // State doesn't include the throttle, so set here
-   engine_throttle = v;
-   train_factory.getNetworkModel().sendThrottle(this);
-   
-   if (chng) fireEngineChanged();
+   train_factory.getNetworkModel().sendThrottle(this,v);
+// 
+// boolean chng = engine_throttle != v; 
+// engine_throttle = v;
+// 
+// train_factory.getNetworkModel().sendThrottle(this);
+// 
+// if (chng) fireEngineChanged();
 }
 
 
@@ -277,11 +281,25 @@ void setNoRearLight()                                   { has_rear_light = false
 
 @Override public void setState(EngineState st)
 {
-   // Engine state actually changed by state request
+   if (engine_state == st) return;
    
-   train_factory.getNetworkModel().sendStartEngine(this,st); 
+   engine_state = st;
+   
+   switch (st) {
+      case STARTUP :
+         train_factory.getNetworkModel().sendStartStopEngine(this,true); 
+         break;
+      case SHUTDOWN :
+         train_factory.getNetworkModel().sendStartStopEngine(this,false); 
+         break;
+    }
 }
 
+
+@Override public void doReboot()
+{
+   train_factory.getNetworkModel().sendReboot(this); 
+}
 
 /********************************************************************************/
 /*                                                                              */
@@ -299,28 +317,21 @@ void setNoRearLight()                                   { has_rear_light = false
    horn_on = false;
    reverse_on = reverse;
    mute_on = mute;
-   int time = 0;
    switch (state) {
       case 0 :
-         engine_state = EngineState.OFF;
+         if (engine_state != EngineState.STARTUP) {
+            engine_state = EngineState.OFF;
+          }
          break;
       case 1 :
+         // SHUTDOWN -> SHUTDOWN, IDLE-> IDLE
+         // READY -> READY
          switch (engine_state) {
             case UNKNOWN :
-               if (speedstep == start_speed && rpmstep == start_speed) {
-                  engine_state = EngineState.IDLE;
-                }
-               else {
-                  engine_state = EngineState.READY;
-                }
-               break;
             case OFF :
-               engine_state = EngineState.STARTUP;
-               time = STARTUP_TIME; 
-               break;
+            case STARTUP :
             case RUNNING :
-               engine_state = EngineState.SHUTDOWN; 
-               time = SHUTDOWN_TIME;
+               engine_state = EngineState.READY;
                break;
             default :
                break;
@@ -330,18 +341,19 @@ void setNoRearLight()                                   { has_rear_light = false
          engine_state = EngineState.RUNNING;
          break;
     }
-   if (time > 0) {
-      Timer t = new Timer(time,new StateUpdater());
-      t.setRepeats(false);
-      t.start();
-    }
    
    // convert this if necessary  
    engine_speed = speed;
    if (estop) { 
       is_emergency = true;
-      engine_throttle = 0;
+      engine_speed = 0;
+//    engine_throttle = 0;
     }
+   else {
+      is_emergency = false;
+    }
+   
+   engine_throttle = speedstep;
    
    switch (engine_state) {
       case OFF :
@@ -351,15 +363,15 @@ void setNoRearLight()                                   { has_rear_light = false
       case STARTUP :
       case SHUTDOWN :
          engine_rpm = MIN_RPM;
-         engine_rpm = rpmstep;
          break;
       case RUNNING :
       case READY :
-          double v0 = (rpmstep - start_speed)/(max_speed - start_speed);
-          v0 = v0 * (MAX_RPM - MIN_RPM) + MIN_RPM;
-          v0 = rpmstep;
-          engine_rpm = v0;
-          break;
+         double v0 = (rpmstep - start_speed);
+         v0 /= (max_speed - start_speed);
+         v0 = v0 * (MAX_RPM - MIN_RPM) + MIN_RPM;
+//       v0 = rpmstep;
+         engine_rpm = v0;
+         break;
     } 
    
    // might want to check if there is a change
@@ -368,22 +380,7 @@ void setNoRearLight()                                   { has_rear_light = false
   
 
 
-private final class StateUpdater implements ActionListener {
-   
-   @Override public void actionPerformed(java.awt.event.ActionEvent evt) {
-      switch (engine_state) {
-         case STARTUP :
-            engine_state = EngineState.READY;
-            break;
-         case SHUTDOWN :
-            engine_state = EngineState.IDLE;
-            break;
-         default :
-            ShoreLog.logE("TRAIN","State timer called with bad state " + engine_state);
-            break;
-       }
-    }
-}
+
 
 
 

@@ -311,9 +311,9 @@ public void sendEmergencyStop(IfaceEngine tr,boolean stop)
 }
 
 
-@Override public void sendThrottle(IfaceEngine eng) 
+@Override public void sendThrottle(IfaceEngine eng,double v) 
 {
-   locofi_processor.sendThrottle(eng);
+   locofi_processor.sendThrottle(eng,v); 
 }
 
 
@@ -323,9 +323,15 @@ public void sendEmergencyStop(IfaceEngine tr,boolean stop)
 }
 
 
-@Override public void sendStartEngine(IfaceEngine eng,IfaceEngine.EngineState state)
+@Override public void sendStartStopEngine(IfaceEngine eng,boolean start)
 {
-   locofi_processor.sendStartEngine(eng,state);   
+   locofi_processor.sendStartStopEngine(eng,start);   
+}
+
+
+@Override public void sendReboot(IfaceEngine eng)
+{
+   locofi_processor.sendReboot(eng); 
 }
 
 

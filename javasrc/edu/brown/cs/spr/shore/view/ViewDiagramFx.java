@@ -894,6 +894,7 @@ private class EngineDrawData implements IfaceEngine.EngineCallback {
          engine_shape.setVisible(false);
          return;
        }
+      
       IfacePoint pt1 = for_engine.getPriorPoint();
       IfacePoint ptback = null;
       IfacePoint ptfront = null;

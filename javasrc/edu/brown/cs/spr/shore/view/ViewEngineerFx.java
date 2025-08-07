@@ -39,6 +39,8 @@ package edu.brown.cs.spr.shore.view;
 
 import java.awt.event.ActionListener;
 import java.net.URL;
+import java.sql.Time;
+import java.util.Optional;
 
 import javax.swing.Timer;
 
@@ -59,10 +61,15 @@ import javafx.event.EventHandler;
 import javafx.geometry.HPos;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.Slider;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
@@ -93,6 +100,10 @@ private Slider          throttle_slider;
 private PowerButton     power_button;
 private IconToggle      emergency_stop;
 private boolean         first_setup;
+private MenuItem        reboot_button;
+private MenuItem        config_button;
+private MenuItem        manage_button;
+private MenuItem        reset_button;
 
 
 
@@ -112,9 +123,22 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
    
    // top row for labels
    Label hdr1 = new Label("ID: " + for_engine.getEngineId() + "   ");
-   Label hdr2 = new Label("Engine " + for_engine.getEngineName());
+   Label hdr2 = new Label("LOCO " + for_engine.getEngineName());
    add(hdr1,0,0,2,1);
    add(hdr2,2,0,3,1);
+   
+   ContextMenu menu = new ContextMenu();
+   reboot_button = new MenuItem("Reboot Loco");
+   reboot_button.setOnAction(new RebootHandler());
+   config_button = new MenuItem("Configure Loco");
+   manage_button = new MenuItem("Manage/Release Loco");
+   reset_button = new MenuItem("Factory Reset Loco");
+   reboot_button.setDisable(true);
+   config_button.setDisable(true);
+   manage_button.setDisable(true);
+   reset_button.setDisable(true);
+   menu.getItems().addAll(manage_button,config_button,reset_button,reboot_button);
+   hdr1.setContextMenu(menu);
    
    // next row for speedometer, speed control, tach
    speed_gauge = getSpeedometer();
@@ -227,10 +251,7 @@ private Slider getThrottle()
    s.setShowTickMarks(true);
    s.setShowTickLabels(false);
    s.setMajorTickUnit(50);
-   s.setMinorTickCount(5);
-   s.setBlockIncrement(10);
    s.setOrientation(Orientation.VERTICAL);
-   s.setValueChanging(true); 
    s.getStyleClass().add("throttle");
    
    return s;
@@ -241,10 +262,13 @@ void setupThrottle()
 {
    double max = for_engine.getThrottleMax()+1;
    throttle_slider.setMax(max);
+   double min = for_engine.getStartSpeed();
+   throttle_slider.setMin(min);
    int nstep = for_engine.getThrottleSteps();
-   double delta = (max+1) / nstep;
+   double delta = (max+1-min) / nstep;
    throttle_slider.setMajorTickUnit(delta);
    throttle_slider.setBlockIncrement(delta);
+   throttle_slider.setSnapToTicks(true);
    throttle_slider.valueProperty().addListener(new ThrottleChange());
 }
 
@@ -252,7 +276,8 @@ void setupThrottle()
 private final class ThrottleChange implements ChangeListener<Number> {
    
    @Override public void changed(ObservableValue<? extends Number> obs,Number oldv,Number newv) {
-      ShoreLog.logD("VIEW","Set throttle " + newv + " " + oldv);
+      boolean chng = throttle_slider.isValueChanging();
+      ShoreLog.logD("VIEW","Set throttle " + newv + " " + oldv + " " + chng);
       for_engine.setThrottle(newv.doubleValue());
     }
    
@@ -454,13 +479,14 @@ private final class PowerButton extends Button implements EventHandler<ActionEve
             next = EngineState.STARTUP;
             break;
          case READY :
-         case RUNNING :
             next = EngineState.SHUTDOWN;
             break;
          default :
             return;
        }
-      for_engine.setState(next);
+      if (next != null) {
+         for_engine.setState(next);
+       }
     }
    
 }       // end of inner class PowerButton
@@ -509,11 +535,15 @@ private class IconToggle extends ToggleButton implements EventHandler<ActionEven
    
    private ImageView off_view;
    private ImageView on_view;
+   private ImageView flash_view;
+   private Timeline blink_timer;
 
    IconToggle(String label,String name) {
       super(label);
       String nm1 = "images/" + name + ".png";
       String nm2 = "images/" + name + "_on.png";
+      String nm3 = "images/" + name + "_flash.png";
+      
       Image img1 = new Image(nm1);
       off_view = new ImageView();
       off_view.setImage(img1);
@@ -521,6 +551,7 @@ private class IconToggle extends ToggleButton implements EventHandler<ActionEven
       off_view.setFitHeight(40);
       off_view.setSmooth(true);
       off_view.setCache(true);
+      
       Image img2 = new Image(nm2);
       on_view = new ImageView();
       on_view.setImage(img2);
@@ -528,6 +559,21 @@ private class IconToggle extends ToggleButton implements EventHandler<ActionEven
       on_view.setFitHeight(40);
       on_view.setSmooth(true);
       on_view.setCache(true);
+      
+      flash_view = null;
+      try {
+         Image img3 = new Image(nm3);
+         flash_view = new ImageView();
+         flash_view.setImage(img3);
+         flash_view.setFitWidth(40);
+         flash_view.setFitHeight(40);
+         flash_view.setSmooth(true);
+         flash_view.setCache(true);
+       }
+      catch (IllegalArgumentException e) { }
+      
+      blink_timer = null;
+      
       setOnAction(this);
       updateGraphic();
       getStyleClass().add("clearButton");
@@ -545,8 +591,21 @@ private class IconToggle extends ToggleButton implements EventHandler<ActionEven
    void updateGraphic() {
       if (isSelected()) {
          setGraphic(on_view);
+         if (flash_view != null && blink_timer == null) {
+            blink_timer = new Timeline(
+                  new KeyFrame(Duration.seconds(0.5),
+                        new KeyValue(graphicProperty(),on_view)),
+                  new KeyFrame(Duration.seconds(0.3),
+                        new KeyValue(graphicProperty(),flash_view)));
+            blink_timer.setCycleCount(Animation.INDEFINITE);
+            blink_timer.play();
+          }
        }
       else {
+         if (blink_timer != null) {
+            blink_timer.stop();
+            blink_timer = null;
+          }
          setGraphic(off_view);
        }
     }
@@ -773,7 +832,7 @@ private void doEngineChanged()
    mute_button.setSelected(for_engine.isMuted());
    power_button.updateButtonImage(for_engine.getEngineState());
    emergency_stop.setSelected(for_engine.isEmergencyStopped());
-   // might try to set throttle based on eengine speed
+   throttle_slider.setValue(for_engine.getThrottle());
    
    switch (for_engine.getEngineState()) {
       case UNKNOWN :
@@ -782,12 +841,26 @@ private void doEngineChanged()
       case STARTUP :
       case SHUTDOWN :
          throttle_slider.setValue(0);
-         throttle_slider.setDisable(true);
+         throttle_slider.setDisable(true); 
          break;
       case READY :
       case RUNNING :
          throttle_slider.setDisable(false);
          break;
+    }
+   if (for_engine.getEngineId() == null || for_engine.getEngineAddress() == null) {
+      reboot_button.setDisable(true);
+      config_button.setDisable(true);
+      manage_button.setDisable(true);
+      reset_button.setDisable(true);
+    }
+   else {
+      reboot_button.setDisable(false);
+      if (for_engine.getEngineState() == EngineState.OFF) {
+//       config_button.setDisable(false);
+//       reset_button.setDisable(false);
+       }
+//    manage_button.setDisable(false);
     }
    
    setupBackground();
@@ -808,6 +881,27 @@ private final class CallbackHandler implements IfaceEngine.EngineCallback {
    
 }       // end of inner class CallbackHandler
 
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Popup Menu Button Handlers                                              */
+/*                                                                              */
+/********************************************************************************/
+
+private final class RebootHandler implements EventHandler<ActionEvent> {
+
+   @Override public void handle(ActionEvent evt) {
+      Alert alert = new Alert(AlertType.CONFIRMATION);
+      alert.setTitle("Confirm Reboot");
+      alert.setHeaderText("Reboot engine " + for_engine.getEngineId() + "?");
+      Optional<ButtonType> result = alert.showAndWait();
+      if (result.isPresent() && result.get() == ButtonType.OK) {
+         for_engine.doReboot(); 
+       }
+    }
+
+}
 
 }       // end of class ViewEngineerFx
 

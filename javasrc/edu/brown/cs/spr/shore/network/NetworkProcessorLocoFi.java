@@ -132,12 +132,11 @@ void sendHorn(IfaceEngine eng)
 }
 
 
-void sendThrottle(IfaceEngine eng)
+void sendThrottle(IfaceEngine eng,double v)
 {
    EngineInfo ei = findEngineInfo(eng);
    if (ei == null) return;
    
-   double v = eng.getThrottle();
    int vint = (int) v;
    ei.sendThrottle(vint);
 }
@@ -151,22 +150,10 @@ void sendReverse(IfaceEngine eng,boolean rev)
 }
 
 
-void sendStartEngine(IfaceEngine eng,IfaceEngine.EngineState state)
+void sendStartStopEngine(IfaceEngine eng,boolean start)
 {
    EngineInfo ei = findEngineInfo(eng);
    if (ei == null) return;
-   
-   boolean start = false;
-   switch (state) {
-      case STARTUP :
-         start = true;
-         break;
-      case SHUTDOWN :
-         start = false;
-         break;
-      default :
-         return;
-    }
    
    ei.sendStartEngine(start);
 }
@@ -180,6 +167,14 @@ void sendEmergencyStop(IfaceEngine eng,boolean stop)
    ei.sendEmergencyStop(stop);
 }
 
+
+void sendReboot(IfaceEngine eng)
+{
+   EngineInfo ei = findEngineInfo(eng);
+   if (ei == null) return;
+   
+   ei.sendReboot();
+}
 
 
 /********************************************************************************/
@@ -594,18 +589,22 @@ private class EngineInfo {
     }
    
    boolean sendSpeedReportMessage() {
-      byte [] msg = LOCOFI_SPEED_REPORT_CMD;
-//    byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
-//    return ack != null;
-//    sendMessage(speed_socket,net_address,msg,0,msg.length); 
+      if (speed_socket != null) {
+//       byte [] msg = LOCOFI_SPEED_REPORT_CMD;
+//       byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
+//       return ack != null;
+//       sendMessage(speed_socket,net_address,msg,0,msg.length); 
+       }
       return true;
     }
    
    boolean sendRpmReportMessage() {
-      byte [] msg = LOCOFI_RPM_REPORT_CMD;
-//    byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
-//    return ack != null;
-//    sendMessage(rpm_socket,net_address,msg,0,msg.length);
+      if (rpm_socket != null) {
+//       byte [] msg = LOCOFI_RPM_REPORT_CMD;
+//       byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
+//       return ack != null;
+//       sendMessage(rpm_socket,net_address,msg,0,msg.length);
+       }
       return true;
     }
    
@@ -622,6 +621,14 @@ private class EngineInfo {
    // byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
    // return ack != null;
     }
+   
+   
+   boolean sendReboot()
+   {
+      byte [] msg = LOCOFI_REBOOT_CMD;
+      byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
+      return ack != null;
+   }
    
    boolean sendLight(boolean front,boolean on) {
       byte [] msg;

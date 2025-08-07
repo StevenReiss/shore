@@ -48,7 +48,7 @@ Color [] ENGINE_COLORS = {
       Color.rgb(0xed,0xfe,0xc6),
 };
 
-double MIN_RPM = 200;
+double MIN_RPM = 208;
 double MAX_RPM = 1024;
 
 

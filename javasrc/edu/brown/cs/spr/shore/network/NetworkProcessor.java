@@ -233,20 +233,7 @@ private class ReaderThread extends Thread {
 
 
 
-/********************************************************************************/
-/*                                                                              */
-/*      Status updater -- sync our status with back end                         */
-/*                                                                              */
-/********************************************************************************/
 
-protected abstract class StatusUpdater extends Thread {
-   
-   StatusUpdater() {
-      super("ShoreStatusUpdater");
-      setDaemon(true);
-    }
-   
-}       // end of inner class StatusUpdater
 
 }       // end of class NetworkProcessor
 
