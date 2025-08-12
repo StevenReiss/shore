@@ -39,7 +39,6 @@ package edu.brown.cs.spr.shore.view;
 
 import java.awt.event.ActionListener;
 import java.net.URL;
-import java.sql.Time;
 import java.util.Optional;
 
 import javax.swing.Timer;
@@ -215,7 +214,8 @@ private void setupBackground()
    if (for_engine != null && for_engine.getEngineId() != null && 
          for_engine.getEngineAddress() != null) {
       bkgcol = for_engine.getEngineColor();
-      bkgcol = bkgcol.desaturate().desaturate();
+      bkgcol = bkgcol.interpolate(Color.WHITE,0.75);
+//    bkgcol = bkgcol.desaturate().desaturate().desaturate().desaturate();
     }
    else {
       ShoreLog.logD("VIEW","USE default background "  + bkgcol);
@@ -269,6 +269,10 @@ void setupThrottle()
    throttle_slider.setMajorTickUnit(delta);
    throttle_slider.setBlockIncrement(delta);
    throttle_slider.setSnapToTicks(true);
+   
+   ShoreLog.logD("VIEW","Throttle setup " + min + " " + max + " " + delta);
+   throttle_slider.setValue(for_engine.getStartSpeed());
+   
    throttle_slider.valueProperty().addListener(new ThrottleChange());
 }
 
@@ -277,8 +281,17 @@ private final class ThrottleChange implements ChangeListener<Number> {
    
    @Override public void changed(ObservableValue<? extends Number> obs,Number oldv,Number newv) {
       boolean chng = throttle_slider.isValueChanging();
-      ShoreLog.logD("VIEW","Set throttle " + newv + " " + oldv + " " + chng);
-      for_engine.setThrottle(newv.doubleValue());
+      ShoreLog.logD("VIEW","Set throttle " + newv + " " + oldv + " " + chng + " " + 
+            throttle_slider.getMin() + " " + throttle_slider.getMax() + " " +
+            for_engine.getEngineState());
+     
+      switch (for_engine.getEngineState()) {
+         case RUNNING :
+         case UNKNOWN :
+         case READY :
+            for_engine.setThrottle(newv.doubleValue());
+            break;
+       }
     }
    
 }
@@ -297,7 +310,7 @@ private Gauge getSpeedometer()
    g.setTickLabelDecimals(0); 
    g.setTickLabelColor(Color.YELLOW);
    speed_gauge = g;
-   setupSpeedometer();
+// setupSpeedometer();
    
    return g;
 }
@@ -305,7 +318,9 @@ private Gauge getSpeedometer()
 
 private boolean setupSpeedometer()
 {
-   ShoreLog.logD("VIEW","SETUP SPEEDOMETER " + for_engine.getSpeedMax());
+   ShoreLog.logD("VIEW","SETUP SPEEDOMETER " + for_engine.getSpeedMax() + " " +
+         for_engine.getStartSpeed() + " " + for_engine.getEngineId());
+   
    speed_gauge.setSubTitle(for_engine.isSpeedKMPH() ? "KmPH" : "MPH");
    double max = for_engine.getSpeedMax();
    if (max == 0) return false;
@@ -343,7 +358,8 @@ private Gauge getTachometer()
    g.setMinorTickMarksVisible(true);
    g.setTickLabelDecimals(0);
    g.setValue(0);
-  
+   g.setTickLabelColor(Color.YELLOW);
+   
    return g;
 }
 
@@ -806,10 +822,12 @@ private class FwdRevSwitch extends HBox implements ChangeListener<Boolean> {
 
 private void doEngineChanged()
 {
-   if (!first_setup) {
-      if (setupSpeedometer()) {
-         setupThrottle();
-         first_setup = true;
+   synchronized (this) {
+      if (!first_setup && for_engine.getStartSpeed() > 0) {
+         if (setupSpeedometer()) {
+            setupThrottle();
+            first_setup = true;
+          }
        }
     }
    
@@ -832,7 +850,10 @@ private void doEngineChanged()
    mute_button.setSelected(for_engine.isMuted());
    power_button.updateButtonImage(for_engine.getEngineState());
    emergency_stop.setSelected(for_engine.isEmergencyStopped());
+   
    throttle_slider.setValue(for_engine.getThrottle());
+   ShoreLog.logD("VIEW","SET THROTTLE " + for_engine.getThrottle() + " " +
+         for_engine.getStartSpeed() + " " + for_engine.getThrottleMax());
    
    switch (for_engine.getEngineState()) {
       case UNKNOWN :

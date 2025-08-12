@@ -77,6 +77,8 @@ private DatagramSocket  rpm_socket;
 private NetworkProcessorTower tower_processor;
 private NetworkProcessorLocoFi locofi_processor;
 
+private static boolean dummy_loco = false;
+
 
 
 
@@ -186,6 +188,11 @@ public NetworkMonitor(IfaceModel model,IfaceTrains trains)
             ALT_PORT,"SHORE engineer");
       jmm.registerService(info);
       jmm.registerService(info1);
+      if (dummy_loco) {
+         ServiceInfo info2 = ServiceInfo.create("loco._udp.local.","engineer",
+               ALT_PORT,"SHORE dummy loco");
+         jmm.registerService(info2);
+       }
     }
    catch (IOException e) {
       ShoreLog.logE("NETWORK","Problem registering service",e);
@@ -219,11 +226,9 @@ private boolean isWifiInterface(NetworkInterface ni)
     }
    if (!havei4) return false;
   
-// String s1 = ni.getName().toLowerCase();
-// String s2 = ni.getDisplayName().toLowerCase();
-   // check name here -- but it might not be significant on a mac?
-   // wlo# on linux
-   
+   String s1 = ni.getName().toLowerCase();
+   String s2 = ni.getDisplayName().toLowerCase();
+   if (s2.startsWith("wlo") || s1.startsWith("wlo")) return true;               // linux
    
    return true;
 }

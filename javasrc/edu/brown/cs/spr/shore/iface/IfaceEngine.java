@@ -38,6 +38,7 @@ package edu.brown.cs.spr.shore.iface;
 import java.net.SocketAddress;
 import java.util.EventListener;
 
+import edu.brown.cs.spr.shore.iface.IfaceConstants.ShoreSlowReason;
 import javafx.scene.paint.Color;
 
 /**
@@ -106,7 +107,9 @@ double getSpeed();
 boolean isSpeedKMPH();
 double getSpeedMax();
 
-
+void stopTrain();
+void slowTrain(ShoreSlowReason reason,double speed);
+void resumeTrain(ShoreSlowReason reason);
 
 
 /********************************************************************************/
@@ -130,6 +133,11 @@ interface EngineCallback extends EventListener {
    default void enginePositionChanged(IfaceEngine e)   { }
    
 }
+
+
+
+
+
 
 
 }       // end of interface IfaceTrain

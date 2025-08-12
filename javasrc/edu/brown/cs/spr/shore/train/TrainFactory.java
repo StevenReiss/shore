@@ -42,6 +42,8 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TreeSet;
 
 import org.w3c.dom.Element;
@@ -54,6 +56,9 @@ import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceNetwork;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
+import edu.brown.cs.spr.shore.iface.IfaceSignal;
+import edu.brown.cs.spr.shore.iface.IfaceSpeedZone;
+import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
 import edu.brown.cs.spr.shore.iface.IfaceEngine.EngineState;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
@@ -74,6 +79,10 @@ private Map<String,TrainEngine> known_trains;
 private int             train_index;
 private Map<SocketAddress,TrainEngine> assigned_trains;
 private Map<IfaceBlock,TrainData> train_locations;
+private ZoneUpdater     zone_updater;
+private Timer           train_timer;
+
+private static final long EXIT_DELAY = 500;
 
 
 
@@ -91,10 +100,14 @@ public TrainFactory(IfaceModel mdl)
    assigned_trains = new HashMap<>();
    train_locations = new HashMap<>();
    train_index = 0;
+   zone_updater = null;
+   train_timer = null;
    
    loadTrains();
    
    layout_model.addModelCallback(new TrainModelUpdater());
+   
+   setupZoneUpdater();
 }
 
 
@@ -218,6 +231,14 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
     }
    
    @Override public void sensorChanged(IfaceSensor s) {
+      ShoreLog.logD("TRAIN","Handle sensor changed " + s);
+      handleSensorChanged(s);
+      if (zone_updater != null) {
+         zone_updater.sensorChanged(s);
+       }
+    }
+   
+   private void handleSensorChanged(IfaceSensor s) {
       if (s.getSensorState() != ShoreSensorState.ON)  return;
       IfaceBlock blk = s.getBlock();
       TrainData td = train_locations.get(blk);
@@ -238,20 +259,45 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
           }
          if (td == null) {
             ShoreLog.logD("TRAIN","No connection found");
+            TrainEngine enew = null;
             for (TrainEngine e1 : assigned_trains.values()) {
                if (e1.getEngineState() == EngineState.RUNNING &&
    //                e1.getSpeed() > 0 &&
                      e1.getEngineBlock() == null) {
-                  td = new TrainData(e1);
-                  td.setBlock(blk);
-                  train_locations.put(blk,td);
-                  td.setCurrentPoints(s.getAtPoint(),null);
-                  ShoreLog.logD("TRAIN","Add new train " + blk + " " + 
-                        td.getEngine().getEngineName());
+                  enew = e1;
+                  ShoreLog.logD("TRAIN","Found unattached running train " + 
+                        e1.getEngineId());
                   break;
                 }
              }
-            ShoreLog.logD("TRAIN","Can't find train for block " + blk);
+            if (enew == null) {
+               for (TrainEngine e1 : assigned_trains.values()) {
+                  if (e1.getEngineState() == EngineState.RUNNING && e1.getSpeed() > 0) {
+                     if (enew == null) {
+                        ShoreLog.logD("TRAIN","Found attached running train " + 
+                              e1.getEngineId());
+                        enew = e1;
+                      }
+                     else {
+                        ShoreLog.logD("TRAIN","Found multiple running train " + 
+                              e1.getEngineId());
+                        enew = null;
+                        break;
+                      }
+                   }
+                }
+             }
+            if (enew != null) {
+               td = new TrainData(enew);
+               td.setBlock(blk);
+               train_locations.put(blk,td);
+               td.setCurrentPoints(s.getAtPoint(),null);
+               ShoreLog.logD("TRAIN","Add new train " + blk + " " + 
+                     td.getEngine().getEngineName());
+             }
+            else {
+               ShoreLog.logD("TRAIN","Can't find train for block " + blk);
+             }
           }
        }
       else {
@@ -267,6 +313,18 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
        }
     }
    
+   @Override public void switchChanged(IfaceSwitch sw) {
+      IfaceBlock blk = sw.getPivotPoint().getBlock();
+      TrainData td = train_locations.get(blk);
+      if (td != null) td.checkNextBlock();
+   }
+   
+   @Override public void signalChanged(IfaceSignal sg) { 
+      IfaceBlock blk = sg.getFromBlock();
+      TrainData td = train_locations.get(blk);
+      if (td != null) td.checkNextBlock();
+    }
+   
 }       //  end of inner class TrainModelUpdater
 
 
@@ -276,19 +334,27 @@ private class TrainData {
    private TrainEngine for_engine;
    private IfaceBlock active_block;
    private Set<IfacePoint> block_points;
+   private IfaceBlock next_block;
+   private IfaceSignal exit_signal;
     
    TrainData(TrainEngine eng) {
       for_engine = eng;
       active_block = null;
       block_points = new HashSet<>();
+      next_block = null;
+      exit_signal = null;
     }
    
    TrainEngine getEngine()                      { return for_engine; }
    IfaceBlock getBlock()                        { return active_block; }
    
    void setBlock(IfaceBlock blk) {
+      ShoreLog.logD("TRAIN","Associate train " + for_engine.getEngineId() + 
+            " with block " + blk);
       active_block = blk;
       block_points.clear();
+      next_block = null;
+      exit_signal = null;
     }
    
    void setCurrentPoints(IfacePoint cur,IfacePoint prior) {
@@ -296,11 +362,259 @@ private class TrainData {
          if (block_points.contains(cur)) return;
          block_points.add(cur);
          if (prior != null) block_points.add(prior);
+         ShoreLog.logD("TRAIN","Set train points " + for_engine.getEngineId() + " " +
+               cur + " " + prior);
          for_engine.setCurrentPoints(cur,prior);
+         checkNextBlock();
+       }
+      else {
+         ShoreLog.logD("TRAIN","Currrent point not in active block " + cur + " " +
+            active_block);
+       }
+    }
+   
+   void checkNextBlock() {
+      if (active_block == null) return;
+      IfacePoint cur = for_engine.getCurrentPoint();
+      IfacePoint prior = for_engine.getPriorPoint();
+      if (prior == null) return;
+      IfaceBlock next = layout_model.findNextBlock(prior,cur);
+      if (next == next_block) return;
+      next_block = next;
+      for (IfaceConnection c : active_block.getConnections()) {
+         if (c.getOtherBlock(active_block) == next) {
+            exit_signal = c.getStopSignal(active_block);
+            break;
+          }
+       }
+      boolean slow = false;
+      boolean stop = false;
+      switch (next_block.getBlockState()) {
+         case EMPTY :
+            break;
+         case INUSE :
+            if (train_locations.get(next_block) == this) break;
+            slow = true;
+            break;
+         case UNKNOWN :
+            break;
+         case PENDING :
+            IfaceBlock pendon = next_block.getPendingFrom();
+            ShoreLog.logD("TRAIN","Check next block pending " + 
+                  active_block + " " + next_block + " " + pendon);
+            if (pendon == active_block) break;
+            slow = true;
+            break;
+       }
+      
+      if (exit_signal != null && exit_signal.getSignalState() == ShoreSignalState.RED) {
+         for (IfacePoint pt : exit_signal.getAtPoints()) {
+            if (block_points.contains(pt)) stop = true;
+          }
+       }
+      
+      ShoreLog.logD("TRAIN","Train signal action " + active_block + " " +
+            next + " " + exit_signal + " " + slow + " " + stop);
+      
+      if (stop) {
+         for_engine.stopTrain();
+       } 
+      else if (slow) {
+         // Might want a different reason than in Safety Signal
+         for_engine.slowTrain(ShoreSlowReason.SIGNAL,SLOW_THROTTLE); 
+       }
+      else {
+         for_engine.resumeTrain(ShoreSlowReason.SIGNAL);
        }
     }
    
 }       // end of inner class TrainData
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Updater for speed zone monitoring                                       */
+/*                                                                              */
+/********************************************************************************/
+
+private void setupZoneUpdater()
+{
+   int maxsensor = 0;
+   for (IfaceSpeedZone sz : layout_model.getSpeedZones()) {
+      int si = sz.getZoneSensors().size();
+      maxsensor = Math.max(si,maxsensor);
+    }
+   
+   if (maxsensor == 0) return;                  // no speed zones
+   
+   zone_updater = new ZoneUpdater(maxsensor);
+   train_timer = new Timer("Train timer");
+}
+
+
+private final class ZoneUpdater implements IfaceModel.ModelCallback {
+   
+   private Map<IfaceEngine,SensorBuffer> train_sensors;
+   private int max_size;
+   
+   ZoneUpdater(int max) {
+      max_size = max;
+      train_sensors = new HashMap<>();
+    }
+   
+   @Override public void sensorChanged(IfaceSensor s) {
+      IfaceBlock blk = s.getBlock();
+      TrainData td = train_locations.get(blk);
+      ShoreLog.logD("TRAIN","Check speed zone sensors " + td + " " + blk);
+      if (td == null) return;
+      IfaceEngine eng = td.getEngine();
+      SensorBuffer buffer = train_sensors.get(eng);
+      if (buffer == null) {
+         buffer = new SensorBuffer(eng,max_size);
+         train_sensors.put(eng,buffer);
+         ShoreLog.logD("TRAIN","Create sensor buffer for " + eng.getEngineId());
+       }
+      buffer.noteSensor(s);
+    }
+}
+
+
+private final class SensorBuffer {
+   
+   private IfaceEngine for_engine;
+   private IfaceSensor [] last_sensors;
+   private int head_index;
+   private int tail_index;
+   private int buffer_size;
+   private int buffer_length;
+   private IfaceSpeedZone current_zone;
+   private boolean is_done;
+   private ZoneCheckTask end_task;
+   
+   SensorBuffer(IfaceEngine eng,int max) {
+      for_engine = eng;
+      last_sensors = new IfaceSensor[max+1];
+      head_index = 0;
+      tail_index = 0;
+      buffer_size = 0;
+      buffer_length = last_sensors.length;
+      current_zone = null;
+      is_done = false;
+      end_task = null;
+    }
+   
+   void noteSensor(IfaceSensor s) {
+      ShoreLog.logD("TRAIN","Check speed sensor " + current_zone + " " + s + " " +
+            s.getSensorState());
+   
+      if (current_zone == null) {
+         if (s.getSensorState() == ShoreSensorState.ON) {
+            for (IfaceSpeedZone sz : layout_model.getSpeedZones()) {
+               ShoreLog.logD("TRAIN","Check sensor " + s + " " + sz.getStartSensor() + " " +
+                     sz.getEndSensor());
+               if (s == sz.getStartSensor()) {
+                  ShoreLog.logD("TRAIN","Found start sensor for speed zone");
+                  if (!contains(sz.getEndSensor()) && !contains(sz.getStartSensor())) {
+                     current_zone = sz;
+                     clear();
+                     ShoreLog.logD("TRAIN","Slow train for speed zone");
+                     for_engine.slowTrain(ShoreSlowReason.SPEED_ZONE,
+                           sz.getSpeedPercent());
+                     break;
+                   }
+                }
+             }
+            add(s);
+          }
+       }
+      else if (current_zone != null) {
+         if (s.getSensorState() == ShoreSensorState.ON) {
+            for (IfaceSensor ss : current_zone.getZoneSensors()) {
+               if (ss == s) {
+                  add(s);
+                  synchronized (this) {
+                     is_done = false;
+                     if (end_task != null) {
+                        end_task.cancel();
+                        end_task = null;
+                      }
+                   }
+                }
+             }
+            ShoreLog.logD("TRAIN","Add sensor " + s);
+          }
+         else if (s == current_zone.getEndSensor() && s.getSensorState() == ShoreSensorState.OFF) {
+            for (IfaceSensor ss : current_zone.getZoneSensors()) {
+               if (ss.getSensorState() == ShoreSensorState.ON) {
+                  is_done = false;
+                  ShoreLog.logD("TRAIN","Still have a sensor on in zone " + ss);
+                  return;
+                }
+             }
+            // all sensors off, end sensor just went off
+            synchronized (this) {
+               ShoreLog.logD("TRAIN","Start exit check for speed zone");
+               is_done = true;
+               ZoneCheckTask task = new ZoneCheckTask(this);
+               train_timer.schedule(task,EXIT_DELAY);
+             }
+            
+          }
+       }
+    }
+   
+   private void add(IfaceSensor s) {
+      if (contains(s)) return;
+      if (buffer_size == buffer_length) {
+         head_index = (head_index + 1) % buffer_length;
+       }
+      else {
+         ++buffer_size;
+       }
+      last_sensors[tail_index] = s;
+      tail_index = (tail_index + 1) % buffer_length;
+    }
+   
+   private void clear() {
+      head_index = 0;
+      tail_index = 0;
+      buffer_size = 0;
+    }
+   
+   private boolean contains(IfaceSensor s) {
+      for (int i = 0; i < buffer_size; ++i) {
+         int idx = (head_index + i) % buffer_length;
+         if (last_sensors[idx] == s) return true;
+       }
+      return false;
+    }
+   
+   synchronized void checkDone() {
+      if (!is_done) return;
+      ShoreLog.logD("TRAIN","Resume speed after zone " + for_engine.getEngineId());
+      for_engine.resumeTrain(ShoreSlowReason.SPEED_ZONE);
+      current_zone = null;
+      clear();
+      
+    }
+   
+}       // end of inner class SensorBuffer
+
+
+private class ZoneCheckTask extends TimerTask {
+   
+   private SensorBuffer for_buffer;
+   
+   ZoneCheckTask(SensorBuffer buf) {
+      for_buffer = buf;
+    }
+   
+   @Override public void run() {
+      for_buffer.checkDone();
+    }
+   
+}       // end of inner class ZoneCheckTask
 
 }       // end of class TrainFactory
 

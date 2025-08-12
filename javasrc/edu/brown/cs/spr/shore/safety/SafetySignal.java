@@ -118,7 +118,7 @@ void handleSensorChange(IfaceSensor s)
 {
    if (s.getSensorState() != ShoreSensorState.ON) return;
    
-   // check if we have to stop a train
+   // check if we have to stop a train -- night be redundant (done by train model)
    for (IfaceSignal sig : s.getSignals()) { 
       Collection<IfaceSensor> pset = sig.getPriorSensors();
       ShoreLog.logD("SAFETY","PRIOR SENSORS " + s + " " + pset);
@@ -138,6 +138,11 @@ void handleSensorChange(IfaceSensor s)
             else {
                // add to active signals so we ignore later sets
                active_signals.put(sig,new SignalData(sig,null));
+             }
+          }
+         else {
+            if (sig.getSignalState() == ShoreSignalState.GREEN) {
+               sd.restartTrain();
              }
           }
        }
@@ -264,18 +269,24 @@ private ShoreSignalState updateSignal(IfaceSignal sig,IfaceConnection conn)
 private class SignalData {
    
    private IfaceSignal for_signal;
-   private IfaceEngine for_train;
+   private IfaceEngine for_engine;
    
    SignalData(IfaceSignal sig,IfaceEngine train) {
       for_signal = sig;
-      for_train = train;
+      for_engine = train;
     }
    
    void stopTrain() {
-      if (for_train != null) {
-         for_train.setThrottle(0);
+      if (for_engine != null) {
+         for_engine.stopTrain();
        }
     } 
+   
+   void restartTrain() {
+      if (for_engine != null) {
+         for_engine.resumeTrain(ShoreSlowReason.SIGNAL);
+       }
+    }
    
    IfaceBlock getBlock() {
       return for_signal.getFromBlock();

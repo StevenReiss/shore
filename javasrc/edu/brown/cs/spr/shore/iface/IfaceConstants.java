@@ -115,6 +115,17 @@ enum ShoreBlockState {
 };
 
 
+/**
+ *      Reasons for slowing train
+ **/
+enum ShoreSlowReason {
+   DEFAULT,                     // original speed from throttle setting
+   SPEED_ZONE,                  // slow for speed zone
+   SIGNAL,                      // slow for a signal ahead
+   STOP,                        // stop for a signal
+   ESTOP,                       // emergency stop was set before a stop
+}
+
 
 
 }       // end of interface IfaceConstants

@@ -61,6 +61,7 @@ import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
+import edu.brown.cs.spr.shore.iface.IfaceSpeedZone;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.shore.ShoreException;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
@@ -109,6 +110,7 @@ private Map<String,ModelSensor> model_sensors;
 private Map<String,ModelSignal> model_signals;
 private Map<String,ModelDiagram> model_diagrams;
 private List<ModelConnection> block_connections;
+private List<ModelSpeedZone> speed_zones;
 private List<String> model_errors;
 private SwingEventListenerList<ModelCallback> model_listeners;
 private Element model_xml;
@@ -133,6 +135,7 @@ public ModelBase(File file)
    model_diagrams = new HashMap<>();
    block_connections = new ArrayList<>();
    model_listeners = new SwingEventListenerList<>(ModelCallback.class);
+   speed_zones = new ArrayList<>();
    
    model_errors = new ArrayList<>();
    model_xml = null;
@@ -211,6 +214,11 @@ Collection<ModelSwitch> getModelSwitches()
    return new ArrayList<>(model_diagrams.values());  
 }
 
+
+@Override public Collection<IfaceSpeedZone> getSpeedZones()
+{
+   return new ArrayList<>(speed_zones);
+}
 
 
 ModelSensor findSensorForPoint(ModelPoint pt)
@@ -575,6 +583,26 @@ private void loadModel(File file) throws ShoreException
    if (hasErrors()) return;
    
    checkModel();
+   
+   if (hasErrors()) return;
+   
+   for (Element szxml : IvyXml.children(xml,"SPEEDZONE")) {
+      ModelSensor pt0 = model_sensors.get(IvyXml.getAttrString(szxml,"FROM"));
+      ModelSensor pt1 = model_sensors.get(IvyXml.getAttrString(szxml,"TO"));
+      if (pt0 == null || pt1 == null) {
+         noteError("Speedzone has bad sensor ids: " + IvyXml.convertXmlToString(szxml));
+       }
+      double speed = IvyXml.getAttrDouble(szxml,"SPEED",60.0);
+      boolean oneway = IvyXml.getAttrBool(szxml,"ONEWAY");
+      ModelSpeedZone mz1 = new ModelSpeedZone(this,pt0,pt1,speed); 
+      speed_zones.add(mz1);
+      if (!oneway) {
+         ModelSpeedZone mz2 = new ModelSpeedZone(this,pt1,pt0,speed);
+         speed_zones.add(mz2);
+       }
+    }
+   
+   
 }
  
 

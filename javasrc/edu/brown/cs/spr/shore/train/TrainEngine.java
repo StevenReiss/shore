@@ -37,12 +37,15 @@ package edu.brown.cs.spr.shore.train;
 
 import java.net.SocketAddress;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import edu.brown.cs.ivy.swing.SwingEventListenerList;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
+import edu.brown.cs.spr.shore.shore.ShoreLog;
 import javafx.scene.paint.Color;
 
 class TrainEngine implements TrainConstants, IfaceEngine, Comparable<IfaceEngine>
@@ -83,6 +86,8 @@ private List<IfaceBlock>        train_blocks;
 private IfacePoint              current_point;
 private IfacePoint              prior_point;
 
+private Map<ShoreSlowReason,Double> saved_throttle;
+
 private SwingEventListenerList<EngineCallback> engine_listeners;
 
 
@@ -97,6 +102,21 @@ TrainEngine(TrainFactory fac,String name,String id,Color color)
 {
    train_factory = fac;
    engine_name = name;
+   engine_state = EngineState.UNKNOWN; 
+   engine_color = color;
+   if (id != null) {
+      engine_id = id.toUpperCase();
+    }
+   else engine_id = null;
+   
+   initialize();
+    
+   engine_listeners = new SwingEventListenerList<>(EngineCallback.class);
+}
+
+
+private void initialize()
+{
    train_blocks = new ArrayList<>();
    current_point = null;
    prior_point = null;
@@ -113,11 +133,6 @@ TrainEngine(TrainFactory fac,String name,String id,Color color)
    rear_light = false;
    has_rear_light = true;
    engine_state = EngineState.UNKNOWN; 
-   engine_color = color;
-   if (id != null) {
-      engine_id = id.toUpperCase();
-    }
-   else engine_id = null;
    current_point = null;
    prior_point = null;
    start_speed = 0;
@@ -125,8 +140,7 @@ TrainEngine(TrainFactory fac,String name,String id,Color color)
    max_display = 200;
    num_steps = 8;
    use_kmph = false;
-    
-   engine_listeners = new SwingEventListenerList<>(EngineCallback.class);
+   saved_throttle = new HashMap<>();
 }
 
 
@@ -148,6 +162,9 @@ void setEngineAddress(SocketAddress sa)
    if (socket_address == sa) return;
    
    socket_address = sa;
+   if (sa == null) {
+      initialize();
+    }
    
    fireEngineChanged();
 }  
@@ -189,14 +206,19 @@ void setNoRearLight()                                   { has_rear_light = false
 
 @Override public void setThrottle(double v) 
 {
-   train_factory.getNetworkModel().sendThrottle(this,v);
-// 
-// boolean chng = engine_throttle != v; 
-// engine_throttle = v;
-// 
-// train_factory.getNetworkModel().sendThrottle(this);
-// 
-// if (chng) fireEngineChanged();
+   // might want to let saved throttle setting override user request
+   // this would enforce safety precautions
+   // then we should reset default throttle
+   
+   if (v < start_speed) v = start_speed;
+   
+   if (saved_throttle.get(ShoreSlowReason.DEFAULT) != null) {
+      saved_throttle.put(ShoreSlowReason.DEFAULT,v);
+    }
+   
+   if (saved_throttle.isEmpty() || v < getThrottle()) {
+      train_factory.getNetworkModel().sendThrottle(this,v);
+    }
 }
 
 
@@ -227,7 +249,9 @@ void setNoRearLight()                                   { has_rear_light = false
 
 @Override public void setEmergencyStop(boolean stop)
 {
+   // might want to forbid changing this if saved_throttle indicates stop signal
    // actual stop set from engine state request
+   
    train_factory.getNetworkModel().sendEmergencyStop(this,stop); 
 }
 
@@ -300,6 +324,74 @@ void setNoRearLight()                                   { has_rear_light = false
 {
    train_factory.getNetworkModel().sendReboot(this); 
 }
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Train control methods                                                   */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public void slowTrain(ShoreSlowReason reason,double speed) 
+{
+   ShoreLog.logD("TRAIN","SLOW TRAIN " + getEngineId() + " " +
+         reason + " " + speed);
+   double throttle = (max_speed - start_speed) * speed + start_speed; 
+   Double v = saved_throttle.get(reason);
+   if (v != null && v < throttle) return;
+   saved_throttle.put(reason,throttle);
+   if (saved_throttle.get(ShoreSlowReason.DEFAULT) == null) {
+      saved_throttle.put(ShoreSlowReason.DEFAULT,engine_throttle);
+    }
+   
+   if (engine_throttle <= throttle) return;
+   
+   train_factory.getNetworkModel().sendThrottle(this,throttle);
+}
+
+
+@Override public void stopTrain()
+{
+   ShoreLog.logD("TRAIN","STOP TRAIN " + getEngineId());
+   slowTrain(ShoreSlowReason.STOP,0);
+   if (isEmergencyStopped()) {
+      saved_throttle.put(ShoreSlowReason.ESTOP,0.0);
+    }
+   
+   train_factory.getNetworkModel().sendThrottle(this,start_speed);
+   train_factory.getNetworkModel().sendEmergencyStop(this,true);
+}
+
+
+@Override public void resumeTrain(ShoreSlowReason reason)
+{
+   Double v = saved_throttle.remove(reason);
+   if (v == null) return;
+   if (reason == ShoreSlowReason.STOP) {
+      Double v1 = saved_throttle.remove(ShoreSlowReason.ESTOP);
+      if (v1 == null) {
+         train_factory.getNetworkModel().sendEmergencyStop(this,false);
+       }
+    }
+      
+   double v0 = -1;
+   boolean havedflt = false;
+   for (Map.Entry<ShoreSlowReason,Double> ent : saved_throttle.entrySet()) {
+      v = ent.getValue();
+      if (v0 < 0) v0 = v;
+      else if (v0 > v) v0 = v;
+      if (ent.getKey() == ShoreSlowReason.DEFAULT) havedflt = true;
+    }
+   if (v0 < 0) return;
+   if (havedflt && saved_throttle.size() == 1) {
+      // only default -- remove it
+      saved_throttle.clear();
+    }
+   
+   train_factory.getNetworkModel().sendThrottle(this,v0);
+}
+
 
 /********************************************************************************/
 /*                                                                              */

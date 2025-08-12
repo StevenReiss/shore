@@ -336,6 +336,7 @@ private final class LocoFiStatusUpdater extends Thread {
                if (iv == null) iv = 0;
                bad_count.put(ei,iv+1);
                if (iv > MAX_NO_STATE_REPLY) { 
+                  ShoreLog.logE("NETWORK","Engine " + ei.getEngineId() + " timed out");
                   IfaceEngine eng = findEngine(ei.getEngineId());
                   if (eng != null) {
                      engine_model.setEngineSocket(eng,null);
@@ -659,7 +660,7 @@ private class EngineInfo {
    
    boolean sendThrottle(int v) {
       byte [] msg = new byte[3];
-      msg[0] = LOCLFI_SET_THROTTLE_CMD[0]; 
+      msg[0] = LOCOFI_SET_THROTTLE_CMD[0];  
       msg[1] = (byte) (v & 0xff);
       msg[2] = (byte) ((v & 0xff00) >> 8);
       byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);

@@ -63,7 +63,7 @@ private SafetyFactory   safety_factory;
 private Map<IfaceBlock,BlockData> active_blocks;
 
 private static final long BLOCK_DELAY = 10;
-private static final long VERIFY_DELAY = 10000;
+private static final long VERIFY_DELAY = 3000;
 
 
 

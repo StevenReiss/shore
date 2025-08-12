@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              ModelBlock.java                                                 */
+/*              ModelSpeedZone.java                                             */
 /*                                                                              */
-/*      Implementation of a track block                                         */
+/*      description of class                                                    */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,19 +35,19 @@
 
 package edu.brown.cs.spr.shore.model;
 
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
 
-import org.w3c.dom.Element;
+import edu.brown.cs.spr.shore.iface.IfaceSensor;
+import edu.brown.cs.spr.shore.iface.IfaceSpeedZone;
 
-import edu.brown.cs.ivy.xml.IvyXml;
-import edu.brown.cs.spr.shore.iface.IfaceBlock;
-import edu.brown.cs.spr.shore.iface.IfaceConnection;
-import edu.brown.cs.spr.shore.shore.ShoreLog;
-
-class ModelBlock implements ModelConstants, IfaceBlock
+class ModelSpeedZone implements IfaceSpeedZone, ModelConstants
 {
 
 
@@ -57,12 +57,11 @@ class ModelBlock implements ModelConstants, IfaceBlock
 /*                                                                              */
 /********************************************************************************/
 
-private ModelBase for_model;
-private String block_id;
-private ModelPoint at_point;
-private ShoreBlockState block_state;
-private ModelBlock pending_from;
-private Set<ModelConnection> block_connects;
+private ModelSensor     start_sensor;
+private ModelSensor     end_sensor;
+private double          speed_percent;
+private List<ModelSensor> all_sensors;
+
 
 
 
@@ -72,19 +71,16 @@ private Set<ModelConnection> block_connects;
 /*                                                                              */
 /********************************************************************************/
 
-ModelBlock(ModelBase model,Element xml)
+ModelSpeedZone(ModelBase mb,ModelSensor start,ModelSensor end,double speed)
 {
-   for_model = model;
-   block_id = IvyXml.getAttrString(xml,"ID");
-   String ptname = IvyXml.getAttrString(xml,"POINT");
-   at_point = model.getPointById(ptname);
-   if (at_point == null) {
-      model.noteError("Point " + ptname + " not found for block " + block_id);
+   start_sensor = start;
+   end_sensor = end;
+   speed_percent = speed;
+   all_sensors = getSensors(mb);
+   if (all_sensors == null) {
+      mb.noteError("Not path for speed zone from " + start + " to " + end);
     }
-   block_state = ShoreBlockState.UNKNOWN;
-   block_connects = new HashSet<>();
-   pending_from = null;
-}  
+}
 
 
 /********************************************************************************/
@@ -93,121 +89,116 @@ ModelBlock(ModelBase model,Element xml)
 /*                                                                              */
 /********************************************************************************/
 
-@Override public String getId()                 { return block_id; } 
-@Override public ModelPoint getAtPoint()        { return at_point; }
-
-@Override public ShoreBlockState getBlockState()     { return block_state; }
-@Override public ModelBlock getPendingFrom()    
+@Override public double getSpeedPercent()
 {
-   if (block_state != ShoreBlockState.PENDING) return null;
-    
-   return pending_from;
+   return speed_percent;
 }
 
 
-
-@Override public void setBlockState(ShoreBlockState st)
+@Override public IfaceSensor getEndSensor()
 {
-   if (block_state == st) return;
-   
-   String stnm = st.toString();
-   if (st == ShoreBlockState.PENDING) stnm += "[" + pending_from + "]";
-   ShoreLog.logD("MODEL","Set Block State " + block_id + "=" + stnm);
-   
-   block_state = st;
-   for_model.fireBlockChanged(this);
+   return start_sensor;
 }
 
 
-@Override public boolean setPendingFrom(IfaceBlock blk)  
+@Override public IfaceSensor getStartSensor()
 {
-   if (blk == null) {
-      setBlockState(ShoreBlockState.EMPTY);
-      return true;
-    }
-   
-   if (block_state != ShoreBlockState.EMPTY &&
-         block_state != ShoreBlockState.UNKNOWN) return false;
-// if (!checkNextPending(blk)) return false;
-   
-   pending_from = (ModelBlock) blk;
-   setBlockState(ShoreBlockState.PENDING);
-  
-   return true;
+   return end_sensor;
 }
 
 
-@Override public Collection<IfaceConnection> getConnections()
+@Override public List<IfaceSensor> getZoneSensors() 
 {
-   return new ArrayList<>(block_connects); 
+   List<IfaceSensor> rslt = new ArrayList<>();
+   rslt.addAll(all_sensors);
+   return rslt;
 }
-
-
-void addConnection(ModelConnection conn) 
-{
-   block_connects.add(conn);
-}
-
 
 
 /********************************************************************************/
 /*                                                                              */
-/*      Normalize the block                                                     */
+/*      Setup methods                                                           */
 /*                                                                              */
 /********************************************************************************/
 
-/*
- * first pass associated each point with a block
- **/
-
-void normalizeBlock(ModelBase mdl)
+private List<ModelSensor> getSensors(ModelBase mb)
 {
-   ModelPoint pt = getAtPoint();
-   if (pt == null) {
-      mdl.noteError("No Point specified for block " + getId());
-      return;
-    }
-   propagateBlock(mdl,pt);
+   ModelPoint pt0 = start_sensor.getAtPoint();
+   ModelPoint pt1 = end_sensor.getAtPoint();
+   
+   List<ModelSensor> sensors = findShortestPath(mb,pt0,pt1);
+   
+   return sensors;
 }
 
 
-
-private void propagateBlock(ModelBase mdl,ModelPoint pt)
+private List<ModelSensor> findShortestPath(ModelBase mb,ModelPoint pt0,ModelPoint pt1)
 {
-   if (pt.getBlock() != null) { 
-      if (pt.getBlock() == this) return;
-      mdl.noteError("Point " + pt.getId() + " is in block " +
-            pt.getBlock().getId() + " and block " + getId());
-      return;
+   Map<ModelPoint,Double> distance = new HashMap<>();
+   Map<ModelPoint,ModelPoint> pred = new HashMap<>();
+   PriorityQueue<PointData> queue = new PriorityQueue<>();
+   Set<ModelPoint> settled = new HashSet<>();
+   
+   distance.put(pt0,0.0);
+   queue.add(new PointData(pt0,0));
+   while (!queue.isEmpty()) {
+      PointData cur = queue.remove();
+      ModelPoint curpt = cur.getPoint();
+      if (!settled.add(curpt)) continue;
+      double d1 = distance.get(curpt);
+      for (ModelPoint npt : curpt.getModelConnectedTo()) {
+         double d = distance(curpt,npt);
+         double d2 = d + d1;
+         Double dnpt = distance.get(npt);
+         if (dnpt == null || dnpt > d2) {
+            distance.put(npt,d2);
+            pred.put(npt,curpt);
+            queue.add(new PointData(npt,d2));
+          }
+       }
     }
    
-   pt.setBlock(this);
+   if (distance.get(pt1) == null) return null;
    
-   for (ModelPoint npt : pt.getModelConnectedTo()) {
-      if (npt.getType() == ShorePointType.GAP) continue;
-      propagateBlock(mdl,npt);
+   List<ModelSensor> rslt = new ArrayList<>();
+   for (ModelPoint ptx = pt1; ptx != null; ptx = pred.get(ptx)) {
+       ModelSensor ms = mb.findSensorForPoint(ptx);
+       if (ms != null) rslt.add(0,ms);
+    }
+   
+   return rslt;
+}
+
+
+private double distance(ModelPoint mpt0,ModelPoint mpt1)
+{
+   Point2D pt0 = mpt0.getPoint2D();
+   Point2D pt1 = mpt1.getPoint2D();
+   return pt0.distance(pt1);
+}
+
+
+private class PointData implements Comparable<PointData> {
+   
+   private ModelPoint for_point;
+   private double point_distance;
+   
+   PointData(ModelPoint pt,double d) {
+      for_point = pt;
+      point_distance = d;
+    }
+   
+   ModelPoint getPoint()                { return for_point; }
+   
+   @Override public int compareTo(PointData pd) {
+      return Double.compare(point_distance,pd.point_distance);
     }
 }
 
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Output methods                                                          */
-/*                                                                              */
-/********************************************************************************/
-
-@Override public String toString()
-{
-   return "BLOCK[" + block_id + "=" + block_state + "]";
-}
-
-
-
-}       // end of class ModelBlock
+}       // end of class ModelSpeedZone
 
 
 
 
-/* end of ModelBlock.java */
+/* end of ModelSpeedZone.java */
 

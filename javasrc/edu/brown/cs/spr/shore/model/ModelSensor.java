@@ -73,6 +73,7 @@ private byte tower_id;
 private byte tower_index;
 private ShoreSensorState force_state;
 private boolean is_ignored;
+private boolean is_high;
 
 
 
@@ -91,6 +92,7 @@ ModelSensor(ModelBase mdl,Element xml)
    tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
    tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
    is_ignored = IvyXml.getAttrBool(xml,"IGNORED");
+   is_high = IvyXml.getAttrBool(xml,"HIGH");
    
    if (IvyXml.getAttrPresent(xml,"STATE")) {
       force_state = IvyXml.getAttrEnum(xml,"STATE",ShoreSensorState.UNKNOWN);
@@ -144,7 +146,6 @@ void setConnection(ModelConnection conn)
 }
 
 
-
 void assignSwitch(ModelSwitch sw,ShoreSwitchState state)
 {
    switch (state) {
@@ -165,6 +166,12 @@ void assignSwitch(ModelSwitch sw,ShoreSwitchState state)
 {
    return sensor_point.getBlock();
 }  
+
+@Override public boolean isHighThreshold() 
+{
+   return is_high;
+}
+
 
 @Override public ShoreSensorState getSensorState()   { return sensor_state; }
 
@@ -189,6 +196,7 @@ void addSignal(ModelSignal sig)
 @Override public byte getTowerId()              { return tower_id; } 
 
 @Override public byte getTowerSensor()          { return tower_index; }
+
 
 
 /********************************************************************************/

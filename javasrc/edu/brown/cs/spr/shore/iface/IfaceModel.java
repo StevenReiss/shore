@@ -87,6 +87,12 @@ Collection<IfaceBlock> getBlocks();
 Collection<IfaceDiagram> getDiagrams();
 
 /**
+ *      Return the seet of all speed zones
+ **/
+Collection<IfaceSpeedZone> getSpeedZones();
+
+
+/**
  *      Determine if a path from prev through pt goes to the
  *      point tgt without leaving the current block
  **/

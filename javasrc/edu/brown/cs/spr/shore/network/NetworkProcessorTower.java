@@ -209,6 +209,8 @@ private boolean sendDefSensor(IfaceSensor sen)
          s = idx1 * 4 + ShoreSwitchState.N.ordinal();
        }
     }
+   if (sen.isHighThreshold()) s |= 128;
+   
    ci.sendDefSensorMessage(sen.getTowerSensor(),s);
    
    return true;

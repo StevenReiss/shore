@@ -31,7 +31,7 @@ byte [] LOCOFI_REV_DIR_CMD		 = {0x01, 0x01};
 //{0x02} is reserved for setting the speed step
 //the second and third argument is the actual speed step (two bytes passed in little endian format); 
 //  for older versions, only second argument is needed; default 0
-byte [] LOCLFI_SET_THROTTLE_CMD          = {0x02, 0x00, 0x00 };
+byte [] LOCOFI_SET_THROTTLE_CMD          = {0x02, 0x00, 0x00 };
 byte [] LOCOFI_FWD_LIGHT_OFF_CMD	 = {0x03, 0x00};
 byte [] LOCOFI_FWD_LIGHT_ON_CMD 	 = {0x03, 0x01};
 byte [] LOCOFI_FWD_LIGHT_BLINK_CMD	 = {0x03, 0x02};

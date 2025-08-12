@@ -42,6 +42,8 @@ public interface TrainConstants extends IfaceConstants
 {
  
 Color [] ENGINE_COLORS = {
+      Color.GREEN,
+      Color.RED,
       Color.rgb(0xcd,0xcb,0xfc),
       Color.rgb(0xae,0xf6,0xf5),
       Color.rgb(0x92,0xf5,0xd7),
@@ -63,6 +65,11 @@ int STARTUP_TIME = 6000;
  *      Time to shutdown engine
  **/
 int SHUTDOWN_TIME = 4000; 
+
+/**
+ *      % Throttle value for slow speed
+ **/
+double SLOW_THROTTLE = 0.25;
 
 }       // end of interface TrainConstants
 

@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              IfaceSensor.java                                                */
+/*              IfaceSpeedZone.java                                             */
 /*                                                                              */
-/*      Information about sensors                                               */
+/*      Representation of a speed zone                                          */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,89 +35,38 @@
 
 package edu.brown.cs.spr.shore.iface;
 
-import java.util.Collection;
+import java.util.List;
 
-/**
- *      Represents a sensor embedded in the track.  Sensors are used by the system 
- *      to detect train locations, implement safety constraints, and plan what should
- *      happen.  A sensor can be associated with a switch N or R direction (to force the
- *      switch to go that way and avoid derailment).  They can also be associated with
- *      a connection when they represent two sides of a gap between blocks.  They can
- *      also be associated with a signal in which case they represent where a train should
- *      be stopped if the signal is red.  These are all setup from the layout.xml file.
- **/
-public interface IfaceSensor extends IfaceConstants
+public interface IfaceSpeedZone extends IfaceConstants
 {
 
-
 /**
- *      Return switch if on N path to switch; null otherwise
+ *      Get speed as a % of the maximum speed
  **/
-IfaceSwitch getSwitchN();
-
-
-/**
- *      Return switch if on R path to switch; null otherwise
- **/
-IfaceSwitch getSwitchR();
+double getSpeedPercent();
 
 
 /**
- *      Return the connection if sensor is on either side of a gap, null otherwise
+ *      Get sensor at the start
  **/
-IfaceConnection getConnection();
+IfaceSensor getStartSensor();
 
 
 /**
- *      Return the block this sensor is in.
+ *      Get sensor at the end
  **/
-IfaceBlock getBlock();
+IfaceSensor getEndSensor();
 
 /**
- *      Return the current state (ON/OFF) of the sensor
+ *      Return the set of sensors in the zone
  **/
-ShoreSensorState getSensorState();
+List<IfaceSensor> getZoneSensors();
 
 
-/**
- *      Set the state of the sensor
- **/
-void setSensorState(ShoreSensorState state);
-
-
-/**
- *      Get the signals associated with the sensor.  This can be more than one if the
- *      sensor is used for stopping trains from both directions
- **/
-Collection<IfaceSignal> getSignals();
-
-
-/**
- *      Get the location point for this sensor.
- **/
-IfacePoint getAtPoint();
-
-
-/**
- *      Tell if the sensor should have a high threshold
- **/
-boolean isHighThreshold();
-
-
-/**
- *      Get the id of the tower connected to this sensor.  
- **/
-byte getTowerId();
-
-/**
- *      Get the index number of this sensor in the tower
- **/
-byte getTowerSensor();
-
-}       // end of interface IfaceSensor
+}       // end of interface IfaceSpeedZone
 
 
 
 
-/* end of IfaceSensor.java */
+/* end of IfaceSpeedZone.java */
 
