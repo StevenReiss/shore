@@ -129,6 +129,8 @@ void setPoint2D(double x,double y)
 
 String getRefId()                               { return ref_id; }
 
+@Override public String getLabel()              { return ref_id; } 
+
 List<ModelPoint> getModelConnectedTo()
 {
    return conn_points;

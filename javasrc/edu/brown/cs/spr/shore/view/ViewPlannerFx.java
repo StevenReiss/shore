@@ -35,8 +35,11 @@
 
 package edu.brown.cs.spr.shore.view;
 
+import javafx.collections.ObservableList;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.GridPane;
 
 class ViewPlannerFx extends AnchorPane implements ViewConstants
 {
@@ -67,6 +70,33 @@ ViewPlannerFx()
    setPrefSize(1024,200);
 }
 
+
+
+private ObservableList<String> startOptions()
+{
+   return null;
+}
+
+private ObservableList<String> options(String from) 
+{
+   return null;
+}
+
+
+private class TrainPlanner extends GridPane { 
+   
+   TrainPlanner() {
+      setMinSize(400,200);
+      add(new Label("Start From:"),0,0,1,1);
+      add(new Label("Step 1:"),0,1,1,1);
+      add(new Label("Step 2:"),0,2,1,1);
+      add(new Label("Step 3:"),0,3,1,1);
+      add(new Label("Step 4:"),0,4,1,1);
+      add(new Label("Step 5:"),0,5,1,1);
+      add(new Label("Use Train:"),0,6,1,1);
+      
+    }
+}
 
 }       // end of class ViewPlannerFx
 

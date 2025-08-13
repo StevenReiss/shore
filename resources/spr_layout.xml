@@ -106,6 +106,9 @@
      <POINT ID='C14' X='100' Y='68' TYPE='BLOCK' REF='14' />
      <POINT ID='C15' X='83' Y='68' TYPE='LABEL' REF='To Yard' />
      <POINT ID='C16' X='70' Y='68' TYPE='DIAGRAM' />
+     <POINT ID='L1' X='3' Y='3' TYPE='LABEL' REF='LOOP A' />
+     <POINT ID='L2' X='27' Y='17' TYPE='LABEL' REF='LOOP B' />
+
      <!-- Connect the dots -->
      <CONNECT POINTS='M1 M2 M3 M4 M5 M6 M6a M7 M8 M9 M9a M10 M11 M12 M13 M14 M15 M15a M16' />
      <CONNECT POINTS='M16 M17 M18 M19 M19a M20 M21 M22 M22a M23 M24 M25 M26 M26a M27 M28 M1' />
@@ -220,7 +223,7 @@
      <POINT ID='Y55' X='164' Y='12' TYPE='TURNING' />
      <POINT ID='Y13a' X='151' Y='12' TYPE='SIGNAL' REF='14to12,13' />
      <POINT ID='Y13b' X='133' Y='12' TYPE='SIGNAL' REF='14to1' />
-     <POINT ID='Y15' X='113' Y='12' TYPE='DIAGRAM' REF='Mainline' />
+     <POINT ID='Y15' X='113' Y='12' TYPE='DIAGRAM' REF='To Mainline' />
      <POINT ID='Y16' X='17' Y='57' TYPE='END' REF='118c' />
      <POINT ID='Y17' X='50' Y='57' TYPE='BLOCK' REF='11' />
      <POINT ID='Y17a' X='62' Y='57' TYPE='SIGNAL' REF='11to12,13' />
@@ -342,4 +345,9 @@
    <ENGINE NAME='Engine 3' />
    <SPEEDZONE SPEED='40' FROM='148' TO='150' ONEWAY='false' />
    <SPEEDZONE SPEED='40' FROM='151' TO='149' />
+   <PLANNER>
+      <LOOP NAME='LOOP A' BLOCKS='1 3 5' />
+      <LOOP NAME='LOOP B' BLOCKS='4 6 2' />
+      <START NAME='YARD-14' BLOCK='14' />
+   </PLANNER>
 </LAYOUT>

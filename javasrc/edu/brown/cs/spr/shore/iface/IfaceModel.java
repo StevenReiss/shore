@@ -149,6 +149,12 @@ Set<IfacePoint> findSuccessorPoints(IfacePoint current,
 Set<IfacePoint> findSuccessorPoints(IfacePoint current,IfacePoint entry,
       boolean useswitch);
 
+/**
+ *      Call to note setup error
+ **/
+void noteError(String msg);
+
+
 
 /**
  *      Callback interface for any changes to model componetns

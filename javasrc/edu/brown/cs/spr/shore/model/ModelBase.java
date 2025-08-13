@@ -298,9 +298,9 @@ ModelSwitch getSwitchById(String id)
 @Override public Element getModelXml()          { return model_xml; }
 
 
-void noteError(String msg)
+@Override public void noteError(String msg)
 {
-   model_errors.add(msg);
+   model_errors.add(msg); 
 }
 
 
@@ -979,6 +979,16 @@ public void createReport(File output)
    ps.println("      " + new Date());
    ps.println();
    
+   outputSwitches(ps);
+   outputSignals(ps);
+   outputConnections(ps);
+   outputSpeedZones(ps);
+   outputTowers(ps);
+}
+
+
+private void outputSwitches(PrintStream ps) 
+{
    ps.println("SWITCHES:");
    for (ModelSwitch sw : model_switches.values()) {
       ps.print("   Switch " + sw.getId() + 
@@ -997,7 +1007,11 @@ public void createReport(File output)
       ps.println("      E: " + sw.getEntryPoint());
     }
    ps.println("\f");
-   
+}
+
+
+private void outputSignals(PrintStream ps)
+{
    ps.println("SIGNALS:");
    for (ModelSignal sg : model_signals.values()) {
       if (sg.getModelStopSensors() == null) continue;
@@ -1025,7 +1039,11 @@ public void createReport(File output)
       ps.println();
     }
    ps.println("\f");
-   
+}
+
+
+private void outputConnections(PrintStream ps)
+{
    ps.println("CONNECTIONS:");
    for (ModelConnection conn : block_connections) {
       ModelBlock fblk = conn.getFromBlock();
@@ -1057,7 +1075,32 @@ public void createReport(File output)
       ps.println();
     }
    ps.println("\f"); 
-   
+}
+
+
+private void outputSpeedZones(PrintStream ps)
+{
+   if (speed_zones != null && !speed_zones.isEmpty()) {
+      for (ModelSpeedZone sz : speed_zones) {
+         ps.println("SPEED ZONE");
+         ps.println("    FROM: " + sz.getStartSensor());
+         ps.println("    TO:   " + sz.getEndSensor());
+         ps.print("    WITH:");
+         for (IfaceSensor s : sz.getZoneSensors()) {
+            if (s == sz.getStartSensor()) continue;
+            if (s == sz.getEndSensor()) continue;
+            ps.print(" " + s);
+          }
+         ps.println();
+       }  
+      ps.println("\f"); 
+    }
+}
+
+
+
+private void outputTowers(PrintStream ps)
+{
    for (int i = 0; ; ++i) {
       Map<Byte,ModelSensor> senmap = new TreeMap<>();
       Map<Byte,ModelSignal> sigmap = new TreeMap<>();
@@ -1084,7 +1127,11 @@ public void createReport(File output)
       ps.println("TOWER " + i);
       ps.println("   SENSORS: ");
       for (Map.Entry<Byte,ModelSensor> ent : senmap.entrySet()) {
-         ps.println("      " + ent.getKey() + ":  " + ent.getValue());
+         ps.print("      " + ent.getKey() + ":  " + ent.getValue());
+         if (ent.getValue().isHighThreshold()) {
+            ps.print(" (HIGH)");
+          }
+         ps.println();
        }
       if (!sigmap.isEmpty()) {
          ps.println();
@@ -1111,6 +1158,11 @@ public void createReport(File output)
       ps.println("\f");
     }
 }
+
+
+
+
+
 
 
 }       // end of class ModelBase
