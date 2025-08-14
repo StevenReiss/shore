@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              PlannerFactory.java                                             */
+/*              PlannerStart.java                                               */
 /*                                                                              */
-/*      Main class for managine planning                                        */
+/*      Possible starting/ending point for a plan                               */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,25 +35,14 @@
 
 package edu.brown.cs.spr.shore.planner;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.StringTokenizer;
-
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
-import edu.brown.cs.spr.shore.iface.IfaceNetwork;
-import edu.brown.cs.spr.shore.iface.IfacePoint;
-import edu.brown.cs.spr.shore.iface.IfaceSwitch;
-import edu.brown.cs.spr.shore.iface.IfaceTrains;
 
-public class PlannerFactory implements PlannerConstants
+class PlannerStart extends PlannerDestination
 {
 
 
@@ -63,12 +52,9 @@ public class PlannerFactory implements PlannerConstants
 /*                                                                              */
 /********************************************************************************/
 
-private IfaceModel      layout_model;
-private IfaceTrains     train_base;
-private IfaceNetwork    network_model;
-
-private List<PlannerLoop> train_loops;
-private List<PlannerStart> train_starts;
+private String  start_name;
+private IfaceBlock start_block;
+ 
 
 
 /********************************************************************************/
@@ -77,98 +63,46 @@ private List<PlannerStart> train_starts;
 /*                                                                              */
 /********************************************************************************/
 
-public PlannerFactory(IfaceNetwork net,IfaceModel mdl,IfaceTrains trns)
+PlannerStart(PlannerFactory planner,Element xml) 
 {
-   layout_model = mdl; 
-   train_base = trns;
-   network_model = net;
-   train_loops = new ArrayList<>();
-   train_starts = new ArrayList<>();
+   super(planner);
    
-   Element xml0 = layout_model.getModelXml();
-   Element xml = IvyXml.getChild(xml0,"PLANNER");
-   for (Element lxml : IvyXml.children(xml,"LOOP")) {
-      PlannerLoop pl = new PlannerLoop(this,lxml,true);
-      train_loops.add(pl);
-      PlannerLoop pl1 = new PlannerLoop(this,lxml,false);
-      train_loops.add(pl1);
-    }
-   for (Element sxml : IvyXml.children(xml,"START")) {
-      PlannerStart ps = new PlannerStart(this,sxml);
-      train_starts.add(ps);
-    }
-   
-   for (PlannerLoop pl : train_loops) {
-      pl.findExits();
-    }
-   for (PlannerStart ps : train_starts) {
-      ps.findExits();
+   start_name = IvyXml.getAttrString(xml,"NAME");
+   String bid = IvyXml.getAttrString(xml,"BLOCK");
+   start_block = findBlockById(bid); 
+   if (start_block == null) {
+      layout_model.noteError("Block " + bid + " not found for start " + start_name);
     }
 }
 
 
 
+
 /********************************************************************************/
 /*                                                                              */
-/*      Access  methods                                                         */
+/*      Setup finding exits from this start                                     */
 /*                                                                              */
 /********************************************************************************/
 
-IfaceModel getLayoutModel()                     { return layout_model; }
-
-List<PlannerDestination> getDestinations()
+@Override void findExits() 
 {
-   List<PlannerDestination> rslt = new ArrayList<>();
-   rslt.addAll(train_loops);
-   rslt.addAll(train_starts);
-   return rslt;
+   // find loops we can get to pretty directly
 }
 
 
-/********************************************************************************/
-/*                                                                              */
-/*      PlannerPlan -- given plan                                               */
-/*                                                                              */
-/********************************************************************************/
-
-private class PlannerPlan {
+@Override boolean isRelevant(IfaceBlock from,IfaceConnection c)
+{
+   IfaceBlock blk = c.getOtherBlock(from);
+   if (start_block == blk) return true;
    
-  private List<PlannerStep> plan_steps;
-  
-  PlannerPlan() {
-     plan_steps = new ArrayList<>();
-   }
-  
-  void addStep(PlannerStep step) {
-     plan_steps.add(step);
-   }
-  
-  List<IfaceBlock> getBlockSequence() {
-     return null;
-   }
-  
-}       // end of inner class PlannerPlan
+   return false;
+}
 
 
-private class PlannerStep {
-
-   private PlannerDestination step_target;
-   private int step_count;
-   
-   PlannerStep(PlannerDestination pd,int ct) {
-      step_target = pd;
-      step_count = ct;
-    }
-   
-}       // end of inner class Planner Step
+}       // end of class PlannerStart
 
 
 
 
-}       // end of class PlannerFactory
-
-
-
-
-/* end of PlannerFactory.java */
+/* end of PlannerStart.java */
 

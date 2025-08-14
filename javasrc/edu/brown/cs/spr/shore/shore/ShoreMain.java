@@ -39,6 +39,7 @@ import java.io.File;
 
 import edu.brown.cs.spr.shore.model.ModelBase;
 import edu.brown.cs.spr.shore.network.NetworkMonitor;
+import edu.brown.cs.spr.shore.planner.PlannerFactory;
 import edu.brown.cs.spr.shore.safety.SafetyFactory;
 import edu.brown.cs.spr.shore.train.TrainFactory;
 import edu.brown.cs.spr.shore.view.ViewFactory;
@@ -71,6 +72,7 @@ private ModelBase       model_base;
 private TrainFactory    train_base;
 private SafetyFactory   safety_base;
 private ViewFactory     view_base;
+private PlannerFactory  planner_base;
 
 private File            model_file;
 private File            report_file;
@@ -117,6 +119,9 @@ private void process()
    train_base.setNetworkModel(network_monitor);
    
    safety_base = new SafetyFactory(network_monitor,model_base,train_base); 
+   
+   planner_base = new PlannerFactory(network_monitor,model_base,train_base);  
+   
    view_base = new ViewFactory(safety_base,model_base,train_base); 
   
    // set up vision module here

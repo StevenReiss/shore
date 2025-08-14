@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              PlannerFactory.java                                             */
+/*              PlannerDestination.java                                         */
 /*                                                                              */
-/*      Main class for managine planning                                        */
+/*      Planner loop or entry/exit (destination for planning)                   */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,25 +35,15 @@
 
 package edu.brown.cs.spr.shore.planner;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.StringTokenizer;
 
-import org.w3c.dom.Element;
-
-import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
-import edu.brown.cs.spr.shore.iface.IfaceNetwork;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
-import edu.brown.cs.spr.shore.iface.IfaceTrains;
 
-public class PlannerFactory implements PlannerConstants
+abstract class PlannerDestination implements PlannerConstants
 {
 
 
@@ -63,12 +53,9 @@ public class PlannerFactory implements PlannerConstants
 /*                                                                              */
 /********************************************************************************/
 
-private IfaceModel      layout_model;
-private IfaceTrains     train_base;
-private IfaceNetwork    network_model;
+protected PlannerFactory planner_model;
+protected IfaceModel    layout_model;
 
-private List<PlannerLoop> train_loops;
-private List<PlannerStart> train_starts;
 
 
 /********************************************************************************/
@@ -77,98 +64,86 @@ private List<PlannerStart> train_starts;
 /*                                                                              */
 /********************************************************************************/
 
-public PlannerFactory(IfaceNetwork net,IfaceModel mdl,IfaceTrains trns)
+protected PlannerDestination(PlannerFactory mdl) 
 {
-   layout_model = mdl; 
-   train_base = trns;
-   network_model = net;
-   train_loops = new ArrayList<>();
-   train_starts = new ArrayList<>();
-   
-   Element xml0 = layout_model.getModelXml();
-   Element xml = IvyXml.getChild(xml0,"PLANNER");
-   for (Element lxml : IvyXml.children(xml,"LOOP")) {
-      PlannerLoop pl = new PlannerLoop(this,lxml,true);
-      train_loops.add(pl);
-      PlannerLoop pl1 = new PlannerLoop(this,lxml,false);
-      train_loops.add(pl1);
-    }
-   for (Element sxml : IvyXml.children(xml,"START")) {
-      PlannerStart ps = new PlannerStart(this,sxml);
-      train_starts.add(ps);
-    }
-   
-   for (PlannerLoop pl : train_loops) {
-      pl.findExits();
-    }
-   for (PlannerStart ps : train_starts) {
-      ps.findExits();
-    }
+   planner_model = mdl;
+   layout_model = mdl.getLayoutModel();
+} 
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Abstract methods                                                        */
+/*                                                                              */
+/********************************************************************************/
+
+/**
+ *      Compute the set of exits from this destination
+ **/
+
+abstract void findExits();
+
+
+/**
+ *     Check if this destination is relevant for this entry
+ **/
+
+abstract boolean isRelevant(IfaceBlock from,IfaceConnection c);
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Helper methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+protected IfaceBlock findBlockById(String bid)
+{
+   for (IfaceBlock bb : layout_model.getBlocks()) {
+      if (bb.getId().equals(bid)) {
+         return bb;
+       }
+    } 
+   return null;
 }
 
 
-
-/********************************************************************************/
-/*                                                                              */
-/*      Access  methods                                                         */
-/*                                                                              */
-/********************************************************************************/
-
-IfaceModel getLayoutModel()                     { return layout_model; }
-
-List<PlannerDestination> getDestinations()
+protected IfacePoint getSingleSuccessor(IfaceModel prior,IfacePoint cur) 
 {
-   List<PlannerDestination> rslt = new ArrayList<>();
-   rslt.addAll(train_loops);
-   rslt.addAll(train_starts);
-   return rslt;
+   for (IfacePoint nxt : cur.getConnectedTo()) {
+      if (nxt == prior) continue;
+      return nxt;
+    }
+   
+   return null;
 }
 
 
-/********************************************************************************/
-/*                                                                              */
-/*      PlannerPlan -- given plan                                               */
-/*                                                                              */
-/********************************************************************************/
-
-private class PlannerPlan {
+protected IfaceSwitch findSwitchForPoint(IfacePoint pt)
+{
+   if (pt == null) return null;
    
-  private List<PlannerStep> plan_steps;
-  
-  PlannerPlan() {
-     plan_steps = new ArrayList<>();
-   }
-  
-  void addStep(PlannerStep step) {
-     plan_steps.add(step);
-   }
-  
-  List<IfaceBlock> getBlockSequence() {
-     return null;
-   }
-  
-}       // end of inner class PlannerPlan
-
-
-private class PlannerStep {
-
-   private PlannerDestination step_target;
-   private int step_count;
-   
-   PlannerStep(PlannerDestination pd,int ct) {
-      step_target = pd;
-      step_count = ct;
+   for (IfaceSwitch ms : layout_model.getSwitches()) { 
+      if (ms.getPivotPoint() == pt) {
+         return ms;
+       }
     }
    
-}       // end of inner class Planner Step
+   return null;
+}
+
+
+protected void addExit(PlannerDestination pd,List<IfaceBlock> thru)
+{
+   
+}
+
+
+}       // end of class PlannerDestination
 
 
 
 
-}       // end of class PlannerFactory
-
-
-
-
-/* end of PlannerFactory.java */
+/* end of PlannerDestination.java */
 

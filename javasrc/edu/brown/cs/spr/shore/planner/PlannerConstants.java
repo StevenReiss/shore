@@ -40,9 +40,6 @@ package edu.brown.cs.spr.shore.planner;
 public interface PlannerConstants
 {
 
-
-
-
 }       // end of interface PlannerConstants
 
 
