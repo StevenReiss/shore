@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              IfacePoint.java                                                 */
+/*              IfaceLabel.java                                                 */
 /*                                                                              */
-/*      description of class                                                    */
+/*      I(nformation about a label at a point                                   */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,66 +35,20 @@
 
 package edu.brown.cs.spr.shore.iface;
 
-import java.util.Collection;
 
-import edu.brown.cs.spr.shore.iface.IfaceConstants.ShorePointType;
 
-/**
- *      Represents a point in a diagram.  Points are defined in the layout.xml file
- *      which is loaded into SHORE.  Points can be in an arbitrary coordinate system
- *      and are scaled (and aligned) appropriately for display.  Points are genearlly
- *      associated with an object (switch/signal/sensor/gap) or indicate a curve point
- *      in the layout.  Points can be associated with a block if they represent a point
- *      within that block.  Points are also associated with a diagram.
- **/
-public interface IfacePoint
+public interface IfaceLabel extends IfaceConstants
 {
 
-
-/**
- *      return the point's X coordinate in user coordinates.
- **/
-double getX();
+String getLabelText();
+int getLabelSize();
+String getLabelColor();
 
 
-/**
- *      Return the point's Y coordinate in user coordinates.
- **/
-double getY();
-
-
-/**
- *      Return the type of point.  This indicates what is associated with the point.
- **/
-ShorePointType getType();
-
-
-/**
- *      Return the list of points connected to (via rails) this point.
- **/
-Collection<IfacePoint> getConnectedTo();
-
-
-/**
- *      Return the diagram this point is in
- **/
-IfaceDiagram getDiagram();
-
-
-/**
- *      return the block this point is in.  Returns null if not in a block.
- **/
-IfaceBlock getBlock();
-
-/**
- *      Get label associated with a label point
- **/
-IfaceLabel getLabel();
-
-}       // end of interface IfacePoint
+}       // end of interface IfaceLabel
 
 
 
 
-/* end of IfacePoint.java */
+/* end of IfaceLabel.java */
 

@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              IfacePoint.java                                                 */
+/*              IfacePlanner.java                                               */
 /*                                                                              */
-/*      description of class                                                    */
+/*      Controller for planning                                                 */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -37,64 +37,31 @@ package edu.brown.cs.spr.shore.iface;
 
 import java.util.Collection;
 
-import edu.brown.cs.spr.shore.iface.IfaceConstants.ShorePointType;
-
-/**
- *      Represents a point in a diagram.  Points are defined in the layout.xml file
- *      which is loaded into SHORE.  Points can be in an arbitrary coordinate system
- *      and are scaled (and aligned) appropriately for display.  Points are genearlly
- *      associated with an object (switch/signal/sensor/gap) or indicate a curve point
- *      in the layout.  Points can be associated with a block if they represent a point
- *      within that block.  Points are also associated with a diagram.
- **/
-public interface IfacePoint
+public interface IfacePlanner extends IfaceConstants
 {
 
+Collection<PlanTarget> getStartTargets();
+Collection<PlanTarget> getNextTargets(PlanTarget t);
+PlanTarget findTarget(String name);
 
-/**
- *      return the point's X coordinate in user coordinates.
- **/
-double getX();
-
-
-/**
- *      Return the point's Y coordinate in user coordinates.
- **/
-double getY();
+int getMaxSteps();
 
 
-/**
- *      Return the type of point.  This indicates what is associated with the point.
- **/
-ShorePointType getType();
+interface PlanTarget {
+   String getName();
+   boolean isLoop();
+   IfaceSignal getStartSignal();
+}
 
+interface PlanStep {
+   PlanTarget getTarget();
+   int getCount();
+}
 
-/**
- *      Return the list of points connected to (via rails) this point.
- **/
-Collection<IfacePoint> getConnectedTo();
-
-
-/**
- *      Return the diagram this point is in
- **/
-IfaceDiagram getDiagram();
-
-
-/**
- *      return the block this point is in.  Returns null if not in a block.
- **/
-IfaceBlock getBlock();
-
-/**
- *      Get label associated with a label point
- **/
-IfaceLabel getLabel();
-
-}       // end of interface IfacePoint
+}       // end of interface IfacePlanner
 
 
 
 
-/* end of IfacePoint.java */
+/* end of IfacePlanner.java */
 

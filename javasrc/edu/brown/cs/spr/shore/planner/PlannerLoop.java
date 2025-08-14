@@ -46,7 +46,6 @@ import org.w3c.dom.Element;
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
-import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 
@@ -61,10 +60,8 @@ class PlannerLoop extends PlannerDestination
 /*                                                                              */
 /********************************************************************************/
 
-private PlannerFactory  plan_model; 
 private List<IfaceBlock> loop_blocks;
-private String          loop_name;
-private List<PlannerExit> possible_exits;
+
 
 
 
@@ -76,11 +73,12 @@ private List<PlannerExit> possible_exits;
 
 PlannerLoop(PlannerFactory planner,Element xml,boolean fwd)
 {
-   super(planner);
+   super(planner,xml);
    
-   loop_name = IvyXml.getAttrString(xml,"NAME");
-   if (fwd) loop_name += " Forward";
-   else loop_name += " Backward";
+   String nm = getName();
+   if (fwd) nm += " Forward";
+   else nm += " Backward";
+   setName(nm); 
    
    loop_blocks = new ArrayList<>();
    String blks = IvyXml.getAttrString(xml,"BLOCKS");
@@ -88,7 +86,7 @@ PlannerLoop(PlannerFactory planner,Element xml,boolean fwd)
       String bid = tok.nextToken();
       IfaceBlock bfnd = findBlockById(bid);
       if (bfnd == null) {
-         layout_model.noteError("Block " + bid + " not found for loop " + loop_name);
+         layout_model.noteError("Block " + bid + " not found for loop " + getName());
        }
       else {
          loop_blocks.add(bfnd);
@@ -98,6 +96,16 @@ PlannerLoop(PlannerFactory planner,Element xml,boolean fwd)
       Collections.reverse(loop_blocks);
     }
 }
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Access methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public boolean isLoop()               { return true; } 
 
 
 
@@ -134,6 +142,7 @@ private void addExitsForBlock(int blkidx,int startidx,IfacePoint prior,IfacePoin
    // compute points we might get to in the block in this direction
    Set<IfacePoint> topoints = layout_model.findSuccessorPoints(cur,
          prior,false);
+   topoints.remove(cur);
    
    IfaceBlock blk = cur.getBlock();
    for (IfaceConnection c : blk.getConnections()) {
@@ -156,42 +165,7 @@ private void addExitsForBlock(int blkidx,int startidx,IfacePoint prior,IfacePoin
     }
 }
 
-
-
-private void findPlannerExit(IfaceBlock from,IfaceConnection conn,List<IfaceBlock> thrublocks)
-{
-   IfaceBlock blk = conn.getOtherBlock(from);
-   
-   for (PlannerDestination pd : planner_model.getDestinations()) {  
-      if (pd.isRelevant(from,conn)) {
-         addExit(pd,thrublocks);
-         return;
-       }
-    }
-   
-   if (blk != null) {
-      if (thrublocks == null) {
-         thrublocks = new ArrayList<>();
-         thrublocks.add(from);
-       }
-      if (!thrublocks.contains(blk)) {
-         thrublocks = new ArrayList<>(thrublocks);
-         thrublocks.add(blk);
-       }
-    }
-   
-   // we might be passing thru this block
-   IfacePoint pt = conn.getEntrySensor(from).getAtPoint();
-   Set<IfacePoint> topoints = layout_model.findSuccessorPoints(pt,conn.getGapPoint(),false);
-   for (IfaceConnection c : blk.getConnections()) {
-      IfaceSensor s0 = c.getExitSensor(blk);
-      IfacePoint p0 = s0.getAtPoint();
-      if (topoints.contains(p0)) {
-         findPlannerExit(blk,c,thrublocks);
-       }
-    }
-}
-
+ 
 
 /********************************************************************************/
 /*                                                                              */
@@ -201,11 +175,48 @@ private void findPlannerExit(IfaceBlock from,IfaceConnection conn,List<IfaceBloc
 
 @Override boolean isRelevant(IfaceBlock from,IfaceConnection conn)
 {
-   // find set of point from gap into block
-   // for all connections of new block, if connection exit is in set
-   //    if target block of connection is successor of this block in block list
-   //   return true
+   IfaceBlock blk = conn.getOtherBlock(from);
+   int idx = loop_blocks.indexOf(blk);
+   if (idx < 0) return false;
+   int nidx = (idx + 1) % loop_blocks.size();
+   IfaceBlock nxtblk = loop_blocks.get(nidx);
+   
+   IfaceSensor s0 = conn.getEntrySensor(from);
+   IfacePoint p0 = s0.getAtPoint();
+   
+   Set<IfacePoint> topoints = layout_model.findSuccessorPoints(p0,
+         conn.getGapPoint(),false);
+   for (IfaceConnection c1 : blk.getConnections()) {
+      IfaceSensor s1 = c1.getExitSensor(blk);
+      IfacePoint p1 = s1.getAtPoint();
+      if (c1.getOtherBlock(blk) == nxtblk && topoints.contains(p1)) {
+         return true;
+       }
+    }
+   
    return false;
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Output methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public String toString() 
+{
+   StringBuffer buf = new StringBuffer();
+   buf.append(getName());
+   buf.append(" (");
+   for (int i = 0; i < loop_blocks.size(); ++i) {
+      IfaceBlock b = loop_blocks.get(i);
+      if (i != 0) buf.append("-");
+      buf.append(b.getId());
+    }
+   buf.append(")");
+   return buf.toString();
 }
 
 }       // end of class PlannerLoop

@@ -37,23 +37,19 @@ package edu.brown.cs.spr.shore.planner;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.StringTokenizer;
+import java.util.TreeSet;
 
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
-import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceNetwork;
-import edu.brown.cs.spr.shore.iface.IfacePoint;
-import edu.brown.cs.spr.shore.iface.IfaceSwitch;
+import edu.brown.cs.spr.shore.iface.IfacePlanner;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
 
-public class PlannerFactory implements PlannerConstants
+public class PlannerFactory implements PlannerConstants, IfacePlanner
 {
 
 
@@ -66,6 +62,7 @@ public class PlannerFactory implements PlannerConstants
 private IfaceModel      layout_model;
 private IfaceTrains     train_base;
 private IfaceNetwork    network_model;
+private int             max_plan_steps;
 
 private List<PlannerLoop> train_loops;
 private List<PlannerStart> train_starts;
@@ -87,6 +84,7 @@ public PlannerFactory(IfaceNetwork net,IfaceModel mdl,IfaceTrains trns)
    
    Element xml0 = layout_model.getModelXml();
    Element xml = IvyXml.getChild(xml0,"PLANNER");
+   max_plan_steps = IvyXml.getAttrInt(xml,"STEPS",5);
    for (Element lxml : IvyXml.children(xml,"LOOP")) {
       PlannerLoop pl = new PlannerLoop(this,lxml,true);
       train_loops.add(pl);
@@ -125,6 +123,42 @@ List<PlannerDestination> getDestinations()
 }
 
 
+@Override public PlanTarget findTarget(String name) 
+{
+   if (name == null) return null;
+   
+   for (PlannerDestination pd : getDestinations()) {
+      if (pd.getName().equals(name)) return pd;
+    }
+   
+   return null;
+}
+
+
+@Override public Collection<PlanTarget> getStartTargets() 
+{
+   return new TreeSet<>(train_starts);
+}
+
+
+@Override public Collection<PlanTarget> getNextTargets(PlanTarget t)
+{
+   PlannerDestination pd = (PlannerDestination) t;
+   Collection<PlanTarget> rslt = new TreeSet<>();
+   for (PlannerExit pe : pd.getExits()) {
+      rslt.add(pe.getDestination());
+    }
+   
+   return rslt;
+}
+
+
+@Override public int getMaxSteps() 
+{
+   return max_plan_steps;
+}
+
+
 /********************************************************************************/
 /*                                                                              */
 /*      PlannerPlan -- given plan                                               */
@@ -150,7 +184,7 @@ private class PlannerPlan {
 }       // end of inner class PlannerPlan
 
 
-private class PlannerStep {
+private class PlannerStep implements IfacePlanner.PlanStep {
 
    private PlannerDestination step_target;
    private int step_count;
@@ -159,6 +193,9 @@ private class PlannerStep {
       step_target = pd;
       step_count = ct;
     }
+   
+   @Override public PlannerDestination getTarget()              { return step_target; } 
+   @Override public int getCount()                              { return step_count; }
    
 }       // end of inner class Planner Step
 

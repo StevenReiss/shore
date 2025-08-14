@@ -196,7 +196,7 @@ private class LayoutPanel extends BorderPane {
          toty += vd.getPrefHeight();
          pnls[i++] = vd;
        }
-      ViewPlannerFx planner = new ViewPlannerFx();
+      ViewPlannerFx planner = new ViewPlannerFx(view_factory); 
       SplitPane.setResizableWithParent(planner,true);
       totx = Math.max(totx,planner.getPrefWidth());
       toty += planner.getPrefHeight();

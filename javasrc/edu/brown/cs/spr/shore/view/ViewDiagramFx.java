@@ -46,6 +46,7 @@ import java.util.Set;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceDiagram;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
+import edu.brown.cs.spr.shore.iface.IfaceLabel;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
@@ -409,13 +410,17 @@ private void drawGaps()
 private void drawLabels()
 {
    for (IfacePoint pt : for_diagram.getPoints()) {
-      if (pt.getType() != ShorePointType.LABEL && pt.getType() != ShorePointType.DIAGRAM) continue;
+      if (pt.getType() != ShorePointType.LABEL &&
+            pt.getType() != ShorePointType.DIAGRAM) continue;
       if (pt.getDiagram() != for_diagram) continue;
-      String txt = pt.getLabel();
+      IfaceLabel plbl = pt.getLabel();
+      if (plbl == null) continue;
+      String txt = plbl.getLabelText();
       if (txt == null || txt.isEmpty()) continue;
 
       Point2D loc = getCoords(pt);
       Label lbl = new Label(txt);
+      // set size and color and other properties from label
       lbl.setFont(LABEL_FONT);
       lbl.setWrapText(false);
       lbl.setMinWidth(Region.USE_PREF_SIZE);

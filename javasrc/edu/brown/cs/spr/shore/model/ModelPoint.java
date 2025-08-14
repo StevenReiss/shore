@@ -43,6 +43,7 @@ import java.util.List;
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
+import edu.brown.cs.spr.shore.iface.IfaceLabel;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 
 class ModelPoint implements ModelConstants, IfacePoint 
@@ -63,6 +64,7 @@ private ShorePointType point_type;
 private List<ModelPoint> conn_points;
 private String ref_id;
 private ModelBlock in_block;
+private ModelLabel point_label;
 
 
 
@@ -80,6 +82,17 @@ ModelPoint(ModelDiagram dgm,Element xml)
    point_y = IvyXml.getAttrDouble(xml,"Y",0);
    point_type = IvyXml.getAttrEnum(xml,"TYPE",ShorePointType.OTHER); 
    ref_id = IvyXml.getAttrString(xml,"REF");
+   point_label = null;
+   
+   if (point_type == ShorePointType.LABEL || point_type == ShorePointType.DIAGRAM) {
+      Element lxml = IvyXml.getChild(xml,"LABEL");
+      if (lxml != null) {
+         point_label = new ModelLabel(lxml);
+       }
+      else if (ref_id != null) {
+         point_label = new ModelLabel(ref_id);
+       }
+    }
    
    conn_points = new ArrayList<>();
 }
@@ -129,7 +142,7 @@ void setPoint2D(double x,double y)
 
 String getRefId()                               { return ref_id; }
 
-@Override public String getLabel()              { return ref_id; } 
+@Override public ModelLabel getLabel()          { return point_label; }  
 
 List<ModelPoint> getModelConnectedTo()
 {
@@ -152,6 +165,39 @@ void setSignal(ModelSignal sig)
    point_type = ShorePointType.SIGNAL;
    ref_id = sig.getId();
 }
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Label inforamtion                                                       */
+/*                                                                              */
+/********************************************************************************/
+
+private final class ModelLabel implements IfaceLabel {
+
+   private String label_text;
+   private int label_size;
+   private String label_color;
+   
+   ModelLabel(String txt) {
+      label_text = txt;
+      label_size = 0;
+      label_color = null;
+    }
+  
+   ModelLabel(Element xml) {
+      label_text = IvyXml.getAttrString(xml,"TEXT");
+      label_size = IvyXml.getAttrInt(xml,"SIZE",0);
+      label_color = IvyXml.getAttrString(xml,"COLOR");
+    }
+
+   @Override public String getLabelText()               { return label_text; }
+   @Override public int getLabelSize()                  { return label_size; }
+   @Override public String getLabelColor()              { return label_color; }
+   
+}
+
 
 
 /********************************************************************************/

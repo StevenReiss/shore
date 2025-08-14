@@ -35,14 +35,17 @@
 
 package edu.brown.cs.spr.shore.planner;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
-import edu.brown.cs.spr.shore.iface.IfaceModel;
+import edu.brown.cs.spr.shore.iface.IfaceSignal;
 
-class PlannerStart extends PlannerDestination
+class PlannerStart extends PlannerDestination 
 {
 
 
@@ -52,8 +55,9 @@ class PlannerStart extends PlannerDestination
 /*                                                                              */
 /********************************************************************************/
 
-private String  start_name;
 private IfaceBlock start_block;
+private IfaceSignal start_signal;
+private List<IfaceBlock> next_blocks;
  
 
 
@@ -65,16 +69,41 @@ private IfaceBlock start_block;
 
 PlannerStart(PlannerFactory planner,Element xml) 
 {
-   super(planner);
+   super(planner,xml); 
    
-   start_name = IvyXml.getAttrString(xml,"NAME");
-   String bid = IvyXml.getAttrString(xml,"BLOCK");
-   start_block = findBlockById(bid); 
-   if (start_block == null) {
-      layout_model.noteError("Block " + bid + " not found for start " + start_name);
+   String sid = IvyXml.getAttrString(xml,"SIGNAL");
+   
+   start_signal = null;
+   for (IfaceSignal sig : layout_model.getSignals()) {
+      if (sig.getId().equals(sid)) {
+         start_signal = sig;
+         break;
+       }
+    }
+   if (start_signal == null) {
+      layout_model.noteError("Signal " + sid + " not found for start " + getName());
+      return;
+    }
+   start_block = start_signal.getFromBlock();
+   next_blocks = new ArrayList<>();
+   for (IfaceConnection conn : start_signal.getConnections()) {
+      IfaceBlock nblk = conn.getOtherBlock(start_block);
+      next_blocks.add(nblk);
     }
 }
 
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Access methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public IfaceSignal getStartSignal()
+{
+   return start_signal;
+}
 
 
 
@@ -86,7 +115,9 @@ PlannerStart(PlannerFactory planner,Element xml)
 
 @Override void findExits() 
 {
-   // find loops we can get to pretty directly
+   for (IfaceConnection conn : start_signal.getConnections()) {
+      findPlannerExit(start_block,conn,null);
+    }
 }
 
 
@@ -96,6 +127,19 @@ PlannerStart(PlannerFactory planner,Element xml)
    if (start_block == blk) return true;
    
    return false;
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Output methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public String toString()
+{
+   return getName();
 }
 
 

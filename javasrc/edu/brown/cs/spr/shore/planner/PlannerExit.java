@@ -39,9 +39,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
-import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 
-class PlannerExit implements PlannerConstants
+class PlannerExit implements PlannerConstants, Comparable<PlannerExit>
 {
 
 
@@ -68,6 +67,35 @@ PlannerExit(PlannerDestination pd,List<IfaceBlock> blks)
 }
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      Access methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+PlannerDestination getDestination()             { return exit_target; }
+
+IfaceBlock geStartBlock()
+{
+   return enter_blocks.get(0);
+}
+
+List<IfaceBlock> getThroughBlocks()
+{
+   return enter_blocks.subList(1,enter_blocks.size());
+}
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Sorting methods                                                         */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public int compareTo(PlannerExit e)
+{
+   return exit_target.getName().compareTo(e.exit_target.getName()); 
+}
 
 }       // end of class PlannerExit
 
