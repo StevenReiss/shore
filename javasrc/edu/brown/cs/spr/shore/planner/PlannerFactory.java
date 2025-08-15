@@ -43,7 +43,6 @@ import java.util.TreeSet;
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
-import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceNetwork;
 import edu.brown.cs.spr.shore.iface.IfacePlanner;
@@ -60,12 +59,11 @@ public class PlannerFactory implements PlannerConstants, IfacePlanner
 /********************************************************************************/
 
 private IfaceModel      layout_model;
-private IfaceTrains     train_base;
+private IfaceTrains     train_model;
 private IfaceNetwork    network_model;
 private int             max_plan_steps;
 
-private List<PlannerLoop> train_loops;
-private List<PlannerStart> train_starts;
+private List<PlannerActionBase> train_actions;
 
 
 /********************************************************************************/
@@ -77,30 +75,29 @@ private List<PlannerStart> train_starts;
 public PlannerFactory(IfaceNetwork net,IfaceModel mdl,IfaceTrains trns)
 {
    layout_model = mdl; 
-   train_base = trns;
+   train_model = trns;
    network_model = net;
-   train_loops = new ArrayList<>();
-   train_starts = new ArrayList<>();
+   train_actions = new ArrayList<>();
    
    Element xml0 = layout_model.getModelXml();
    Element xml = IvyXml.getChild(xml0,"PLANNER");
    max_plan_steps = IvyXml.getAttrInt(xml,"STEPS",5);
    for (Element lxml : IvyXml.children(xml,"LOOP")) {
-      PlannerLoop pl = new PlannerLoop(this,lxml,true);
-      train_loops.add(pl);
-      PlannerLoop pl1 = new PlannerLoop(this,lxml,false);
-      train_loops.add(pl1);
+      PlannerLoopAction pl = new PlannerLoopAction(this,lxml,true);
+      train_actions.add(pl);
+      PlannerLoopAction pl1 = new PlannerLoopAction(this,lxml,false);
+      train_actions.add(pl1);
     }
    for (Element sxml : IvyXml.children(xml,"START")) {
-      PlannerStart ps = new PlannerStart(this,sxml);
-      train_starts.add(ps);
+      PlannerStartAction ps = new PlannerStartAction(this,sxml);
+      train_actions.add(ps);
     }
-   
-   for (PlannerLoop pl : train_loops) {
-      pl.findExits();
+   for (Element sxml : IvyXml.children(xml,"END")) {
+      PlannerEndAction ps = new PlannerEndAction(this,sxml);
+      train_actions.add(ps);
     }
-   for (PlannerStart ps : train_starts) {
-      ps.findExits();
+   for (PlannerActionBase pact : train_actions) {
+      pact.findExits();
     }
 }
 
@@ -114,20 +111,18 @@ public PlannerFactory(IfaceNetwork net,IfaceModel mdl,IfaceTrains trns)
 
 IfaceModel getLayoutModel()                     { return layout_model; }
 
-List<PlannerDestination> getDestinations()
+List<PlannerActionBase> getAllActions()
 {
-   List<PlannerDestination> rslt = new ArrayList<>();
-   rslt.addAll(train_loops);
-   rslt.addAll(train_starts);
+   List<PlannerActionBase> rslt = new ArrayList<>(train_actions);
    return rslt;
 }
 
 
-@Override public PlanTarget findTarget(String name) 
+@Override public PlanAction findAction(String name) 
 {
    if (name == null) return null;
    
-   for (PlannerDestination pd : getDestinations()) {
+   for (PlannerActionBase pd : getAllActions()) {
       if (pd.getName().equals(name)) return pd;
     }
    
@@ -135,16 +130,22 @@ List<PlannerDestination> getDestinations()
 }
 
 
-@Override public Collection<PlanTarget> getStartTargets() 
-{
-   return new TreeSet<>(train_starts);
+@Override public Collection<PlanAction> getStartActions() 
+{ 
+   Collection<PlanAction> rslt = new TreeSet<>();
+   for (PlannerActionBase pact : train_actions) {
+      if (pact.getActionType() == PlanActionType.START) {
+         rslt.add(pact);
+       }
+    }
+   return rslt;
 }
 
 
-@Override public Collection<PlanTarget> getNextTargets(PlanTarget t)
+@Override public Collection<PlanAction> getNextActions(PlanAction t)
 {
-   PlannerDestination pd = (PlannerDestination) t;
-   Collection<PlanTarget> rslt = new TreeSet<>();
+   PlannerActionBase pd = (PlannerActionBase) t;
+   Collection<PlanAction> rslt = new TreeSet<>();
    for (PlannerExit pe : pd.getExits()) {
       rslt.add(pe.getDestination());
     }
@@ -161,45 +162,30 @@ List<PlannerDestination> getDestinations()
 
 /********************************************************************************/
 /*                                                                              */
-/*      PlannerPlan -- given plan                                               */
+/*      Plan creation methods                                                   */
 /*                                                                              */
 /********************************************************************************/
 
-private class PlannerPlan {
+@Override public PlannerPlan createPlan(Object... actions) 
+{
+   PlannerPlan plan = new PlannerPlan(network_model,train_model);
    
-  private List<PlannerStep> plan_steps;
-  
-  PlannerPlan() {
-     plan_steps = new ArrayList<>();
-   }
-  
-  void addStep(PlannerStep step) {
-     plan_steps.add(step);
-   }
-  
-  List<IfaceBlock> getBlockSequence() {
-     return null;
-   }
-  
-}       // end of inner class PlannerPlan
-
-
-private class PlannerStep implements IfacePlanner.PlanStep {
-
-   private PlannerDestination step_target;
-   private int step_count;
-   
-   PlannerStep(PlannerDestination pd,int ct) {
-      step_target = pd;
-      step_count = ct;
+   for (int i = 0; i < actions.length; ++i) {
+      if (actions[i] instanceof PlanAction) {
+         PlanAction pa = (PlanAction) actions[i];
+         int ct = 0;
+         if (i+1 < actions.length) {
+            if (actions[i+1] instanceof Integer) {
+               Integer iv = (Integer) (actions[++i]);
+               ct = iv;
+             }
+          }
+         plan.addStep(pa,ct);
+       }
     }
-   
-   @Override public PlannerDestination getTarget()              { return step_target; } 
-   @Override public int getCount()                              { return step_count; }
-   
-}       // end of inner class Planner Step
-
-
+      
+   return plan;
+}
 
 
 }       // end of class PlannerFactory

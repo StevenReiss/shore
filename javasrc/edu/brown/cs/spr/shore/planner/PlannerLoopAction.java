@@ -48,9 +48,10 @@ import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
+import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanActionType;
 
 
-class PlannerLoop extends PlannerDestination
+class PlannerLoopAction extends PlannerActionBase
 { 
 
 
@@ -71,7 +72,7 @@ private List<IfaceBlock> loop_blocks;
 /*                                                                              */
 /********************************************************************************/
 
-PlannerLoop(PlannerFactory planner,Element xml,boolean fwd)
+PlannerLoopAction(PlannerFactory planner,Element xml,boolean fwd)
 {
    super(planner,xml);
    
@@ -105,8 +106,16 @@ PlannerLoop(PlannerFactory planner,Element xml,boolean fwd)
 /*                                                                              */
 /********************************************************************************/
 
-@Override public boolean isLoop()               { return true; } 
+@Override public PlanActionType getActionType() 
+{
+   return PlanActionType.LOOP;
+}
 
+
+@Override List<IfaceBlock> getBlocks()          
+{
+   return loop_blocks;
+}
 
 
 /********************************************************************************/

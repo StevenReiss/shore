@@ -36,27 +36,52 @@
 package edu.brown.cs.spr.shore.iface;
 
 import java.util.Collection;
+import java.util.EventListener;
+
+
 
 public interface IfacePlanner extends IfaceConstants
 {
 
-Collection<PlanTarget> getStartTargets();
-Collection<PlanTarget> getNextTargets(PlanTarget t);
-PlanTarget findTarget(String name);
+Collection<PlanAction> getStartActions();
+Collection<PlanAction> getNextActions(PlanAction t);
+PlanAction findAction(String name);
+
+PlanExecutable createPlan(Object... actions);
+
 
 int getMaxSteps();
 
+enum PlanActionType {
+   START,
+   END,
+   LOOP,
+}
 
-interface PlanTarget {
+interface PlanExecutable {
+   void addStep(PlanAction act,int count);
+   default void addStep(PlanAction act)         { addStep(act,0); }
+   void execute(IfaceEngine eng);
+   void abort();
+   void addPlanCallback(PlanCallback cb);
+   void removePlanCallback(PlanCallback cb);
+}
+
+
+interface PlanCallback extends EventListener {
+   void planStarted(PlanExecutable p);
+   void planStepCompleted(PlanAction act,int ct);
+   void planCompleted(PlanExecutable p);
+}
+
+
+
+interface PlanAction {
    String getName();
-   boolean isLoop();
-   IfaceSignal getStartSignal();
+   PlanActionType getActionType();
+   IfaceSignal getSignal();
 }
 
-interface PlanStep {
-   PlanTarget getTarget();
-   int getCount();
-}
 
 }       // end of interface IfacePlanner
 

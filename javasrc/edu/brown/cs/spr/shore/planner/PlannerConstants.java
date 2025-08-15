@@ -40,6 +40,13 @@ package edu.brown.cs.spr.shore.planner;
 public interface PlannerConstants
 {
 
+/**
+ *      Planner event -- block. stop, callback, ...
+ **/
+
+interface PlanEvent { }
+
+
 }       // end of interface PlannerConstants
 
 

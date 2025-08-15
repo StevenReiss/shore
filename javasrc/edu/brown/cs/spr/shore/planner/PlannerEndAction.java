@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              PlannerStart.java                                               */
+/*              PlannerEndAction.java                                           */
 /*                                                                              */
-/*      Possible starting/ending point for a plan                               */
+/*      End action for train                                                    */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -35,7 +35,6 @@
 
 package edu.brown.cs.spr.shore.planner;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.w3c.dom.Element;
@@ -44,8 +43,9 @@ import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
+import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanActionType;
 
-class PlannerStart extends PlannerDestination 
+class PlannerEndAction extends PlannerActionBase
 {
 
 
@@ -55,10 +55,8 @@ class PlannerStart extends PlannerDestination
 /*                                                                              */
 /********************************************************************************/
 
-private IfaceBlock start_block;
-private IfaceSignal start_signal;
-private List<IfaceBlock> next_blocks;
- 
+private IfaceBlock      end_block;
+private IfaceSignal     end_signal;
 
 
 /********************************************************************************/
@@ -67,29 +65,24 @@ private List<IfaceBlock> next_blocks;
 /*                                                                              */
 /********************************************************************************/
 
-PlannerStart(PlannerFactory planner,Element xml) 
+PlannerEndAction(PlannerFactory planner,Element xml) 
 {
    super(planner,xml); 
    
    String sid = IvyXml.getAttrString(xml,"SIGNAL");
    
-   start_signal = null;
+   end_signal = null;
    for (IfaceSignal sig : layout_model.getSignals()) {
       if (sig.getId().equals(sid)) {
-         start_signal = sig;
+         end_signal = sig;
          break;
        }
     }
-   if (start_signal == null) {
+   if (end_signal == null) {
       layout_model.noteError("Signal " + sid + " not found for start " + getName());
       return;
     }
-   start_block = start_signal.getFromBlock();
-   next_blocks = new ArrayList<>();
-   for (IfaceConnection conn : start_signal.getConnections()) {
-      IfaceBlock nblk = conn.getOtherBlock(start_block);
-      next_blocks.add(nblk);
-    }
+   end_block = end_signal.getFromBlock();
 }
 
 
@@ -100,11 +93,21 @@ PlannerStart(PlannerFactory planner,Element xml)
 /*                                                                              */
 /********************************************************************************/
 
-@Override public IfaceSignal getStartSignal()
+@Override public IfaceSignal getSignal() 
 {
-   return start_signal;
+   return end_signal;
 }
 
+@Override public PlanActionType getActionType()
+{ 
+   return PlanActionType.END;
+}
+
+
+@Override List<IfaceBlock> getBlocks()
+{
+   return List.of(end_block);
+}
 
 
 /********************************************************************************/
@@ -113,18 +116,13 @@ PlannerStart(PlannerFactory planner,Element xml)
 /*                                                                              */
 /********************************************************************************/
 
-@Override void findExits() 
-{
-   for (IfaceConnection conn : start_signal.getConnections()) {
-      findPlannerExit(start_block,conn,null);
-    }
-}
+@Override void findExits()                      { }
 
 
 @Override boolean isRelevant(IfaceBlock from,IfaceConnection c)
 {
    IfaceBlock blk = c.getOtherBlock(from);
-   if (start_block == blk) return true;
+   if (end_block == blk) return true;
    
    return false;
 }
@@ -143,10 +141,8 @@ PlannerStart(PlannerFactory planner,Element xml)
 }
 
 
-}       // end of class PlannerStart
+}       // end of class PlannerEndAction
 
 
-
-
-/* end of PlannerStart.java */
+/* end of PlannerEndAction.java */
 

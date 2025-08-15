@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              PlannerDestination.java                                         */
+/*              PlannerStart.java                                               */
 /*                                                                              */
-/*      Planner loop or entry/exit (destination for planning)                   */
+/*      Possible starting/ending point for a plan                               */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -36,25 +36,17 @@
 package edu.brown.cs.spr.shore.planner;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
-import edu.brown.cs.spr.shore.iface.IfaceModel;
-import edu.brown.cs.spr.shore.iface.IfacePlanner;
-import edu.brown.cs.spr.shore.iface.IfacePoint;
-import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
-import edu.brown.cs.spr.shore.iface.IfaceSwitch;
+import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanActionType;
 
-abstract class PlannerDestination implements PlannerConstants, IfacePlanner.PlanTarget,
-      Comparable<PlannerDestination>
+class PlannerStartAction extends PlannerActionBase 
 {
 
 
@@ -64,10 +56,10 @@ abstract class PlannerDestination implements PlannerConstants, IfacePlanner.Plan
 /*                                                                              */
 /********************************************************************************/
 
-protected PlannerFactory planner_model;
-protected IfaceModel    layout_model;
-private Set<PlannerExit> planner_exits;
-private String destination_name;
+private IfaceBlock start_block;
+private IfaceSignal start_signal;
+private List<IfaceBlock> next_blocks;
+ 
 
 
 /********************************************************************************/
@@ -76,13 +68,30 @@ private String destination_name;
 /*                                                                              */
 /********************************************************************************/
 
-protected PlannerDestination(PlannerFactory mdl,Element xml) 
+PlannerStartAction(PlannerFactory planner,Element xml) 
 {
-   planner_model = mdl;
-   layout_model = mdl.getLayoutModel();
-   planner_exits = new TreeSet<>();
-   destination_name = IvyXml.getAttrString(xml,"NAME");
-} 
+   super(planner,xml); 
+   
+   String sid = IvyXml.getAttrString(xml,"SIGNAL");
+   
+   start_signal = null;
+   for (IfaceSignal sig : layout_model.getSignals()) {
+      if (sig.getId().equals(sid)) {
+         start_signal = sig;
+         break;
+       }
+    }
+   if (start_signal == null) {
+      layout_model.noteError("Signal " + sid + " not found for start " + getName());
+      return;
+    }
+   start_block = start_signal.getFromBlock();
+   next_blocks = new ArrayList<>();
+   for (IfaceConnection conn : start_signal.getConnections()) {
+      IfaceBlock nblk = conn.getOtherBlock(start_block);
+      next_blocks.add(nblk);
+    }
+}
 
 
 
@@ -92,161 +101,62 @@ protected PlannerDestination(PlannerFactory mdl,Element xml)
 /*                                                                              */
 /********************************************************************************/
 
-@Override public String getName()
+@Override public IfaceSignal getSignal()
 {
-   return destination_name;
+   return start_signal;
 }
 
-protected void setName(String nm) 
+@Override public PlanActionType getActionType()
 {
-   destination_name = nm;
+   return PlanActionType.START;
 }
 
-Collection<PlannerExit> getExits()
+@Override List<IfaceBlock> getBlocks()
 {
-   return planner_exits;
-}
-
- 
-@Override public boolean isLoop()                       { return false; }
-
-@Override public IfaceSignal getStartSignal()           { return null; }
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Abstract methods                                                        */
-/*                                                                              */
-/********************************************************************************/
-
-/**
- *      Compute the set of exits from this destination
- **/
-
-abstract void findExits();
-
-
-/**
- *     Check if this destination is relevant for this entry
- **/
-
-abstract boolean isRelevant(IfaceBlock from,IfaceConnection c);
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Helper methods                                                          */
-/*                                                                              */
-/********************************************************************************/
-
-protected IfaceBlock findBlockById(String bid)
-{
-   for (IfaceBlock bb : layout_model.getBlocks()) {
-      if (bb.getId().equals(bid)) {
-         return bb;
-       }
-    } 
-   return null;
-}
-
-
-protected IfacePoint getSingleSuccessor(IfaceModel prior,IfacePoint cur) 
-{
-   for (IfacePoint nxt : cur.getConnectedTo()) {
-      if (nxt == prior) continue;
-      return nxt;
-    }
-   
-   return null;
-}
-
-
-protected IfaceSwitch findSwitchForPoint(IfacePoint pt)
-{
-   if (pt == null) return null;
-   
-   for (IfaceSwitch ms : layout_model.getSwitches()) { 
-      if (ms.getPivotPoint() == pt) {
-         return ms;
-       }
-    }
-   
-   return null;
+   List<IfaceBlock> rslt = new ArrayList<>();
+   rslt.add(start_block);
+   rslt.addAll(next_blocks);
+   return rslt;
 }
 
 
 /********************************************************************************/
 /*                                                                              */
-/*      Exit finding methods                                                    */
+/*      Setup finding exits from this start                                     */
 /*                                                                              */
 /********************************************************************************/
 
-protected void findPlannerExit(IfaceBlock from,IfaceConnection conn,List<IfaceBlock> thrublocks)
+@Override void findExits() 
 {
-   IfaceBlock blk = conn.getOtherBlock(from);
-   
-   if (thrublocks == null) {
-      thrublocks = new ArrayList<>();
-      thrublocks.add(from);
-    }
-   
-   for (PlannerDestination pd : planner_model.getDestinations()) {  
-      if (pd.isRelevant(from,conn)) {
-         addExit(pd,thrublocks);
-         return;
-       }
-    }
-   
-   if (blk != null) {
-      if (!thrublocks.contains(blk)) {
-         thrublocks = new ArrayList<>(thrublocks);
-         thrublocks.add(blk);
-       }
-    }
-   
-   // we might be passing thru this block
-   IfaceSensor s = conn.getEntrySensor(from);
-   if (s == null) return;
-   IfacePoint pt = s.getAtPoint();
-   Set<IfacePoint> topoints = layout_model.findSuccessorPoints(pt,conn.getGapPoint(),false);
-   topoints.remove(pt);
-   for (IfaceConnection c : blk.getConnections()) {
-      IfaceSensor s0 = c.getExitSensor(blk);
-      IfacePoint p0 = s0.getAtPoint();
-      if (topoints.contains(p0)) {
-         findPlannerExit(blk,c,thrublocks);
-       }
+   for (IfaceConnection conn : start_signal.getConnections()) {
+      findPlannerExit(start_block,conn,null);
     }
 }
 
 
-
-protected void addExit(PlannerDestination pd,List<IfaceBlock> thru)
+@Override boolean isRelevant(IfaceBlock from,IfaceConnection c)
 {
-   PlannerExit pe = new PlannerExit(pd,thru);
-   planner_exits.add(pe);
+   return false;
 }
 
 
 
 /********************************************************************************/
 /*                                                                              */
-/*      Comparison methods                                                      */
+/*      Output methods                                                          */
 /*                                                                              */
 /********************************************************************************/
 
-@Override public int compareTo(PlannerDestination pd)
+@Override public String toString()
 {
-   return getName().compareTo(pd.getName());
+   return getName();
 }
 
 
-}       // end of class PlannerDestination
+}       // end of class PlannerStart
 
 
 
 
-/* end of PlannerDestination.java */
+/* end of PlannerStart.java */
 

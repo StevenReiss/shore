@@ -38,22 +38,26 @@ package edu.brown.cs.spr.shore.view;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
-import javax.swing.SwingUtilities;
 
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfacePlanner;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
-import edu.brown.cs.spr.shore.iface.IfaceSignal;
-import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanTarget;
+import edu.brown.cs.spr.shore.iface.IfaceSignal; 
+import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanAction;
+import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanActionType;
+import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanExecutable;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
@@ -72,8 +76,8 @@ class ViewPlannerFx extends HBox implements ViewConstants
 /********************************************************************************/
 
 private IfacePlanner planner_model;
-private IfaceEngine  active_train;
 private List<TrainPlanner> train_plans;
+private TrainPlanner train_planner;
 
 
 
@@ -86,47 +90,59 @@ private List<TrainPlanner> train_plans;
 ViewPlannerFx(ViewFactory vf)
 {
    planner_model = vf.getPlannerModel();
-   active_train = null;
    train_plans = new ArrayList<>();
    
    setSpacing(10.0);
    setFillHeight(true);
    
-   for (int i = 0; i < 3; ++i) {
-      TrainPlanner tp = new TrainPlanner();
-      train_plans.add(tp);
-      getChildren().add(tp);
-    }
+   train_planner = new TrainPlanner();
+   train_plans.add(train_planner);
+   getChildren().add(train_planner);
    
+   EngineChanged cb = new EngineChanged();
    for (IfaceEngine eng : vf.getTrainModel().getAllEngines()) {
-      eng.addEngineCallback(new EngineChanged());
+      eng.addEngineCallback(cb);
     }
 }
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      Methods to return viable options for planner                            */
+/*                                                                              */
+/********************************************************************************/
 
-private ObservableList<PlanTarget> startOptions()
+
+private ObservableList<PlanAction> startOptions()
 {
-   Collection<PlanTarget> starts = planner_model.getStartTargets();
+   Collection<PlanAction> starts = planner_model.getStartActions();
    return FXCollections.observableArrayList(starts);
 }
 
-private ObservableList<PlanTarget> options(PlanTarget from) 
+private ObservableList<PlanAction> options(PlanAction from) 
 {
-   Collection<PlanTarget> nexts = planner_model.getNextTargets(from);
+   Collection<PlanAction> nexts = planner_model.getNextActions(from);
    return FXCollections.observableArrayList(nexts);
 }
 
-private ObservableList<PlanTarget> noOptions()
+private ObservableList<PlanAction> noOptions()
 {
    return FXCollections.observableArrayList();
 }
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      The actual planner to let the user create a plan                        */
+/*                                                                              */
+/********************************************************************************/
+
 private class TrainPlanner extends GridPane { 
    
-   private List<ChoiceBox<PlanTarget>> choice_boxes;
+   private List<ChoiceBox<PlanAction>> choice_boxes;
    private List<Spinner<Integer>> count_boxes;
+   private Button start_button;
+   private IfaceEngine for_engine;
    
    TrainPlanner() {
       int steps = planner_model.getMaxSteps();
@@ -134,17 +150,17 @@ private class TrainPlanner extends GridPane {
       count_boxes = new ArrayList<>();
       setMinSize(200,200);
       setPrefSize(340,200);
-      add(new Label("Start From:"),0,0,1,1);
-      ChoiceBox<PlanTarget> prv = null;
+      add(new Label("Start From:"),0,0,1,REMAINING);
+      ChoiceBox<PlanAction> prv = null;
       for (int i = 1; i <= steps; ++i) {
          add(new Label("Step " + i + ":"),0,i,1,1);
-         ChoiceBox<PlanTarget> cb = new ChoiceBox<>();
+         ChoiceBox<PlanAction> cb = new ChoiceBox<>();
          cb.setConverter(new TargetConverter());
          if (prv == null) {
             cb.setItems(startOptions());
           }
          else {
-            PlanTarget prvtgt = prv.getValue();
+            PlanAction prvtgt = prv.getValue();
             if (prvtgt != null) {
                cb.setItems(options(prvtgt));
              }
@@ -158,12 +174,17 @@ private class TrainPlanner extends GridPane {
          cb.valueProperty().addListener(new ChoiceListener(this,i-1));
          cb.itemsProperty().addListener(new ValuesListener(this,i-1));
        }
-      // add a button that will set signal if plan is complete and plan not being used
-      // add a button that will start plan if there is a valid train and plan is valid and
-      //        not in use and train not involved in a plan
+      
+      HBox buttons = new HBox();
+      buttons.setAlignment(Pos.CENTER);
+      start_button = new Button("START");
+      start_button.setOnAction(new PlanStarter(this));
+      buttons.getChildren().addAll(start_button);
+      add(buttons,0,steps+1,1,REMAINING);
+      start_button.setDisable(true);
     }
    
-   ChoiceBox<PlanTarget> getChoiceBox(int idx) {
+   ChoiceBox<PlanAction> getChoiceBox(int idx) {
       return choice_boxes.get(idx);
     }
    
@@ -176,30 +197,71 @@ private class TrainPlanner extends GridPane {
     }
    
    boolean isComplete() {
+      for (int i = 0; i < choice_boxes.size(); ++i) {
+         PlanAction t = choice_boxes.get(i).getValue();
+         if (t == null) return false;
+         switch (t.getActionType()) {
+            case START :
+               if (i != 0) return false;
+               break;
+            case LOOP :
+               if (i == 0) return false;
+               break;
+            case END :
+               if (i > 0) return true;
+               if (i == 0) return false;
+               break;
+          }
+       }
       return false;
     }
    
-   PlanTarget getStartTarget() {
+   PlanAction getStartTarget() {
       if (!isComplete()) return null;
       return choice_boxes.get(0).getValue();
+    }
+   
+   IfaceEngine getEngine()                      { return for_engine; }
+   void enablePlan(IfaceEngine eng) {
+      if (eng == null || !isComplete()) {
+         eng = null;
+         start_button.setDisable(true);
+         // temporary: allow debug without engine
+         if (isComplete()) start_button.setDisable(false);
+       }
+      else {
+         start_button.setDisable(false); 
+       }
+      for_engine = eng;
+    }
+   
+   PlanExecutable createPlan() {
+      if (!isComplete()) return null;
+      PlanExecutable plan = planner_model.createPlan();
+      for (int i = 0; i < choice_boxes.size(); ++i) {
+         PlanAction pa = choice_boxes.get(i).getValue();
+         int ct = count_boxes.get(i).getValue();
+         plan.addStep(pa,ct);
+       }
+      return plan;
     }
    
 }
 
 
-private final class TargetConverter extends StringConverter<PlanTarget> {
+private final class TargetConverter extends StringConverter<PlanAction> {
    
-   @Override public PlanTarget fromString(String s) {
-      return planner_model.findTarget(s);
+   @Override public PlanAction fromString(String s) {
+      return planner_model.findAction(s);
     }
       
-   @Override public String toString(PlanTarget t) {
+   @Override public String toString(PlanAction t) {
       return t.getName();
     }
    
 }       // end of inner class TargetConverter
 
-private class ChoiceListener implements ChangeListener<PlanTarget> {   
+private class ChoiceListener implements ChangeListener<PlanAction> {   
    
    private TrainPlanner for_planner;
    private int for_step;
@@ -209,10 +271,10 @@ private class ChoiceListener implements ChangeListener<PlanTarget> {
       for_step = idx;
     }
    
-   @Override public void changed(ObservableValue<? extends PlanTarget> obs,
-         PlanTarget oldv,PlanTarget newv) {
+   @Override public void changed(ObservableValue<? extends PlanAction> obs,
+         PlanAction oldv,PlanAction newv) {
       boolean donext = true;
-      if (newv == null || !newv.isLoop()) {
+      if (newv == null || newv.getActionType() != PlanActionType.LOOP) {
          for_planner.getCountBox(for_step).setDisable(true);
           if (newv == null || for_step != 0) donext = false;
        }
@@ -220,27 +282,29 @@ private class ChoiceListener implements ChangeListener<PlanTarget> {
          for_planner.getCountBox(for_step).setDisable(false);
        }
       if (donext) {
-         ChoiceBox<PlanTarget> nextcb = for_planner.getChoiceBox(for_step+1);
+         ChoiceBox<PlanAction> nextcb = for_planner.getChoiceBox(for_step+1);
          nextcb.setValue(null);
          nextcb.itemsProperty().set(options(newv));
        }
       else {
          for (int i = for_step+1; i < for_planner.getNumSteps(); ++i) {
-            ChoiceBox<PlanTarget> cb1 = for_planner.getChoiceBox(i);
+            ChoiceBox<PlanAction> cb1 = for_planner.getChoiceBox(i);
             cb1.setItems(noOptions());
             for_planner.getCountBox(i).setDisable(true);
           }
        }
+      for_planner.enablePlan(null);
     }
-}
+   
+}       // end of inner class ChoiceListener
 
 
-private class ValuesListener implements ChangeListener<ObservableList<PlanTarget>>,
+private class ValuesListener implements ChangeListener<ObservableList<PlanAction>>,
       Runnable {
    
    private TrainPlanner for_planner;
    private int for_step;
-   private PlanTarget set_value;
+   private PlanAction set_value;
    
    ValuesListener(TrainPlanner plnr,int idx) {
       for_planner = plnr;
@@ -248,19 +312,19 @@ private class ValuesListener implements ChangeListener<ObservableList<PlanTarget
     }
    
    @Override public void changed(
-         ObservableValue<? extends ObservableList<PlanTarget>> obs,
-               ObservableList<PlanTarget> oldv,ObservableList<PlanTarget> newv) {
+         ObservableValue<? extends ObservableList<PlanAction>> obs,
+               ObservableList<PlanAction> oldv,ObservableList<PlanAction> newv) {
       if (newv != null && newv.size() == 1) {
-         PlanTarget pt = newv.get(0);
+         PlanAction pt = newv.get(0);
          set_value = pt;
          Platform.runLater(this);
        }
     }
    
    @Override public void run() {
-      PlanTarget pt = set_value;
+      PlanAction pt = set_value;
       set_value = null;
-      ChoiceBox<PlanTarget> cb = for_planner.getChoiceBox(for_step);
+      ChoiceBox<PlanAction> cb = for_planner.getChoiceBox(for_step);
       try {
          cb.setValue(pt);
        }
@@ -273,10 +337,30 @@ private class ValuesListener implements ChangeListener<ObservableList<PlanTarget
 }       // enf of ininer class ValuesListener
 
 
+private class PlanStarter implements EventHandler<ActionEvent> {
+   
+   private TrainPlanner for_planner;
+   
+   PlanStarter(TrainPlanner plnr) {
+      for_planner = plnr;
+    }
+   
+   @Override public void handle(ActionEvent evt) {
+      IfaceEngine eng = for_planner.getEngine();
+//    if (eng == null) return;
+      PlanExecutable pe = for_planner.createPlan();
+      if (pe == null) return;
+      ShoreLog.logD("VIEW","Create plan " + pe);
+      pe.execute(eng);
+    }
+   
+}       // end of inner class PlanStarter
+
+
 
 /********************************************************************************/
 /*                                                                              */
-/*      Monitor state of engines                                                */
+/*      Monitor state of engines to see if one is ready for plan                */
 /*                                                                              */
 /********************************************************************************/
 
@@ -293,21 +377,22 @@ private final class EngineChanged implements IfaceEngine.EngineCallback {
       if (eng.getSpeed() == 0 && start_signal != null && start_block != null) {
          enableEngine(eng);
        }
+      else {
+         enableEngine(null);
+       }
     }
    
    @Override public void enginePositionChanged(IfaceEngine eng) {
       IfacePoint pt = eng.getCurrentPoint();
       if (pt.getType() == ShorePointType.SIGNAL) {
-         for (TrainPlanner tp : train_plans) {
-            PlanTarget tgt = tp.getStartTarget();
-            if (tgt == null) continue;
-            if (tgt.getStartSignal().getAtPoints().contains(pt)) {
-               start_signal = tgt.getStartSignal();
-               start_block = pt.getBlock();
-             }
-            if (eng.getSpeed() == 0) {
-               enableEngine(eng);
-             }
+         PlanAction tgt = train_planner.getStartTarget();
+         if (tgt == null || tgt.getSignal() == null) return;
+         if (tgt.getSignal().getAtPoints().contains(pt)) {
+            start_signal = tgt.getSignal();
+            start_block = pt.getBlock();
+          }
+         if (eng.getSpeed() == 0) {
+            enableEngine(eng);
           }
        }
       else {
@@ -318,7 +403,10 @@ private final class EngineChanged implements IfaceEngine.EngineCallback {
        }
     }
    
-   private void enableEngine(IfaceEngine eng) { }
+   private void enableEngine(IfaceEngine eng) {
+      if (!train_planner.isComplete()) return;
+      train_planner.enablePlan(eng);
+    }
    
 }       // end of inner class EngineChanged
 

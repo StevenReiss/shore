@@ -50,7 +50,7 @@ class PlannerExit implements PlannerConstants, Comparable<PlannerExit>
 /*                                                                              */
 /********************************************************************************/
 
-private PlannerDestination exit_target; 
+private PlannerActionBase exit_target; 
 private List<IfaceBlock> enter_blocks;
 
 
@@ -60,7 +60,7 @@ private List<IfaceBlock> enter_blocks;
 /*                                                                              */
 /********************************************************************************/
 
-PlannerExit(PlannerDestination pd,List<IfaceBlock> blks)
+PlannerExit(PlannerActionBase pd,List<IfaceBlock> blks)
 {
    exit_target = pd;
    enter_blocks = new ArrayList<>(blks);
@@ -73,7 +73,7 @@ PlannerExit(PlannerDestination pd,List<IfaceBlock> blks)
 /*                                                                              */
 /********************************************************************************/
 
-PlannerDestination getDestination()             { return exit_target; }
+PlannerActionBase getDestination()             { return exit_target; }
 
 IfaceBlock geStartBlock()
 {
