@@ -120,7 +120,7 @@ private void process()
    
    safety_base = new SafetyFactory(network_monitor,model_base,train_base); 
    
-   planner_base = new PlannerFactory(network_monitor,model_base,train_base);  
+   planner_base = new PlannerFactory(safety_base,model_base,train_base);    
    
    view_base = new ViewFactory(safety_base,model_base,train_base,planner_base); 
    

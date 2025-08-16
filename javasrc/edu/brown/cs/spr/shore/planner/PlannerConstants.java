@@ -35,9 +35,9 @@
 
 package edu.brown.cs.spr.shore.planner;
 
+import edu.brown.cs.spr.shore.iface.IfaceConstants;
 
-
-public interface PlannerConstants
+public interface PlannerConstants extends IfaceConstants 
 {
 
 /**

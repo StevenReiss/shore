@@ -69,9 +69,9 @@ interface PlanExecutable {
 
 
 interface PlanCallback extends EventListener {
-   void planStarted(PlanExecutable p);
-   void planStepCompleted(PlanAction act,int ct);
-   void planCompleted(PlanExecutable p);
+   default void planStarted(PlanExecutable p)                                   { }
+   default void planStepCompleted(PlanExecutable p,PlanAction act,int ct)       { }
+   default void planCompleted(PlanExecutable p)                                 { }
 }
 
 

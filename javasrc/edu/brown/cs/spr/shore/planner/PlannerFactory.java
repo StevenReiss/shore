@@ -44,8 +44,8 @@ import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
-import edu.brown.cs.spr.shore.iface.IfaceNetwork;
 import edu.brown.cs.spr.shore.iface.IfacePlanner;
+import edu.brown.cs.spr.shore.iface.IfaceSafety;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
 
 public class PlannerFactory implements PlannerConstants, IfacePlanner
@@ -60,7 +60,7 @@ public class PlannerFactory implements PlannerConstants, IfacePlanner
 
 private IfaceModel      layout_model;
 private IfaceTrains     train_model;
-private IfaceNetwork    network_model;
+private IfaceSafety     safety_model;
 private int             max_plan_steps;
 
 private List<PlannerActionBase> train_actions;
@@ -72,11 +72,11 @@ private List<PlannerActionBase> train_actions;
 /*                                                                              */
 /********************************************************************************/
 
-public PlannerFactory(IfaceNetwork net,IfaceModel mdl,IfaceTrains trns)
+public PlannerFactory(IfaceSafety safety,IfaceModel mdl,IfaceTrains trns)
 {
    layout_model = mdl; 
    train_model = trns;
-   network_model = net;
+   safety_model = safety;
    train_actions = new ArrayList<>();
    
    Element xml0 = layout_model.getModelXml();
@@ -168,7 +168,7 @@ List<PlannerActionBase> getAllActions()
 
 @Override public PlannerPlan createPlan(Object... actions) 
 {
-   PlannerPlan plan = new PlannerPlan(network_model,train_model);
+   PlannerPlan plan = new PlannerPlan(safety_model,layout_model,train_model);
    
    for (int i = 0; i < actions.length; ++i) {
       if (actions[i] instanceof PlanAction) {
