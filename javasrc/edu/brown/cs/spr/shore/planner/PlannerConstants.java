@@ -44,7 +44,10 @@ public interface PlannerConstants extends IfaceConstants
  *      Planner event -- block. stop, callback, ...
  **/
 
-interface PlanEvent { }
+interface PlanEvent {
+   default void waitForAction()                      { }
+   default void noteDone()                           { }
+}
 
 
 }       // end of interface PlannerConstants

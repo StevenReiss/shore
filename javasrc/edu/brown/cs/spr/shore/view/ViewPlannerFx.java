@@ -44,6 +44,7 @@ import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfacePlanner;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
+import edu.brown.cs.spr.shore.iface.IfaceSafety;
 import edu.brown.cs.spr.shore.iface.IfaceSignal; 
 import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanAction;
 import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanActionType;
@@ -76,6 +77,7 @@ class ViewPlannerFx extends HBox implements ViewConstants
 /********************************************************************************/
 
 private IfacePlanner planner_model;
+private IfaceSafety safety_model;
 private List<TrainPlanner> train_plans;
 private TrainPlanner train_planner;
 
@@ -90,6 +92,7 @@ private TrainPlanner train_planner;
 ViewPlannerFx(ViewFactory vf)
 {
    planner_model = vf.getPlannerModel();
+   safety_model = vf.getSafetyModel();
    train_plans = new ArrayList<>();
    
    setSpacing(10.0);
@@ -142,6 +145,7 @@ private class TrainPlanner extends GridPane {
    private List<ChoiceBox<PlanAction>> choice_boxes;
    private List<Spinner<Integer>> count_boxes;
    private Button start_button;
+   private Button signal_button;
    private IfaceEngine for_engine;
    
    TrainPlanner() {
@@ -177,9 +181,11 @@ private class TrainPlanner extends GridPane {
       
       HBox buttons = new HBox();
       buttons.setAlignment(Pos.CENTER);
+      signal_button = new Button("Set STOP Signal");
+      signal_button.setOnAction(new SignalSetter(this));
       start_button = new Button("START");
       start_button.setOnAction(new PlanStarter(this));
-      buttons.getChildren().addAll(start_button);
+      buttons.getChildren().addAll(signal_button,start_button);
       add(buttons,0,steps+1,1,REMAINING);
       start_button.setDisable(true);
     }
@@ -216,7 +222,7 @@ private class TrainPlanner extends GridPane {
       return false;
     }
    
-   PlanAction getStartTarget() {
+   PlanAction getStartAction() {
       if (!isComplete()) return null;
       return choice_boxes.get(0).getValue();
     }
@@ -350,11 +356,33 @@ private class PlanStarter implements EventHandler<ActionEvent> {
 //    if (eng == null) return;
       PlanExecutable pe = for_planner.createPlan();
       if (pe == null) return;
+      // create a display for the executing plan
+      // add a callback for this display to track state
       ShoreLog.logD("VIEW","Create plan " + pe);
       pe.execute(eng);
     }
    
 }       // end of inner class PlanStarter
+
+
+
+private class SignalSetter implements EventHandler<ActionEvent> {
+
+   private TrainPlanner for_planner;
+   
+   SignalSetter(TrainPlanner plnr) {
+      for_planner = plnr;
+    }
+   
+   @Override public void handle(ActionEvent evt) {
+      PlanAction act = for_planner.getStartAction();
+      if (act == null) return;
+      IfaceSignal sig = act.getSignal();
+      if (sig == null) return;
+      safety_model.setSignal(sig,ShoreSignalState.RED);
+    }
+   
+}       // end of inner class SignalSetter
 
 
 
@@ -385,7 +413,7 @@ private final class EngineChanged implements IfaceEngine.EngineCallback {
    @Override public void enginePositionChanged(IfaceEngine eng) {
       IfacePoint pt = eng.getCurrentPoint();
       if (pt.getType() == ShorePointType.SIGNAL) {
-         PlanAction tgt = train_planner.getStartTarget();
+         PlanAction tgt = train_planner.getStartAction();
          if (tgt == null || tgt.getSignal() == null) return;
          if (tgt.getSignal().getAtPoints().contains(pt)) {
             start_signal = tgt.getSignal();

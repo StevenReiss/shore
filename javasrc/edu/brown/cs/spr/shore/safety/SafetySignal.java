@@ -37,8 +37,10 @@ package edu.brown.cs.spr.shore.safety;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
@@ -60,6 +62,7 @@ class SafetySignal implements SafetyConstants
 
 private SafetyFactory safety_factory;
 private Map<IfaceSignal,SignalData> active_signals;
+private Set<IfaceSignal> user_reds;
 
 
 
@@ -73,6 +76,7 @@ SafetySignal(SafetyFactory sf)
 {
    safety_factory = sf;
    active_signals = new HashMap<>();
+   user_reds = new HashSet<>();
 }
 
 
@@ -100,6 +104,13 @@ boolean safelySetSignal(IfaceSignal ss,ShoreSignalState state)
                return false;
           }
        }
+    }
+   
+   if (state == ShoreSignalState.RED) {
+      user_reds.add(ss);
+    }
+   else {
+      user_reds.remove(ss);
     }
    
    safety_factory.getNetworkModel().setSignal(ss,state);
@@ -211,6 +222,7 @@ private void updateSignal(IfaceSignal sig)
       rslt = ShoreSignalState.OFF;
     }
   
+   if (user_reds.contains(sig)) return;
    if (sig.getSignalState() == rslt) return;
    
    ShoreLog.logD("SAFETY","Set signal " + sig.getId() + " = " + rslt + " from " +
