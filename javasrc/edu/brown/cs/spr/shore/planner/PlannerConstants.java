@@ -40,13 +40,14 @@ import edu.brown.cs.spr.shore.iface.IfaceConstants;
 public interface PlannerConstants extends IfaceConstants 
 {
 
-/**
- *      Planner event -- block. stop, callback, ...
- **/
 
-interface PlanEvent {
-   default void waitForAction()                      { }
-   default void noteDone()                           { }
+enum PlannerEventType {
+   START,                       // start of a plan
+   FINISH,                      // end of a plan
+   ACTION_COMPLETE,             // plan action completed
+   BLOCK,                       // enter a new block
+   PAUSE,                       // stop train at a station, etc
+   SPEED,                       // set throttle speed
 }
 
 

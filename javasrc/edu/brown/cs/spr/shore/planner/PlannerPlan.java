@@ -37,16 +37,13 @@ package edu.brown.cs.spr.shore.planner;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import edu.brown.cs.ivy.swing.SwingEventListenerList;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
-import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSafety;
-import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
 import edu.brown.cs.spr.shore.iface.IfaceEngine.EngineCallback;
 import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanAction;
@@ -114,6 +111,10 @@ PlannerPlan(IfaceSafety safety,IfaceModel layout,IfaceTrains tm)
 }
 
 
+IfaceModel getLayoutModel()                     { return layout_model; }
+IfaceSafety getSafetyModel()                    { return safety_model; }
+
+
 
 /********************************************************************************/
 /*                                                                              */
@@ -123,7 +124,7 @@ PlannerPlan(IfaceSafety safety,IfaceModel layout,IfaceTrains tm)
 
 @Override public void execute(IfaceEngine eng)
 {
-   List<PlanEvent> steps = setupPlan();
+   List<PlannerEvent> steps = setupPlan();
    
    PlanFollower runner = new PlanFollower(eng,steps);
    abort_plan = false;
@@ -137,6 +138,12 @@ PlannerPlan(IfaceSafety safety,IfaceModel layout,IfaceTrains tm)
       abort_plan = true;
       notifyAll();
     }
+}
+
+
+private PlannerEvent createEvent(PlannerEventType type,Object... data)
+{
+   return PlannerEvent.createEvent(type,this,data);
 }
 
 
@@ -170,30 +177,27 @@ private class PlanStep {
 /*                                                                              */
 /********************************************************************************/
 
-private List<PlanEvent> setupPlan()
+private List<PlannerEvent> setupPlan()
 {
-   List<PlanEvent> planevents = new ArrayList<>();
-   planevents.add(new EventStart());
+   List<PlannerEvent> planevents = new ArrayList<>();
+   planevents.add(createEvent(PlannerEventType.START));
    
    IfaceBlock curblk = null;
    PlanStep prior = null;
    for (PlanStep step : plan_steps) {
       curblk = addEvents(step,prior,curblk,planevents);
       prior = step;
-      planevents.add(new EventActionComplete(step.getAction()));
+      planevents.add(createEvent(PlannerEventType.ACTION_COMPLETE,step.getAction()));
     }
    
-   planevents.add(new EventFinish());
+   planevents.add(createEvent(PlannerEventType.FINISH)); 
    
    // associate next block with each block event
-   EventBlock bact = null;
-   for (PlanEvent evt : planevents) {
-      if (evt instanceof EventBlock) {
-         EventBlock e1 = (EventBlock) evt;
-         if (bact != null) {
-            bact.setNextBlock(e1.getBlock());
-          }
-         bact = e1;
+   PlannerEvent bact = null;
+   for (PlannerEvent evt : planevents) {
+      if (evt.getEventType() == PlannerEventType.BLOCK) {
+         bact.setNextBlock(evt.getBlock());
+         bact = evt;
        }
     }
    
@@ -201,7 +205,7 @@ private List<PlanEvent> setupPlan()
 }
 
 
-private IfaceBlock addEvents(PlanStep ps,PlanStep prior,IfaceBlock curblk,List<PlanEvent> events)
+private IfaceBlock addEvents(PlanStep ps,PlanStep prior,IfaceBlock curblk,List<PlannerEvent> events)
 {
    PlannerActionBase act = ps.getAction();
    List<IfaceBlock> actblocks = act.getBlocks();
@@ -222,13 +226,13 @@ private IfaceBlock addEvents(PlanStep ps,PlanStep prior,IfaceBlock curblk,List<P
             for (int i = 0; i < lblks.size()-1; ++i) {
                int nidx = (idx+1+i) % lblks.size();
                IfaceBlock blk0 = lblks.get(nidx);
-               events.add(new EventBlock(curblk,blk0));
+               events.add(createEvent(PlannerEventType.BLOCK,curblk,blk0));
                curblk = blk0;
                if (blk0 == sblk) break;
              }
           }
          for (IfaceBlock blk1 : pe.getThroughBlocks()) {
-            events.add(new EventBlock(curblk,blk1));
+            events.add(createEvent(PlannerEventType.BLOCK,curblk,blk1));
             curblk = blk1;
           }
        }
@@ -238,13 +242,13 @@ private IfaceBlock addEvents(PlanStep ps,PlanStep prior,IfaceBlock curblk,List<P
       case START :
          for (int i = 0; i < actblocks.size()-1; ++i) {
             IfaceBlock b = actblocks.get(i);
-            events.add(new EventBlock(curblk,b));
+            events.add(createEvent(PlannerEventType.BLOCK,curblk,b));
             curblk = b;
           }
          break; 
       case END :
          for (IfaceBlock b : actblocks) {
-            events.add(new EventBlock(curblk,b));
+            events.add(createEvent(PlannerEventType.BLOCK,curblk,b));
             curblk = b;
           }
          break;
@@ -256,17 +260,17 @@ private IfaceBlock addEvents(PlanStep ps,PlanStep prior,IfaceBlock curblk,List<P
             ++index;
           }
          IfaceBlock b2 = loopblks.get(index);
-         events.add(new EventBlock(curblk,b2));
+         events.add(createEvent(PlannerEventType.BLOCK,curblk,b2));
          curblk = b2;
          curblk = loopblks.get(index);
          for (int i = 0; i < ps.getCount(); ++i) {
             for (int j = 0; j < loopblks.size(); ++j) {
                int k = (index+ 1 + j) % loopblks.size();
                IfaceBlock b = loopblks.get(k);
-               events.add(new EventBlock(curblk,b));
+               events.add(createEvent(PlannerEventType.BLOCK,curblk,b));
                curblk = b;
              }
-            events.add(new EventActionComplete(act,i+1));
+            events.add(createEvent(PlannerEventType.ACTION_COMPLETE,act,i+1));
           }
          break;
     }
@@ -298,129 +302,11 @@ private boolean isConnected(IfaceBlock b0,IfaceBlock b1)
 
 /********************************************************************************/
 /*                                                                              */
-/*      Setup switches on block entry                                           */
-/*                                                                              */
-/********************************************************************************/
-
-private void setupSwitches(IfaceBlock prior,IfaceBlock enter,IfaceBlock next) 
-{
-   IfacePoint gap0 = null;
-   IfacePoint p0 = null;
-   IfacePoint gap1 = null;
-   IfacePoint p1 = null;
-   for (IfaceConnection conn : enter.getConnections()) {
-      if (conn.getOtherBlock(enter) == next) {
-         gap1 = conn.getGapPoint();
-         p1 = conn.getExitSensor(enter).getAtPoint();
-       }
-      else if (prior == null || conn.getOtherBlock(enter) == prior) {
-         gap0 = conn.getGapPoint();
-         p0 = conn.getEntrySensor(enter).getAtPoint();
-       }
-    }
-   if (gap0 == null || gap1 == null) return;
-   
-   Set<IfacePoint> allpts = layout_model.findSuccessorPoints(gap0,p0,false);
-   Set<IfacePoint> bwdpts = layout_model.findSuccessorPoints(gap1,p1,false);
-   allpts.retainAll(bwdpts);
-   for (IfaceSwitch sw : layout_model.getSwitches()) {
-      if (allpts.contains(sw.getPivotPoint())) {
-         if (allpts.contains(sw.getNSensor().getAtPoint())) {
-            safety_model.setSwitch(sw,ShoreSwitchState.N);
-          }
-         else if (allpts.contains(sw.getRSensor().getAtPoint())) {
-            safety_model.setSwitch(sw,ShoreSwitchState.R);
-          }
-       }
-    }
-}
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Various plan events                                                     */
-/*                                                                              */
-/********************************************************************************/
-
-private class EventStart implements PlanEvent {
-   
-   EventStart() { }
-   
-   @Override public String toString() {
-      return "START";
-    }
-   
-}       // end of inner class EventStart
-
-
-private class EventFinish implements PlanEvent {
-   
-   EventFinish() { }
-   
-   @Override public String toString() {
-      return "FINISH";
-    }
-   
-}       // end of inner class EventFinish
-
-
-
-private class EventActionComplete implements PlanEvent {
-   
-   private PlannerActionBase done_action;
-   
-   EventActionComplete(PlannerActionBase act) {
-      done_action = act;
-    }
-   
-   EventActionComplete(PlannerActionBase act,int ct) {
-      done_action = act;
-    }
-   
-   @Override public String toString() {
-      return "DONE " + done_action.getName();
-    }
-   
-}       // end of inner class EventActionComplete
-
-
-
-private class EventBlock implements PlanEvent {
-   
-   private IfaceBlock prior_block;
-   private IfaceBlock enter_block;
-   private IfaceBlock next_block;
-  
-   EventBlock(IfaceBlock prior,IfaceBlock enter) {
-      prior_block = prior;
-      enter_block = enter;
-      next_block = null;
-    }
-   
-   IfaceBlock getBlock()                        { return enter_block; }
-   IfaceBlock getNextBlock()                    { return next_block; }
-   IfaceBlock getPriorBlock()                   { return prior_block; }
-   
-   void setNextBlock(IfaceBlock b)              { next_block = b; }
-   
-   @Override public String toString() {
-      return enter_block.getId();
-    }
-   
-}       // end of inner class EventBlock
-
-// Add action for stopping the train (at a sensor -- for a station)
-// Add action setting thtottle speed
-
-
-
-/********************************************************************************/
-/*                                                                              */
 /*      Callback methods                                                       */
 /*                                                                              */
 /********************************************************************************/
 
-private void firePlanStarted()
+void firePlanStarted()
 {
    for (PlanCallback cb : plan_listeners) {
       cb.planStarted(this);
@@ -428,7 +314,7 @@ private void firePlanStarted()
 }
 
 
-private void firePlanCompleted()
+void firePlanCompleted()
 {
    for (PlanCallback cb : plan_listeners) {
       cb.planCompleted(this);
@@ -436,7 +322,7 @@ private void firePlanCompleted()
 }
 
 
-private void firePlanStepCompleted(PlannerActionBase act,int ct) 
+void firePlanStepCompleted(PlannerActionBase act,int ct) 
 {
    for (PlanCallback cb : plan_listeners) {
       cb.planStepCompleted(this,act,ct); 
@@ -453,10 +339,10 @@ private void firePlanStepCompleted(PlannerActionBase act,int ct)
 private final class PlanFollower extends Thread implements EngineCallback {
 
    private IfaceEngine for_engine;
-   private List<PlanEvent> plan_events;
+   private List<PlannerEvent> plan_events;
    private int event_index;
    
-   PlanFollower(IfaceEngine eng,List<PlanEvent> events) {
+   PlanFollower(IfaceEngine eng,List<PlannerEvent> events) {
        for_engine = eng;
        plan_events = events;
        event_index = 0;
@@ -465,9 +351,9 @@ private final class PlanFollower extends Thread implements EngineCallback {
    
    @Override public void run() {
       while (event_index < plan_events.size()) {
-         PlanEvent event = plan_events.get(event_index);
+         PlannerEvent event = plan_events.get(event_index);
          if (abort_plan) break;
-         event.waitForAction();
+         event.waitForAction(for_engine); 
          if (abort_plan) break;
          event.noteDone();
          ++event_index;
