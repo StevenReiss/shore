@@ -71,6 +71,7 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -103,6 +104,7 @@ private MenuItem        reboot_button;
 private MenuItem        config_button;
 private MenuItem        manage_button;
 private MenuItem        reset_button;
+private boolean        control_pressed;
 
 
 
@@ -116,6 +118,7 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
 {
    for_engine = engine;
    first_setup = false;
+   control_pressed = false;
    
    URL r = getClass().getClassLoader().getResource("engineer.css");
    getStylesheets().add(r.toExternalForm());
@@ -195,6 +198,10 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
    
    setVgap(5.0);
    setHgap(5.0);
+   
+   ControlKeyHandler chh = new ControlKeyHandler();
+   setOnKeyPressed(chh);
+   setOnKeyReleased(chh);
    
    CallbackHandler hdlr = new CallbackHandler();
    for_engine.addEngineCallback(hdlr);
@@ -283,8 +290,12 @@ private final class ThrottleChange implements ChangeListener<Number> {
       boolean chng = throttle_slider.isValueChanging();
       ShoreLog.logD("VIEW","Set throttle " + newv + " " + oldv + " " + chng + " " + 
             throttle_slider.getMin() + " " + throttle_slider.getMax() + " " +
-            for_engine.getEngineState());
+            for_engine.getEngineState() + " " + control_pressed);
      
+      if (control_pressed) {
+         for_engine.resumeTrain(null);
+       }
+      
       switch (for_engine.getEngineState()) {
          case RUNNING :
          case UNKNOWN :
@@ -922,7 +933,32 @@ private final class RebootHandler implements EventHandler<ActionEvent> {
        }
     }
 
+}       // end of inner class RebootHandler
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Detect control key                                                      */
+/*                                                                              */
+/********************************************************************************/
+
+private final class ControlKeyHandler implements EventHandler<KeyEvent> {
+
+   @Override public void handle(KeyEvent evt) {
+      if (evt.getEventType() == KeyEvent.KEY_PRESSED) {
+         if (evt.isControlDown()) {
+            control_pressed = true;
+          }
+       }
+      else if (evt.getEventType() == KeyEvent.KEY_RELEASED) {
+         if (evt.isControlDown()) {
+            control_pressed = false;
+          }
+       }
+    }
 }
+
 
 }       // end of class ViewEngineerFx
 

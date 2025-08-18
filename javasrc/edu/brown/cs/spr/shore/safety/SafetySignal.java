@@ -89,6 +89,8 @@ SafetySignal(SafetyFactory sf)
 
 boolean safelySetSignal(IfaceSignal ss,ShoreSignalState state)
 {
+   ShoreLog.logD("SAFETY","User set signal " + ss + " " + state);
+   
    if (state == ShoreSignalState.GREEN || state == ShoreSignalState.YELLOW) {
       IfaceBlock frm = ss.getFromBlock();
       for (IfaceConnection cc : ss.getConnections()) {
@@ -98,6 +100,12 @@ boolean safelySetSignal(IfaceSignal ss,ShoreSignalState state)
             case UNKNOWN :
                break;
             case PENDING :
+               if (blk.getPendingFrom() != frm) {
+                  ShoreLog.logD("SAFETY","Attempt to set signal " + ss + " " + frm +
+                        " when target block in use " + blk + " " + blk.getPendingFrom());
+                  return false;
+                }
+               break;
             case INUSE :
                ShoreLog.logD("SAFETY","Attempt to set signal " + ss + 
                      "when target block in use " + blk);
@@ -152,6 +160,7 @@ void handleSensorChange(IfaceSensor s)
              }
           }
          else {
+            ShoreLog.logD("SAFETY","Signal change should restart train");
             if (sig.getSignalState() == ShoreSignalState.GREEN) {
                sd.restartTrain();
              }

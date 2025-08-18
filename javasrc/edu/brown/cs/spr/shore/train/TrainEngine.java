@@ -213,11 +213,15 @@ void setNoRearLight()                                   { has_rear_light = false
    if (v < start_speed) v = start_speed;
    
    if (saved_throttle.get(ShoreSlowReason.DEFAULT) != null) {
+      ShoreLog.logD("TRAIN","Reset default throttle to " + v);
       saved_throttle.put(ShoreSlowReason.DEFAULT,v);
     }
    
    if (saved_throttle.isEmpty() || v < getThrottle()) {
       train_factory.getNetworkModel().sendThrottle(this,v);
+    }
+   else {
+      ShoreLog.logD("TRAIN","Throttle overridden " + saved_throttle);
     }
 }
 
@@ -366,15 +370,28 @@ void setNoRearLight()                                   { has_rear_light = false
 
 @Override public void resumeTrain(ShoreSlowReason reason)
 {
+   if (reason == null) {
+      saved_throttle.clear();
+      return;
+    }
+   
    Double v = saved_throttle.remove(reason);
-   if (v == null) return;
-   if (reason == ShoreSlowReason.STOP) {
-      Double v1 = saved_throttle.remove(ShoreSlowReason.ESTOP);
-      if (v1 == null) {
+   if (v == null) {
+      ShoreLog.logD("TRAIN","No saved throttle for " + reason + " " +
+            saved_throttle);
+      return;
+    }
+   
+   ShoreLog.logD("TRAIN","Resume train " + reason + " " + saved_throttle + " " + v);
+   
+   Double v1 = saved_throttle.remove(ShoreSlowReason.STOP);
+   if (v1 != null) {
+      Double v2 = saved_throttle.remove(ShoreSlowReason.ESTOP);
+      if (v2 == null) {
          train_factory.getNetworkModel().sendEmergencyStop(this,false);
        }
     }
-      
+   
    double v0 = -1;
    boolean havedflt = false;
    for (Map.Entry<ShoreSlowReason,Double> ent : saved_throttle.entrySet()) {

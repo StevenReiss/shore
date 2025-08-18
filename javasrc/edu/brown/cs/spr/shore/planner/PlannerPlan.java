@@ -37,6 +37,7 @@ package edu.brown.cs.spr.shore.planner;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import edu.brown.cs.ivy.swing.SwingEventListenerList;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
@@ -44,11 +45,13 @@ import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceSafety;
+import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
 import edu.brown.cs.spr.shore.iface.IfaceEngine.EngineCallback;
 import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanAction;
 import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanCallback;
 import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanExecutable;
+import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
 class PlannerPlan implements PlanExecutable, PlannerConstants
@@ -66,6 +69,9 @@ private SwingEventListenerList<PlanCallback> plan_listeners;
 private IfaceModel layout_model;
 private IfaceSafety safety_model;
 private boolean    abort_plan;
+private IfaceEngine for_engine;
+private IfaceBlock  engine_block;
+
 
 
 /********************************************************************************/
@@ -82,6 +88,8 @@ PlannerPlan(IfaceSafety safety,IfaceModel layout,IfaceTrains tm)
    plan_steps = new ArrayList<>();
    plan_listeners = new SwingEventListenerList<>(PlanCallback.class); 
    abort_plan = false;
+   for_engine = null;
+   engine_block = null;
 }
 
 
@@ -125,8 +133,9 @@ IfaceSafety getSafetyModel()                    { return safety_model; }
 @Override public void execute(IfaceEngine eng)
 {
    List<PlannerEvent> steps = setupPlan();
+   for_engine = eng;
    
-   PlanFollower runner = new PlanFollower(eng,steps);
+   PlanFollower runner = new PlanFollower(steps);
    abort_plan = false;
    runner.start();
 }
@@ -196,7 +205,7 @@ private List<PlannerEvent> setupPlan()
    PlannerEvent bact = null;
    for (PlannerEvent evt : planevents) {
       if (evt.getEventType() == PlannerEventType.BLOCK) {
-         bact.setNextBlock(evt.getBlock());
+         if (bact != null) bact.setNextBlock(evt.getBlock());
          bact = evt;
        }
     }
@@ -330,6 +339,78 @@ void firePlanStepCompleted(PlannerActionBase act,int ct)
 }
 
 
+
+/********************************************************************************/
+/*                                                                              */
+/*      Helper methods for plan execution                                       */
+/*                                                                              */
+/********************************************************************************/
+
+void setupSwitches(IfaceBlock prior,IfaceBlock enter,IfaceBlock next) 
+{
+   ShoreLog.logD("PLANNER","Set switches " + prior + " " + enter + " " + next);
+   
+   IfacePoint gap0 = null;
+   IfacePoint p0 = null;
+   IfacePoint gap1 = null;
+   IfacePoint p1 = null;
+   for (IfaceConnection conn : enter.getConnections()) {
+      if (conn.getOtherBlock(enter) == next) {
+         gap1 = conn.getGapPoint();
+         p1 = conn.getExitSensor(enter).getAtPoint();
+       }
+      else if (prior == null || conn.getOtherBlock(enter) == prior) {
+         gap0 = conn.getGapPoint();
+         p0 = conn.getEntrySensor(enter).getAtPoint();
+       }
+    }
+   if (gap0 == null || gap1 == null) return;
+   
+   Set<IfacePoint> allpts = layout_model.findSuccessorPoints(gap0,p0,false);
+   Set<IfacePoint> bwdpts = layout_model.findSuccessorPoints(gap1,p1,false);
+   allpts.retainAll(bwdpts); 
+   ShoreLog.logD("PLANNER","Point set: " + allpts);
+   for (IfaceSwitch sw : layout_model.getSwitches()) {
+      if (allpts.contains(sw.getPivotPoint())) {
+         ShoreLog.logD("PLANNER","Check switch " + sw + " " + 
+               sw.getNSensor().getAtPoint() +
+               " " + sw.getRSensor().getAtPoint());
+         if (allpts.contains(sw.getNSensor().getAtPoint())) {
+            safety_model.setSwitch(sw,ShoreSwitchState.N);
+          }
+         else if (allpts.contains(sw.getRSensor().getAtPoint())) {
+            safety_model.setSwitch(sw,ShoreSwitchState.R);
+          }
+       }
+    }
+}
+
+
+
+boolean waitForBlockEntry(IfaceBlock blk)
+{
+   synchronized (this) {
+      for ( ; ; ) {
+         IfaceBlock atblk = for_engine.getCurrentPoint().getBlock();
+         if (atblk == blk) {
+            engine_block = blk;
+            return true;
+          }
+         if (engine_block == null) engine_block = atblk;
+         if (atblk != engine_block) {
+            ShoreLog.logD("PLANNER","Unexpected block " + atblk + " " +
+                  engine_block + " " + blk);
+            return false;
+          }
+         try {
+            wait(5000);
+          }
+         catch (InterruptedException e) { }
+       }
+    }
+}
+
+
 /********************************************************************************/
 /*                                                                              */
 /*      Plan Follower Thread                                                    */
@@ -338,12 +419,10 @@ void firePlanStepCompleted(PlannerActionBase act,int ct)
 
 private final class PlanFollower extends Thread implements EngineCallback {
 
-   private IfaceEngine for_engine;
    private List<PlannerEvent> plan_events;
    private int event_index;
    
-   PlanFollower(IfaceEngine eng,List<PlannerEvent> events) {
-       for_engine = eng;
+   PlanFollower(List<PlannerEvent> events) {
        plan_events = events;
        event_index = 0;
        for_engine.addEngineCallback(this);
@@ -352,25 +431,25 @@ private final class PlanFollower extends Thread implements EngineCallback {
    @Override public void run() {
       while (event_index < plan_events.size()) {
          PlannerEvent event = plan_events.get(event_index);
+         ShoreLog.logD("PLANNER","Work on step " + event_index + " " + event);
          if (abort_plan) break;
          event.waitForAction(for_engine); 
          if (abort_plan) break;
          event.noteDone();
          ++event_index;
        }
-      // add a callback for train position (look at block for current point; check for stopped)
-      //    if new block -- change active train block and notifyAll
-      //    if train starts after stop (or enters off state -- handle abort)
-      // start up engine, set switches for initial block
-      // go through plan steps:
-      //    if block step -- wait for the block
-      //    if event step -- send the proper event as callback
-      //    if stop step -- stop the train && set timer to restart
-      //    if start step -- start the train
-      // possibly create a thread to do the plan execution
-      //    it can send the events
-      //    it can safely wait for the current block to be exited
-      //    it can safely wait for a timer to restart train
+      for_engine.removeEngineCallback(this);
+    }
+   
+   @Override public void engineChanged(IfaceEngine eng) { 
+      // if we need to monitor throttle or other aspects do a notify here
+      // should monitor for engine reboot and abort plan
+    }
+   
+   @Override public void enginePositionChanged(IfaceEngine eng) {
+      synchronized (PlannerPlan.this) {
+         notifyAll();
+       }
     }
    
 }

@@ -154,14 +154,26 @@ private class TrainPlanner extends GridPane {
       count_boxes = new ArrayList<>();
       setMinSize(200,200);
       setPrefSize(340,200);
-      add(new Label("Start From:"),0,0,1,REMAINING);
       ChoiceBox<PlanAction> prv = null;
-      for (int i = 1; i <= steps; ++i) {
-         add(new Label("Step " + i + ":"),0,i,1,1);
+      
+      signal_button = new Button("Set STOP Signal");
+      signal_button.setOnAction(new SignalSetter(this));
+      signal_button.setDisable(true);
+//    signal_button.setMinWidth(120);
+      start_button = new Button("START");
+      start_button.setOnAction(new PlanStarter(this));
+      start_button.setDisable(true);
+//    start_button.setMinWidth(120);
+      
+      ObservableList<PlanAction> starts = startOptions();
+      for (int i = 0; i <= steps; ++i) {
+         String lbl = (i == 0 ? "Start From:" : "Step " + i + ":");
+         add(new Label(lbl),0,i,1,1);
          ChoiceBox<PlanAction> cb = new ChoiceBox<>();
+         cb.setMinWidth(120);
          cb.setConverter(new TargetConverter());
          if (prv == null) {
-            cb.setItems(startOptions());
+            cb.setItems(starts);
           }
          else {
             PlanAction prvtgt = prv.getValue();
@@ -175,19 +187,17 @@ private class TrainPlanner extends GridPane {
          add(sp,2,i,1,1);
          choice_boxes.add(cb);
          count_boxes.add(sp);
-         cb.valueProperty().addListener(new ChoiceListener(this,i-1));
-         cb.itemsProperty().addListener(new ValuesListener(this,i-1));
+         cb.valueProperty().addListener(new ChoiceListener(this,i));
+         cb.itemsProperty().addListener(new ValuesListener(this,i));
        }
       
+      choice_boxes.get(0).setValue(starts.get(0));
+      
       HBox buttons = new HBox();
+      buttons.setSpacing(5.0);
       buttons.setAlignment(Pos.CENTER);
-      signal_button = new Button("Set STOP Signal");
-      signal_button.setOnAction(new SignalSetter(this));
-      start_button = new Button("START");
-      start_button.setOnAction(new PlanStarter(this));
       buttons.getChildren().addAll(signal_button,start_button);
-      add(buttons,0,steps+1,1,REMAINING);
-      start_button.setDisable(true);
+      add(buttons,0,steps+1,REMAINING,1);
     }
    
    ChoiceBox<PlanAction> getChoiceBox(int idx) {
@@ -232,10 +242,13 @@ private class TrainPlanner extends GridPane {
       if (eng == null || !isComplete()) {
          eng = null;
          start_button.setDisable(true);
-         // temporary: allow debug without engine
-         if (isComplete()) start_button.setDisable(false);
+         signal_button.setDisable(true);
+         if (isComplete()) {
+            signal_button.setDisable(false);
+          }
        }
       else {
+         signal_button.setDisable(true);
          start_button.setDisable(false); 
        }
       for_engine = eng;
@@ -246,6 +259,10 @@ private class TrainPlanner extends GridPane {
       PlanExecutable plan = planner_model.createPlan();
       for (int i = 0; i < choice_boxes.size(); ++i) {
          PlanAction pa = choice_boxes.get(i).getValue();
+         if (pa == null) {
+            ShoreLog.logD("VIEW","Action box " + i + "not defined");
+            continue;
+          }
          int ct = count_boxes.get(i).getValue();
          plan.addStep(pa,ct);
        }
@@ -282,15 +299,17 @@ private class ChoiceListener implements ChangeListener<PlanAction> {
       boolean donext = true;
       if (newv == null || newv.getActionType() != PlanActionType.LOOP) {
          for_planner.getCountBox(for_step).setDisable(true);
-          if (newv == null || for_step != 0) donext = false;
+          if (newv == null || newv.getActionType() == PlanActionType.END) donext = false;
        }
       else {
          for_planner.getCountBox(for_step).setDisable(false);
        }
       if (donext) {
-         ChoiceBox<PlanAction> nextcb = for_planner.getChoiceBox(for_step+1);
-         nextcb.setValue(null);
-         nextcb.itemsProperty().set(options(newv));
+         if (for_step+1 < for_planner.getNumSteps()) {
+            ChoiceBox<PlanAction> nextcb = for_planner.getChoiceBox(for_step+1);
+            nextcb.setValue(null);
+            nextcb.itemsProperty().set(options(newv));
+          }
        }
       else {
          for (int i = for_step+1; i < for_planner.getNumSteps(); ++i) {
@@ -353,12 +372,17 @@ private class PlanStarter implements EventHandler<ActionEvent> {
    
    @Override public void handle(ActionEvent evt) {
       IfaceEngine eng = for_planner.getEngine();
-//    if (eng == null) return;
+      if (eng == null) return;
       PlanExecutable pe = for_planner.createPlan();
+      ShoreLog.logD("VIEW","Create plan " + pe);
       if (pe == null) return;
+      PlanAction act = for_planner.getStartAction();
+      if (act == null) return;
+      IfaceSignal sig = act.getSignal();
+      if (sig == null) return;
+      safety_model.setSignal(sig,ShoreSignalState.GREEN);
       // create a display for the executing plan
       // add a callback for this display to track state
-      ShoreLog.logD("VIEW","Create plan " + pe);
       pe.execute(eng);
     }
    

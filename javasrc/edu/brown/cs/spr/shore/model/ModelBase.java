@@ -434,7 +434,6 @@ private void addPriorPoints(IfacePoint pt,Set<IfacePoint> rslt,IfaceBlock blk)
       IfacePoint prior,boolean usesw)
 {
    Set<IfacePoint> priors = findPriorPoints(current,prior);
-   ShoreLog.logD("MODEL","Prior points: " + prior);
    return findSuccessorPoints(current,priors,usesw);
 }
 

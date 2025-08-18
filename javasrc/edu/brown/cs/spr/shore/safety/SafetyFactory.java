@@ -137,6 +137,7 @@ void schedule(TimerTask task,long delay)
 @Override public boolean setSensor(IfaceSensor ss,ShoreSensorState state)
 {
    // user set sensor -- tell the network to adjust levels and set sensor
+   ShoreLog.logD("SAFETY","User set sensor " + ss + " " + state);
    
    network_model.setSensor(ss,state); 
    

@@ -216,6 +216,7 @@ private void loadTrains()
 private final class TrainModelUpdater implements IfaceModel.ModelCallback {
    
    @Override public void blockChanged(IfaceBlock blk) {
+      ShoreLog.logD("TRAIN","Train block changed " + blk);
       switch (blk.getBlockState()) {
          case EMPTY :
             TrainData td = train_locations.remove(blk);
@@ -314,15 +315,17 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
     }
    
    @Override public void switchChanged(IfaceSwitch sw) {
+      ShoreLog.logD("TRAIN","Handle switch changed " + sw);
       IfaceBlock blk = sw.getPivotPoint().getBlock();
       TrainData td = train_locations.get(blk);
       if (td != null) td.checkNextBlock();
    }
    
    @Override public void signalChanged(IfaceSignal sg) { 
+      ShoreLog.logD("TRAIN","Handle signal changed " + sg);
       IfaceBlock blk = sg.getFromBlock();
       TrainData td = train_locations.get(blk);
-      if (td != null) td.checkNextBlock();
+      if (td != null && td.getBlock() == blk) td.checkNextBlock();
     }
    
 }       //  end of inner class TrainModelUpdater
@@ -379,38 +382,44 @@ private class TrainData {
       IfacePoint prior = for_engine.getPriorPoint();
       if (prior == null) return;
       IfaceBlock next = layout_model.findNextBlock(prior,cur);
-      if (next == next_block) return;
-      next_block = next;
-      for (IfaceConnection c : active_block.getConnections()) {
-         if (c.getOtherBlock(active_block) == next) {
-            exit_signal = c.getStopSignal(active_block);
-            break;
-          }
-       }
+      
       boolean slow = false;
       boolean stop = false;
-      switch (next_block.getBlockState()) {
-         case EMPTY :
-            break;
-         case INUSE :
-            if (train_locations.get(next_block) == this) break;
-            slow = true;
-            break;
-         case UNKNOWN :
-            break;
-         case PENDING :
-            IfaceBlock pendon = next_block.getPendingFrom();
-            ShoreLog.logD("TRAIN","Check next block pending " + 
-                  active_block + " " + next_block + " " + pendon);
-            if (pendon == active_block) break;
-            slow = true;
-            break;
+      
+      if (next != next_block) {
+         ShoreLog.logD("TRAIN","Check next block " + prior + " " + cur + " " + next);
+         next_block = next;
+         for (IfaceConnection c : active_block.getConnections()) {
+            if (c.getOtherBlock(active_block) == next) {
+               exit_signal = c.getStopSignal(active_block);
+               break;
+             }
+          }
+         switch (next_block.getBlockState()) {
+            case EMPTY :
+               break;
+            case INUSE :
+               if (train_locations.get(next_block) == this) break;
+               slow = true;
+               break;
+            case UNKNOWN :
+               break;
+            case PENDING :
+               IfaceBlock pendon = next_block.getPendingFrom();
+               ShoreLog.logD("TRAIN","Check next block pending " + 
+                     active_block + " " + next_block + " " + pendon);
+               if (pendon == active_block) break;
+               slow = true;
+               break;
+          }
        }
       
+      ShoreLog.logD("TRAIN","Check exit signal " + exit_signal);
       if (exit_signal != null && exit_signal.getSignalState() == ShoreSignalState.RED) {
          for (IfacePoint pt : exit_signal.getAtPoints()) {
             if (block_points.contains(pt)) stop = true;
           }
+         slow = true;
        }
       
       ShoreLog.logD("TRAIN","Train signal action " + active_block + " " +
@@ -427,6 +436,7 @@ private class TrainData {
          for_engine.resumeTrain(ShoreSlowReason.SIGNAL);
        }
     }
+   
    
 }       // end of inner class TrainData
 

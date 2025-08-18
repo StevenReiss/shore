@@ -69,7 +69,7 @@ int SHUTDOWN_TIME = 4000;
 /**
  *      % Throttle value for slow speed
  **/
-double SLOW_THROTTLE = 0.25;
+double SLOW_THROTTLE = 0.40;
 
 }       // end of interface TrainConstants
 
