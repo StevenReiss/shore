@@ -368,6 +368,8 @@ void setupSwitches(IfaceBlock prior,IfaceBlock enter,IfaceBlock next)
    
    Set<IfacePoint> allpts = layout_model.findSuccessorPoints(gap0,p0,false);
    Set<IfacePoint> bwdpts = layout_model.findSuccessorPoints(gap1,p1,false);
+   ShoreLog.logD("PLANNER","FWD points " + allpts);
+   ShoreLog.logD("PLANNER","BWD points " + bwdpts);
    allpts.retainAll(bwdpts); 
    ShoreLog.logD("PLANNER","Point set: " + allpts);
    for (IfaceSwitch sw : layout_model.getSwitches()) {
@@ -391,16 +393,19 @@ boolean waitForBlockEntry(IfaceBlock blk)
 {
    synchronized (this) {
       for ( ; ; ) {
-         IfaceBlock atblk = for_engine.getCurrentPoint().getBlock();
-         if (atblk == blk) {
-            engine_block = blk;
-            return true;
-          }
-         if (engine_block == null) engine_block = atblk;
-         if (atblk != engine_block) {
-            ShoreLog.logD("PLANNER","Unexpected block " + atblk + " " +
-                  engine_block + " " + blk);
-            return false;
+         IfacePoint pt = for_engine.getCurrentPoint();
+         if (pt != null) {
+            IfaceBlock atblk = pt.getBlock();
+            if (atblk == blk) {
+               engine_block = blk;
+               return true;
+             }
+            if (engine_block == null) engine_block = atblk;
+            if (atblk != engine_block) {
+               ShoreLog.logD("PLANNER","Unexpected block " + atblk + " " +
+                     engine_block + " " + blk);
+               return false;
+             }
           }
          try {
             wait(5000);
@@ -448,7 +453,7 @@ private final class PlanFollower extends Thread implements EngineCallback {
    
    @Override public void enginePositionChanged(IfaceEngine eng) {
       synchronized (PlannerPlan.this) {
-         notifyAll();
+         PlannerPlan.this.notifyAll();
        }
     }
    

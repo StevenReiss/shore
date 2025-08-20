@@ -48,7 +48,7 @@ import org.w3c.dom.Element;
  *      the ability to get callbacks when items change.  The class
  *      is set up from a layout.xml file.
  **/
-public interface IfaceModel
+public interface IfaceModel extends IfaceConstants
 {
 
 /**
@@ -152,7 +152,7 @@ Set<IfacePoint> findSuccessorPoints(IfacePoint current,IfacePoint entry,
 /**
  *      Call to note setup error
  **/
-void noteError(String msg);
+void noteError(String msg); 
 
 
 

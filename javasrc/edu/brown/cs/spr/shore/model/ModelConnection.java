@@ -261,13 +261,15 @@ private void followSignal(ModelBase mdl,ModelPoint pt)
    ModelSignal sig = mdl.findSignalForPoint(pt);
    ModelBlock b0 = pt.getBlock();
    if (b0 == from_block && from_signal == null) {
-      if (sig != null && sig.getFromBlock() == b0) {
+      if (sig != null && sig.getFromBlock() == b0 &&
+            sig.isBlockRelevant(to_block)) {
          from_signal = sig;
          sig.addConnection(this);
        } 
     }
    else if (b0 == to_block && to_signal == null) {
-      if (sig != null && sig.getFromBlock() == b0) {
+      if (sig != null && sig.getFromBlock() == b0 &&
+            sig.isBlockRelevant(from_block)) {
          to_signal = sig;
          sig.addConnection(this);
        }

@@ -143,6 +143,19 @@ ModelSwitch getAssociatedSwitch()
 {
    if (switch_state == st) return;
    
+   if (for_model.doingChanges()) {
+      for_model.addChange(this,st);
+    }
+   else {
+      actualSetSwitch(st);
+    }
+}
+
+
+void actualSetSwitch(ShoreSwitchState st)
+{
+   if (switch_state == st) return;
+   
    ShoreLog.logD("MODEL","Set switch state " + switch_id + "=" + st);
    
    switch_state = st;

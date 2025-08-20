@@ -114,7 +114,7 @@ private List<ModelSpeedZone> speed_zones;
 private List<String> model_errors;
 private SwingEventListenerList<ModelCallback> model_listeners;
 private Element model_xml;
-
+private List<FutureChange> future_changes;
 
 
 
@@ -136,6 +136,7 @@ public ModelBase(File file)
    block_connections = new ArrayList<>();
    model_listeners = new SwingEventListenerList<>(ModelCallback.class);
    speed_zones = new ArrayList<>();
+   future_changes = null;
    
    model_errors = new ArrayList<>();
    model_xml = null;
@@ -497,37 +498,168 @@ private void addNextPoints(IfacePoint pt,Set<IfacePoint> rslt,Set<IfacePoint> pr
    model_listeners.remove(cb);
 }
 
+void addChange(ModelSwitch sw,ShoreSwitchState st)
+{
+   FutureChange change = new SwitchChange(sw,st);
+   future_changes.add(change);
+   
+}
+
+void addChange(ModelSignal sig,ShoreSignalState st)
+{
+   FutureChange change = new SignalChange(sig,st);
+   future_changes.add(change);
+}
+
+
+void addChange(ModelBlock blk,ShoreBlockState st,IfaceBlock pend)
+{ 
+   FutureChange change = new BlockChange(blk,st,pend);
+   future_changes.add(change);
+}
+
+
+boolean doingChanges() 
+{
+   return future_changes != null;
+}
 
 void fireSensorChanged(ModelSensor sensor)
 {
+   startFutures();
+   
    for (ModelCallback cb : model_listeners) {
       cb.sensorChanged(sensor);
     }
+   
+   handleFutures();
 }
 
 
 void fireSwitchChanged(ModelSwitch sw)
 {
+   startFutures();
+   
    for (ModelCallback cb : model_listeners) {
       cb.switchChanged(sw);
     }
+   
+   handleFutures();
 }
 
 
 void fireSignalChanged(ModelSignal signal)
 {
+   startFutures();
+   
    for (ModelCallback cb : model_listeners) {
       cb.signalChanged(signal);
     }
+   
+   handleFutures();
 }
 
 
 void fireBlockChanged(ModelBlock block)
 {
+   startFutures();
+   
    for (ModelCallback cb : model_listeners) {
       cb.blockChanged(block);
     }
+   
+   handleFutures();
 }
+
+
+private void startFutures()
+{
+   if (future_changes == null) {
+      future_changes = new ArrayList<>();
+    }
+}
+
+
+private void handleFutures()
+{
+   if (future_changes == null) return;
+   
+   while (!future_changes.isEmpty()) {
+      List<FutureChange> todo = new ArrayList<>(future_changes);
+      future_changes.clear();
+      for (FutureChange fc : todo) {
+         fc.processChange();
+       }
+    }
+   
+   future_changes = null;
+}
+
+
+private interface FutureChange {
+   void processChange();
+}
+
+
+
+private class SignalChange implements FutureChange {
+
+   private ModelSignal for_signal;
+   private ShoreSignalState signal_state;
+   
+   SignalChange(ModelSignal sw,ShoreSignalState st) {
+      for_signal = sw;
+      signal_state = st;
+    }
+   
+   @Override public void processChange() {
+      for_signal.actualSetSignal(signal_state); 
+    }
+
+}       // end of inner class SignalChange
+
+
+
+private class SwitchChange implements FutureChange {
+
+   private ModelSwitch for_switch;
+   private ShoreSwitchState switch_state;
+   
+   SwitchChange(ModelSwitch sw,ShoreSwitchState st) {
+      for_switch = sw;
+      switch_state = st;
+    }
+   
+   @Override public void processChange() { 
+      for_switch.actualSetSwitch(switch_state);
+    }
+
+}       // end of inner class SwitchChange
+
+
+
+private class BlockChange implements FutureChange {
+
+   private IfaceBlock for_block;
+   private ShoreBlockState block_state;
+   private IfaceBlock pending_on;
+   
+   BlockChange(IfaceBlock blk,ShoreBlockState state,IfaceBlock pending) {
+      for_block = blk;
+      block_state = state;
+      pending_on = pending;
+    }
+   
+   @Override public void processChange() {
+      if (block_state == ShoreBlockState.PENDING && pending_on != null) {
+         for_block.setPendingFrom(pending_on);
+       }
+      else {
+         for_block.setBlockState(block_state);
+       }
+    }
+   
+}       // end of inner class BlockChange
 
 
 
@@ -1029,7 +1161,7 @@ private void outputSignals(PrintStream ps)
          ps.print(" " + sns.get(i));
        }
       ps.println();
-      ps.println("      Next:  " + sg.getGapPoint()); 
+      ps.println("      Next:  " + sg.getToGapPoint());  
       ps.print("      Prior: ");
       Collection<IfaceSensor> pri = sg.getPriorSensors();
       for (IfaceSensor sen : pri) {
@@ -1157,10 +1289,6 @@ private void outputTowers(PrintStream ps)
       ps.println("\f");
     }
 }
-
-
-
-
 
 
 

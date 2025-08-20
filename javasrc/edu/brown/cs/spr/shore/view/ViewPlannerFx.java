@@ -252,7 +252,7 @@ private class TrainPlanner extends GridPane {
          start_button.setDisable(false); 
        }
       for_engine = eng;
-    }
+   }
    
    PlanExecutable createPlan() {
       if (!isComplete()) return null;
@@ -260,7 +260,7 @@ private class TrainPlanner extends GridPane {
       for (int i = 0; i < choice_boxes.size(); ++i) {
          PlanAction pa = choice_boxes.get(i).getValue();
          if (pa == null) {
-            ShoreLog.logD("VIEW","Action box " + i + "not defined");
+   //       ShoreLog.logD("VIEW","Action box " + i + " not defined");
             continue;
           }
          int ct = count_boxes.get(i).getValue();
@@ -420,17 +420,19 @@ private final class EngineChanged implements IfaceEngine.EngineCallback {
    
    private IfaceSignal start_signal;
    private IfaceBlock  start_block;
+   private IfaceEngine check_engine;
    
    EngineChanged() {
       start_signal = null;
+      check_engine = null;
     }
    
    @Override public void engineChanged(IfaceEngine eng) {
-      if (eng.getSpeed() == 0 && start_signal != null && start_block != null) {
+      if (eng.getSpeed() == 0 && start_signal != null && start_block != null &&
+            eng == check_engine) {
+         // might want to check if engine is at stop point
          enableEngine(eng);
-       }
-      else {
-         enableEngine(null);
+         check_engine = null;
        }
     }
    
@@ -445,6 +447,9 @@ private final class EngineChanged implements IfaceEngine.EngineCallback {
           }
          if (eng.getSpeed() == 0) {
             enableEngine(eng);
+          }
+         else {
+            check_engine = eng;
           }
        }
       else {

@@ -357,7 +357,8 @@ void setNoRearLight()                                   { has_rear_light = false
 
 @Override public void stopTrain()
 {
-   ShoreLog.logD("TRAIN","STOP TRAIN " + getEngineId());
+   ShoreLog.logD("TRAIN","STOP TRAIN " + getEngineId() + " " +
+         isEmergencyStopped());
    slowTrain(ShoreSlowReason.STOP,0);
    if (isEmergencyStopped()) {
       saved_throttle.put(ShoreSlowReason.ESTOP,0.0);
@@ -371,6 +372,7 @@ void setNoRearLight()                                   { has_rear_light = false
 @Override public void resumeTrain(ShoreSlowReason reason)
 {
    if (reason == null) {
+      ShoreLog.logD("TRAIN","Remove all saved throttles");
       saved_throttle.clear();
       return;
     }
@@ -387,7 +389,7 @@ void setNoRearLight()                                   { has_rear_light = false
    Double v1 = saved_throttle.remove(ShoreSlowReason.STOP);
    if (v1 != null) {
       Double v2 = saved_throttle.remove(ShoreSlowReason.ESTOP);
-      if (v2 == null) {
+      if (v2 != null) {
          train_factory.getNetworkModel().sendEmergencyStop(this,false);
        }
     }

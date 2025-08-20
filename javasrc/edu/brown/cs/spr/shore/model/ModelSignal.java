@@ -40,6 +40,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 import org.w3c.dom.Element;
 
@@ -73,7 +74,7 @@ private Set<ModelSensor> prior_sensors;
 private byte tower_id;
 private byte tower_index;
 private boolean is_unused;
-
+private Set<String> to_blocks;
 
 
 
@@ -96,6 +97,19 @@ ModelSignal(ModelBase model,Element xml)
    is_unused = IvyXml.getAttrBool(xml,"UNUSED",false);
    signal_type = IvyXml.getAttrEnum(xml,"TYPE",ShoreSignalType.RG);
    boolean anode = IvyXml.getAttrBool(xml,"ANODE",false);
+   
+   to_blocks = null;
+   String toblk = IvyXml.getAttrString(xml,"TOBLOCK");
+   if (toblk != null) {
+      to_blocks = new HashSet<>();
+      for (StringTokenizer tok = new StringTokenizer(toblk,",; ");
+            tok.hasMoreTokens(); ) {
+          String bid = tok.nextToken();
+          to_blocks.add(bid);
+       }
+      if (to_blocks.isEmpty()) to_blocks = null;
+    }
+   
    if (anode) {
       switch (signal_type) {
          case RG :
@@ -138,6 +152,14 @@ ModelSignal(ModelBase model,Element xml)
    return at_points.get(0).getBlock();
 }
 
+boolean isBlockRelevant(ModelBlock blk) 
+{
+   if (to_blocks == null) return true;
+   if (to_blocks.contains(blk.getId())) return true;
+   return false;
+}
+
+
 @Override public Collection<IfaceConnection> getConnections() 
 {
    return new ArrayList<>(for_connections); 
@@ -177,6 +199,17 @@ List<ModelSensor> getModelStopSensors()
 
 @Override public void setSignalState(ShoreSignalState state)
 {
+   if (for_model.doingChanges()) {
+      for_model.addChange(this,state);
+    }
+   else {
+      actualSetSignal(state);
+    }
+}
+
+
+void actualSetSignal(ShoreSignalState state) 
+{
    if (signal_state == state || is_unused) return;
    
    ShoreLog.logD("MODEL","Set signal " + signal_id + "=" + state);
@@ -186,7 +219,7 @@ List<ModelSensor> getModelStopSensors()
 }
 
 
-ModelPoint getGapPoint()
+ModelPoint getToGapPoint()
 {
    return gap_point;
 }

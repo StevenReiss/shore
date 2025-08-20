@@ -292,7 +292,8 @@ private final class ThrottleChange implements ChangeListener<Number> {
             throttle_slider.getMin() + " " + throttle_slider.getMax() + " " +
             for_engine.getEngineState() + " " + control_pressed);
      
-      if (control_pressed) {
+      if (control_pressed && chng) {
+         ShoreLog.logD("VIEW","Set throttle with control");
          for_engine.resumeTrain(null);
        }
       
@@ -946,13 +947,15 @@ private final class RebootHandler implements EventHandler<ActionEvent> {
 private final class ControlKeyHandler implements EventHandler<KeyEvent> {
 
    @Override public void handle(KeyEvent evt) {
+      ShoreLog.logD("VIEW","Key event " + evt + " " +
+            evt.isControlDown());
       if (evt.getEventType() == KeyEvent.KEY_PRESSED) {
          if (evt.isControlDown()) {
             control_pressed = true;
           }
        }
       else if (evt.getEventType() == KeyEvent.KEY_RELEASED) {
-         if (evt.isControlDown()) {
+         if (!evt.isControlDown()) {
             control_pressed = false;
           }
        }

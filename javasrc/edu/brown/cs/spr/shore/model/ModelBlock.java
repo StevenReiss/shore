@@ -110,11 +110,26 @@ ModelBlock(ModelBase model,Element xml)
 {
    if (block_state == st) return;
    
+   if (for_model.doingChanges()) {
+      for_model.addChange(this,st,null);
+    }
+   else {
+      actualSetBlockState(st);
+    }
+}
+
+
+
+void actualSetBlockState(ShoreBlockState st) 
+{
+   if (block_state == st) return;
+   
    String stnm = st.toString();
    if (st == ShoreBlockState.PENDING) stnm += "[" + pending_from + "]";
    ShoreLog.logD("MODEL","Set Block State " + block_id + "=" + stnm);
    
    block_state = st;
+   if (st != ShoreBlockState.PENDING) pending_from = null;
    for_model.fireBlockChanged(this);
 }
 
@@ -130,10 +145,21 @@ ModelBlock(ModelBase model,Element xml)
          block_state != ShoreBlockState.UNKNOWN) return false;
 // if (!checkNextPending(blk)) return false;
    
-   pending_from = (ModelBlock) blk;
-   setBlockState(ShoreBlockState.PENDING);
+   if (for_model.doingChanges()) {
+      for_model.addChange(this,ShoreBlockState.PENDING,blk);
+    }
+   else {
+      actualSetPendingFrom(blk);
+    }
   
    return true;
+}
+
+
+void actualSetPendingFrom(IfaceBlock blk)
+{
+   pending_from = (ModelBlock) blk;
+   actualSetBlockState(ShoreBlockState.PENDING);
 }
 
 
