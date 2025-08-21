@@ -65,6 +65,7 @@ import edu.brown.cs.spr.shore.iface.IfaceSpeedZone;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.shore.ShoreException;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
+import javafx.application.Platform;
 
 public class ModelBase implements ModelConstants, IfaceModel
 {
@@ -115,6 +116,7 @@ private List<String> model_errors;
 private SwingEventListenerList<ModelCallback> model_listeners;
 private Element model_xml;
 private List<FutureChange> future_changes;
+private int     future_depth;
 
 
 
@@ -137,6 +139,7 @@ public ModelBase(File file)
    model_listeners = new SwingEventListenerList<>(ModelCallback.class);
    speed_zones = new ArrayList<>();
    future_changes = null;
+   future_depth = 0;
    
    model_errors = new ArrayList<>();
    model_xml = null;
@@ -524,59 +527,81 @@ boolean doingChanges()
    return future_changes != null;
 }
 
+
+/********************************************************************************/
+/*                                                                              */
+/*      Handle callback invocatikon                                              */
+/*                                                                              */
+/********************************************************************************/
+
 void fireSensorChanged(ModelSensor sensor)
 {
-   startFutures();
-   
-   for (ModelCallback cb : model_listeners) {
-      cb.sensorChanged(sensor);
+   if (Platform.isFxApplicationThread()) {
+      startFutures();
+      for (ModelCallback cb : model_listeners) {
+         cb.sensorChanged(sensor);
+       }
+      handleFutures();
     }
-   
-   handleFutures();
+   else {
+      Platform.runLater(() -> { fireSensorChanged(sensor); });
+    }
 }
 
 
 void fireSwitchChanged(ModelSwitch sw)
 {
-   startFutures();
-   
-   for (ModelCallback cb : model_listeners) {
-      cb.switchChanged(sw);
+   if (Platform.isFxApplicationThread()) {
+      startFutures();
+      for (ModelCallback cb : model_listeners) {
+         cb.switchChanged(sw);
+       }
+      handleFutures();
     }
-   
-   handleFutures();
+   else {
+      Platform.runLater(() -> { fireSwitchChanged(sw); });
+    }
 }
 
 
 void fireSignalChanged(ModelSignal signal)
 {
-   startFutures();
-   
-   for (ModelCallback cb : model_listeners) {
-      cb.signalChanged(signal);
+   if (Platform.isFxApplicationThread()) {
+      startFutures();
+      for (ModelCallback cb : model_listeners) {
+         cb.signalChanged(signal);
+       }
+      handleFutures();
     }
-   
-   handleFutures();
+   else {
+      Platform.runLater(() -> { fireSignalChanged(signal); });
+    }
 }
 
 
 void fireBlockChanged(ModelBlock block)
 {
-   startFutures();
-   
-   for (ModelCallback cb : model_listeners) {
-      cb.blockChanged(block);
+   if (Platform.isFxApplicationThread()) {
+      startFutures();
+      for (ModelCallback cb : model_listeners) {
+         cb.blockChanged(block);
+       }
+      handleFutures();
     }
-   
-   handleFutures();
+   else {
+      Platform.runLater(() -> { fireBlockChanged(block); });
+    }
 }
 
 
 private void startFutures()
 {
+   ShoreLog.logD("MODEL","Start futures " + future_depth + " " + future_changes);
+   
    if (future_changes == null) {
       future_changes = new ArrayList<>();
     }
+   ++future_depth;
 }
 
 
@@ -584,15 +609,25 @@ private void handleFutures()
 {
    if (future_changes == null) return;
    
-   while (!future_changes.isEmpty()) {
+   ShoreLog.logD("MODEL","Start doing future changes " +
+         Thread.currentThread().getName());
+   
+   while (future_changes != null && !future_changes.isEmpty()) {
       List<FutureChange> todo = new ArrayList<>(future_changes);
       future_changes.clear();
       for (FutureChange fc : todo) {
+         ShoreLog.logD("MODEL","Handling future change " + fc);
          fc.processChange();
+       }
+      if (future_changes == null) {
+         ShoreLog.logX("MODEL","future_changes set to null");
        }
     }
    
-   future_changes = null;
+   ShoreLog.logD("MODEL","Future changes done " + future_depth);
+   if (--future_depth == 0) {
+      future_changes = null;
+    }
 }
 
 
@@ -640,11 +675,11 @@ private class SwitchChange implements FutureChange {
 
 private class BlockChange implements FutureChange {
 
-   private IfaceBlock for_block;
+   private ModelBlock for_block;
    private ShoreBlockState block_state;
    private IfaceBlock pending_on;
    
-   BlockChange(IfaceBlock blk,ShoreBlockState state,IfaceBlock pending) {
+   BlockChange(ModelBlock blk,ShoreBlockState state,IfaceBlock pending) {
       for_block = blk;
       block_state = state;
       pending_on = pending;
@@ -652,10 +687,10 @@ private class BlockChange implements FutureChange {
    
    @Override public void processChange() {
       if (block_state == ShoreBlockState.PENDING && pending_on != null) {
-         for_block.setPendingFrom(pending_on);
+         for_block.actualSetPendingFrom(pending_on);
        }
       else {
-         for_block.setBlockState(block_state);
+         for_block.actualSetBlockState(block_state);
        }
     }
    
