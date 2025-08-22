@@ -37,8 +37,10 @@ package edu.brown.cs.spr.shore.model;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -58,10 +60,9 @@ class ModelSpeedZone implements IfaceSpeedZone, ModelConstants
 /********************************************************************************/
 
 private ModelSensor     start_sensor;
-private ModelSensor     end_sensor;
+private List<ModelSensor> end_sensors;
 private double          speed_percent;
 private List<ModelSensor> all_sensors;
-
 
 
 
@@ -74,7 +75,8 @@ private List<ModelSensor> all_sensors;
 ModelSpeedZone(ModelBase mb,ModelSensor start,ModelSensor end,double speed)
 {
    start_sensor = start;
-   end_sensor = end;
+   end_sensors = new ArrayList<>();
+   end_sensors.add(end);
    speed_percent = speed;
    all_sensors = getSensors(mb);
    if (all_sensors == null) {
@@ -95,15 +97,21 @@ ModelSpeedZone(ModelBase mb,ModelSensor start,ModelSensor end,double speed)
 }
 
 
-@Override public IfaceSensor getEndSensor()
+@Override public Collection<IfaceSensor> getEndSensors() 
 {
-   return start_sensor;
+   return new ArrayList<>(end_sensors);
+}
+
+
+@Override public boolean isEndSensor(IfaceSensor s)
+{
+   return end_sensors.contains(s);
 }
 
 
 @Override public IfaceSensor getStartSensor()
 {
-   return end_sensor;
+   return start_sensor;
 }
 
 
@@ -124,11 +132,14 @@ ModelSpeedZone(ModelBase mb,ModelSensor start,ModelSensor end,double speed)
 private List<ModelSensor> getSensors(ModelBase mb)
 {
    ModelPoint pt0 = start_sensor.getAtPoint();
-   ModelPoint pt1 = end_sensor.getAtPoint();
    
-   List<ModelSensor> sensors = findShortestPath(mb,pt0,pt1);
+   Set<ModelSensor> rslt = new LinkedHashSet<>();
+   for (ModelSensor ms : end_sensors) {
+      List<ModelSensor> sens = findShortestPath(mb,pt0,ms.getAtPoint());
+      rslt.addAll(sens);
+    }
    
-   return sensors;
+   return new ArrayList<>(rslt);
 }
 
 

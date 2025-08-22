@@ -339,11 +339,17 @@ void setNoRearLight()                                   { has_rear_light = false
 
 @Override public void slowTrain(ShoreSlowReason reason,double speed) 
 {
-   ShoreLog.logD("TRAIN","SLOW TRAIN " + getEngineId() + " " +
-         reason + " " + speed);
    double throttle = (max_speed - start_speed) * speed + start_speed; 
    Double v = saved_throttle.get(reason);
-   if (v != null && v < throttle) return;
+   
+   ShoreLog.logD("TRAIN","SLOW TRAIN " + getEngineId() + " " +
+         reason + " " + speed + " " + engine_throttle + " " + v);
+   
+   if (v != null) {
+      ShoreLog.logD("TRAIN","Train already slowed");
+      return;
+    }
+   
    saved_throttle.put(reason,throttle);
    if (saved_throttle.get(ShoreSlowReason.DEFAULT) == null) {
       saved_throttle.put(ShoreSlowReason.DEFAULT,engine_throttle);
@@ -359,8 +365,17 @@ void setNoRearLight()                                   { has_rear_light = false
 {
    ShoreLog.logD("TRAIN","STOP TRAIN " + getEngineId() + " " +
          isEmergencyStopped());
+   if (saved_throttle.get(ShoreSlowReason.STOP) != null) {
+      ShoreLog.logD("TRAIN","Train already stopped");
+      // already stopped -- do nothing
+      return;
+    }
+   
    slowTrain(ShoreSlowReason.STOP,0);
    if (isEmergencyStopped()) {
+      saved_throttle.put(ShoreSlowReason.ESTOP,1.0);
+    }
+   else {
       saved_throttle.put(ShoreSlowReason.ESTOP,0.0);
     }
    
@@ -384,13 +399,18 @@ void setNoRearLight()                                   { has_rear_light = false
       return;
     }
    
-   ShoreLog.logD("TRAIN","Resume train " + reason + " " + saved_throttle + " " + v);
+   ShoreLog.logD("TRAIN","RESUME TRAIN " + reason + " " + saved_throttle + " " + v);
    
    Double v1 = saved_throttle.remove(ShoreSlowReason.STOP);
    if (v1 != null) {
       Double v2 = saved_throttle.remove(ShoreSlowReason.ESTOP);
       if (v2 != null) {
-         train_factory.getNetworkModel().sendEmergencyStop(this,false);
+         if (v2 == 0) {
+            train_factory.getNetworkModel().sendEmergencyStop(this,false);
+          }
+         else {
+            train_factory.getNetworkModel().sendEmergencyStop(this,true);
+          }
        }
     }
    

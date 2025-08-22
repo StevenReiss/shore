@@ -143,6 +143,8 @@ IfaceSafety getSafetyModel()                    { return safety_model; }
 
 @Override public void abort()
 {
+   ShoreLog.logD("PLANNER","ABORT plan");
+   
    synchronized (this) {
       abort_plan = true;
       notifyAll();
@@ -323,10 +325,10 @@ void firePlanStarted()
 }
 
 
-void firePlanCompleted()
+void firePlanCompleted(boolean abort)
 {
    for (PlanCallback cb : plan_listeners) {
-      cb.planCompleted(this);
+      cb.planCompleted(this,abort); 
     }
 }
 
@@ -361,13 +363,19 @@ void setupSwitches(IfaceBlock prior,IfaceBlock enter,IfaceBlock next)
        }
       else if (prior == null || conn.getOtherBlock(enter) == prior) {
          gap0 = conn.getGapPoint();
-         p0 = conn.getEntrySensor(enter).getAtPoint();
+         p0 = conn.getExitSensor(enter).getAtPoint();
+         if (p0.getBlock() != enter) {
+            p0 = conn.getEntrySensor(enter).getAtPoint();
+            ShoreLog.logD("PLANNER","Use entry sensor");
+          }
        }
     }
    if (gap0 == null || gap1 == null) return;
    
-   Set<IfacePoint> allpts = layout_model.findSuccessorPoints(gap0,p0,false);
-   Set<IfacePoint> bwdpts = layout_model.findSuccessorPoints(gap1,p1,false);
+   ShoreLog.logD("PLANNER","Points " + gap0 + " " + p0 + " " + gap1 + " " + p1);
+   
+   Set<IfacePoint> allpts = layout_model.findSuccessorPoints(p0,gap0,false);
+   Set<IfacePoint> bwdpts = layout_model.findSuccessorPoints(p1,gap1,false);
    ShoreLog.logD("PLANNER","FWD points " + allpts);
    ShoreLog.logD("PLANNER","BWD points " + bwdpts);
    allpts.retainAll(bwdpts); 
@@ -407,6 +415,10 @@ boolean waitForBlockEntry(IfaceBlock blk)
                return false;
              }
           }
+         else {
+            ShoreLog.logD("PLANNER","Engine  " + for_engine.getEngineId() +
+                  " has no data");
+          }
          try {
             wait(5000);
           }
@@ -442,6 +454,9 @@ private final class PlanFollower extends Thread implements EngineCallback {
          if (abort_plan) break;
          event.noteDone();
          ++event_index;
+       }
+      if (abort_plan) {
+         firePlanCompleted(true);
        }
       for_engine.removeEngineCallback(this);
     }

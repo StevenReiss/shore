@@ -1250,11 +1250,11 @@ private void outputSpeedZones(PrintStream ps)
       for (ModelSpeedZone sz : speed_zones) {
          ps.println("SPEED ZONE");
          ps.println("    FROM: " + sz.getStartSensor());
-         ps.println("    TO:   " + sz.getEndSensor());
+         ps.println("    TO:   " + sz.getEndSensors()); 
          ps.print("    WITH:");
          for (IfaceSensor s : sz.getZoneSensors()) {
             if (s == sz.getStartSensor()) continue;
-            if (s == sz.getEndSensor()) continue;
+            if (sz.isEndSensor(s)) continue;
             ps.print(" " + s);
           }
          ps.println();

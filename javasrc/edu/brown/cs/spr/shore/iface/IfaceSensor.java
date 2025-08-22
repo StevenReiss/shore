@@ -50,6 +50,13 @@ public interface IfaceSensor extends IfaceConstants
 {
 
 
+
+/**
+ *      Get the id of this sensor
+ **/
+String getId();
+
+
 /**
  *      Return switch if on N path to switch; null otherwise
  **/

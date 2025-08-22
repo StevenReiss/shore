@@ -64,6 +64,7 @@ import javafx.geometry.Rectangle2D;
 import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.effect.BlendMode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
@@ -89,6 +90,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
+import javafx.util.Duration;
 
 
 class ViewDiagramFx extends Pane implements ViewConstants {
@@ -129,7 +131,7 @@ private static final double		 ENGINE_LENGTH			= 10;
 private static final double		 ENGINE_POINT			= 3;
 
 private static final Color		 BACKGROUND_COLOR		= new Color(0.8,
-	 1.0,0.8,0.5);
+      1.0,0.8,0.5);
 private static final Color		 TRACK_COLOR;
 private static final Color		 GAP_COLOR			= Color.YELLOW;
 private static final Color		 SWITCH_ARROW_COLOR		= Color.GREEN;
@@ -184,23 +186,23 @@ ViewDiagramFx(ViewFactory fac,IfaceDiagram dgm,IfaceTrains trains)
       maxx = Math.max(maxx, pt.getX());
       miny = Math.min(miny, pt.getY());
       maxy = Math.max(maxy, pt.getY());
-   }
+    }
    display_bounds = new Rectangle2D(minx,miny,maxx - minx,maxy - miny);
    double ratio = display_bounds.getWidth() / display_bounds.getHeight();
    double minw = MIN_WIDTH;
    double minh = MIN_WIDTH / ratio;
-
+   
    setMinSize(minw, minh);
    setPrefSize(minw, minh);
-
+   
    setupLineSegments();
-
+   
    switch_map = new HashMap<>();
    signal_map = new HashMap<>();
    sensor_map = new HashMap<>();
    block_map = new HashMap<>();
    engine_map = new HashMap<>();
-
+   
    CallbackHandler hdlr = new CallbackHandler();
    fac.getLayoutModel().addModelCallback(hdlr);
 }
@@ -220,18 +222,18 @@ private void setupLineSegments()
       if (!done.contains(pt0)) {
 	 List<IfacePoint> seg = computeLineSegment(pt0, done);
 	 if (seg != null) line_segments.add(seg);
-      }
-   }
+       }
+    }
 }
 
 
 private List<IfacePoint> computeLineSegment(IfacePoint pt,Set<IfacePoint> done)
 {
    LinkedList<IfacePoint> pts = new LinkedList<>();
-
+   
    pts.add(pt);
    done.add(pt);
-
+   
    boolean fwd = true;
    IfacePoint endpt = null;
    IfacePoint bendpt = null;
@@ -241,49 +243,49 @@ private List<IfacePoint> computeLineSegment(IfacePoint pt,Set<IfacePoint> done)
 	 if (endpt == null) endpt = nextpt;
 	 else if (bendpt == null) bendpt = nextpt;
 	 continue;
-      }
+       }
       augmentLineSegment(pts, nextpt, pt, fwd, done);
       if (!fwd) {
 	 endpt = null;
 	 break;
-      }
+       }
       fwd = false;
-   }
-
+    }
+   
    if (endpt != null) pts.addFirst(endpt);
    if (fwd && bendpt != null) pts.addLast(bendpt);
-
+   
    if (pts.size() <= 1) return null;
-
+   
    return pts;
 }
 
 
 private void augmentLineSegment(LinkedList<IfacePoint> pts,IfacePoint pt,IfacePoint prev,
-	 boolean fwd,Set<IfacePoint> done)
+      boolean fwd,Set<IfacePoint> done)
 {
    if (done.contains(pt)) return;
    if (fwd) pts.addLast(pt);
    else pts.addFirst(pt);
    done.add(pt);
-
+   
    IfacePoint endpt = null;
-
+   
    for (IfacePoint nextpt : pt.getConnectedTo()) {
       if (nextpt == prev) continue;
       if (done.contains(nextpt)) {
 	 if (endpt == null) endpt = nextpt;
 	 continue;
-      }
+       }
       if (nextpt.getDiagram() != pt.getDiagram()) continue;
       augmentLineSegment(pts, nextpt, pt, fwd, done);
       return;
-   }
-
+    }
+   
    if (endpt != null) {
       if (fwd) pts.addLast(endpt);
       else pts.addFirst(endpt);
-   }
+    }
 }
 
 
@@ -298,27 +300,27 @@ private void drawDiagram()
    double w = getWidth();
    double h = getHeight();
    setupScaling(w, h);
-
+   
    getChildren().clear();
-
+   
    BackgroundFill fill = new BackgroundFill(BACKGROUND_COLOR,CornerRadii.EMPTY,
-	    Insets.EMPTY);
+         Insets.EMPTY);
    Background bkg = new Background(fill);
    setBackground(bkg);
-
+   
    predrawTurntables();
    drawTracks();
    drawGaps();
    drawLabels();
-
+   
    drawSwitches();
    drawSignals();
    drawSensors();
    drawBlocks();
    drawEngines();
-
+   
    // drawTurntables(); -- we need to know the state of the turntables
-
+   
    // drawTrains();
 }
 
@@ -339,11 +341,11 @@ private void predrawTurntables()
 	 Point2D cpt1 = getCoords(pt1);
 	 double r = cpt.distance(cpt1);
 	 if (radius == 0 || radius > r) radius = r;
-      }
+       }
       if (radius == 0) continue;
       Circle c = new Circle(cpt.getX(),cpt.getY(),radius,Color.LIGHTBLUE);
       getChildren().add(c);
-   }
+    }
 }
 
 
@@ -354,7 +356,7 @@ private void drawTracks()
    path.setStrokeLineCap(StrokeLineCap.ROUND);
    path.setStrokeLineJoin(StrokeLineJoin.ROUND);
    path.setStroke(TRACK_COLOR);
-
+   
    for (List<IfacePoint> seg : line_segments) {
       int ct = 0;
       for (IfacePoint pt : seg) {
@@ -362,23 +364,22 @@ private void drawTracks()
 	 PathElement e = null;
 	 if (ct++ == 0) {
 	    e = new MoveTo(pt0.getX(),pt0.getY());
-	 }
+          }
 	 else {
 	    e = new LineTo(pt0.getX(),pt0.getY());
-	 }
+          }
 	 path.getElements().add(e);
-      }
-   }
-
+       }
+    }
+   
    getChildren().add(path);
 }
 
 
 private void drawGaps()
 {
-
    double g = GAP_WIDTH / 2.0;
-
+   
    for (IfacePoint pt : for_diagram.getPoints()) {
       if (pt.getType() != ShorePointType.GAP) continue;
       if (pt.getDiagram() != for_diagram) continue;
@@ -387,7 +388,7 @@ private void drawGaps()
       for (IfacePoint cpt : pt.getConnectedTo()) {
 	 if (pt1 == null) pt1 = cpt;
 	 else if (pt2 == null) pt2 = cpt;
-      }
+       }
       if (pt2 == null) continue;
       Point2D cpt1 = getCoords(pt1);
       Point2D cpt2 = getCoords(pt2);
@@ -403,7 +404,7 @@ private void drawGaps()
       line.setStrokeWidth(TRACK_WIDTH);
       line.setStrokeLineCap(StrokeLineCap.BUTT);
       getChildren().add(line);
-   }
+    }
 }
 
 
@@ -417,7 +418,7 @@ private void drawLabels()
       if (plbl == null) continue;
       String txt = plbl.getLabelText();
       if (txt == null || txt.isEmpty()) continue;
-
+      
       Point2D loc = getCoords(pt);
       Label lbl = new Label(txt);
       // set size and color and other properties from label
@@ -430,7 +431,7 @@ private void drawLabels()
             new SimpleDoubleProperty(loc.getY()).subtract(lbl.prefHeightProperty().divide(2)));
       
       getChildren().add(lbl);
-   }
+    }
 }
 
 
@@ -443,7 +444,7 @@ private void drawLabels()
 private void drawSwitches()
 {
    switch_map.clear();
-
+   
    for (IfaceSwitch sw : for_diagram.getSwitches()) {
       IfacePoint pt = sw.getPivotPoint();
       Point2D cpt2 = getCoords(pt);
@@ -452,7 +453,7 @@ private void drawSwitches()
       arrow.setStrokeWidth(SWITCH_ARROW_WIDTH);
       arrow.setVisible(false);
       getChildren().add(arrow);
-
+      
       String txt = sw.getId();
       Text t = new Text(txt);
       t.setFont(SWITCH_FONT);
@@ -466,110 +467,106 @@ private void drawSwitches()
       t.setTextOrigin(VPos.CENTER);
       t.setX(cpt2.getX() - w0 / 2);
       t.setY(cpt2.getY());
-
+      
       Shape bkg = new Ellipse(cpt2.getX(),cpt2.getY(),w / 2,h / 2);
       w -= 2;
       bkg = new Rectangle(cpt2.getX() - w / 2,cpt2.getY() - h / 2,w,h);
-
+      
       bkg.setFill(SWITCH_BACKGROUD_COLOR);
-
+      
       getChildren().add(bkg);
       getChildren().add(t);
-
+      
       SwitchDrawData sdd = new SwitchDrawData(sw,arrow,bkg,t);
       sdd.doSetArrow();
       switch_map.put(sw, sdd);
-   }
+    }
 }
 
 
 private class SwitchDrawData {
-
-private Line	    switch_arrow;
-private IfaceSwitch for_switch;
-
-SwitchDrawData(IfaceSwitch sw,Line arrow,Node bkg,Node lbl)
-{
-   for_switch = sw;
-   switch_arrow = arrow;
-   SwitchHandler hdlr = new SwitchHandler(for_switch);
-   bkg.setOnMouseClicked(hdlr);
-   bkg.setOnMousePressed(hdlr);
-   lbl.setOnMouseClicked(hdlr);
-   lbl.setOnMousePressed(hdlr);
-}
-
-void setArrow()
-{
-   if (Platform.isFxApplicationThread()) {
-      doSetArrow();
-   }
-   else {
-      Platform.runLater(() -> doSetArrow());
-   }
-}
-
-void doSetArrow()
-{
-   IfacePoint tpt = null;
-   switch (for_switch.getSwitchState()) {
-      case UNKNOWN:
-	 break;
-      case N:
-	 tpt = for_switch.getNSensor().getAtPoint();
-	 break;
-      case R:
-	 tpt = for_switch.getRSensor().getAtPoint();
-	 break;
-   }
-   if (tpt == null) {
-      switch_arrow.setVisible(false);
-   }
-   else {
-      Point2D p0 = getCoords(for_switch.getPivotPoint());
-      Point2D p1 = getCoords(tpt);
-      double d = p0.distance(p1);
-      double x0 = p0.getX() + (p1.getX() - p0.getX()) / d * SWITCH_ARROW_LENGTH;
-      double y0 = p0.getY() + (p1.getY() - p0.getY()) / d * SWITCH_ARROW_LENGTH;
-      switch_arrow.endXProperty().set(x0);
-      switch_arrow.endYProperty().set(y0);
-      switch_arrow.setVisible(true);
-   }
-}
-}
+   
+   private Line         switch_arrow;
+   private IfaceSwitch  for_switch;
+   
+   SwitchDrawData(IfaceSwitch sw,Line arrow,Node bkg,Node lbl) {
+      for_switch = sw;
+      switch_arrow = arrow;
+      SwitchHandler hdlr = new SwitchHandler(for_switch);
+      bkg.setOnMouseClicked(hdlr);
+      bkg.setOnMousePressed(hdlr);
+      lbl.setOnMouseClicked(hdlr);
+      lbl.setOnMousePressed(hdlr);
+    }
+   
+   void setArrow() {
+      if (Platform.isFxApplicationThread()) {
+         doSetArrow();
+       }
+      else {
+         Platform.runLater(() -> doSetArrow());
+       }
+    }
+   
+   void doSetArrow() {
+      IfacePoint tpt = null;
+      switch (for_switch.getSwitchState()) {
+         case UNKNOWN:
+            break;
+         case N:
+            tpt = for_switch.getNSensor().getAtPoint();
+            break;
+         case R:
+            tpt = for_switch.getRSensor().getAtPoint();
+            break;
+       }
+      if (tpt == null) {
+         switch_arrow.setVisible(false);
+       }
+      else {
+         Point2D p0 = getCoords(for_switch.getPivotPoint());
+         Point2D p1 = getCoords(tpt);
+         double d = p0.distance(p1);
+         double x0 = p0.getX() + (p1.getX() - p0.getX()) / d * SWITCH_ARROW_LENGTH;
+         double y0 = p0.getY() + (p1.getY() - p0.getY()) / d * SWITCH_ARROW_LENGTH;
+         switch_arrow.endXProperty().set(x0);
+         switch_arrow.endYProperty().set(y0);
+         switch_arrow.setVisible(true);
+       }
+    }
+   
+}       // end of inner class SwitchDrawData
 
 
 private class SwitchHandler implements EventHandler<MouseEvent> {
-
-private IfaceSwitch for_switch;
-
-SwitchHandler(IfaceSwitch sw)
-{
-   for_switch = sw;
-}
-
-@Override
-public void handle(MouseEvent evt)
-{
-   ShoreSwitchState ss = for_switch.getSwitchState();
-   if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
-      ShoreSwitchState nss = ShoreSwitchState.UNKNOWN;
-      switch (ss) {
-	 case UNKNOWN:
-	 case R:
-	    nss = ShoreSwitchState.N;
-	    break;
-	 case N:
-	    nss = ShoreSwitchState.R;
-	    break;
-      }
-      if (nss != ShoreSwitchState.UNKNOWN) {
-	 view_factory.getSafetyModel().setSwitch(for_switch, nss);
-      }
-   }
-}
-
-} // end of inner class SwitchHandler
+   
+   private IfaceSwitch for_switch;
+   
+   SwitchHandler(IfaceSwitch sw) {
+      for_switch = sw;
+    }
+   
+   @Override
+   public void handle(MouseEvent evt) {
+      ShoreSwitchState ss = for_switch.getSwitchState();
+      if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
+         ShoreSwitchState nss = ShoreSwitchState.UNKNOWN;
+         switch (ss) {
+            case UNKNOWN:
+            case R:
+               nss = ShoreSwitchState.N;
+               break;
+            case N:
+               nss = ShoreSwitchState.R;
+               break;
+          }
+         if (nss != ShoreSwitchState.UNKNOWN) {
+            view_factory.getSafetyModel().setSwitch(for_switch, nss);
+          }
+       }
+    }
+   
+}       // end of inner class SwitchHandler
 
 
 /********************************************************************************/
@@ -581,7 +578,7 @@ public void handle(MouseEvent evt)
 private void drawSignals()
 {
    signal_map.clear();
-
+   
    for (IfaceSignal sig : for_diagram.getSignals()) {
       if (sig.getAtPoints().isEmpty()) continue;
       IfacePoint pt = sig.getAtPoints().get(0);
@@ -593,7 +590,7 @@ private void drawSignals()
       double dy = -(cnpt.getX() - cpt.getX()) / d;
       double mx = cpt.getX() + SIGNAL_DISTANCE * dx;
       double my = cpt.getY() + SIGNAL_DISTANCE * dy;
-
+      
       int nlight = 2;
       switch (sig.getSignalType()) {
 	 case ENGINE:
@@ -606,161 +603,160 @@ private void drawSignals()
 	 case RGY_ANODE:
 	    nlight = 3;
 	    break;
-      }
-
+       }
+      
       double ht = nlight * SIGNAL_LIGHT + (nlight + 2) * SIGNAL_GAP;
       double wd = SIGNAL_LIGHT + 2 * SIGNAL_GAP;
       double y0 = my - ht / 2;
-
+      
       Line l0 = new Line(cpt.getX(),cpt.getY(),mx + wd / 2,y0 + ht / 2);
       getChildren().add(l0);
-
+      
       Rectangle box = new Rectangle(mx,y0,wd,ht);
       box.setFill(SIGNAL_BACKGROUND);
       getChildren().add(box);
-
+      Tooltip tt = new Tooltip(sig.getId());
+      tt.setShowDelay(Duration.millis(250));
+      Tooltip.install(box,tt);
+            
       Shape[] light = new Shape[nlight];
       for (int i = 0; i < nlight; ++i) {
 	 y0 = y0 + SIGNAL_GAP;
 	 Circle c = new Circle(mx + SIGNAL_GAP + SIGNAL_LIGHT / 2,y0 + SIGNAL_LIGHT / 2,
-		  SIGNAL_LIGHT / 2);
+               SIGNAL_LIGHT / 2);
 	 c.setFill(SIGNAL_OFF);
 	 c.setStroke(SIGNAL_STROKE);
 	 light[i] = c;
 	 y0 += SIGNAL_LIGHT;
+         Tooltip.install(c,tt);
 	 getChildren().add(c);
-      }
-
+       }
+      
       SignalDrawData sdd = new SignalDrawData(sig,box,light);
       signal_map.put(sig, sdd);
-   }
+    }
 }
 
 
 private void setAllSignals(ShoreSignalState state)
 {
    ShoreLog.logD("VIEW", "Set all signals " + state);
-
+   
    for (IfaceSignal sig : for_diagram.getSignals()) {
       if (sig.isUnused()) continue;
       view_factory.getSafetyModel().setSignal(sig, state);
-   }
+    }
 }
 
 
 private class SignalDrawData {
-
-private IfaceSignal for_signal;
-private Shape[]	    signal_lights;
-
-SignalDrawData(IfaceSignal sig,Shape bkg,Shape[] lights)
-{
-   for_signal = sig;
-   signal_lights = lights;
-   SignalHandler hdlr = new SignalHandler(for_signal);
-   bkg.setOnMouseClicked(hdlr);
-   bkg.setOnMousePressed(hdlr);
-   for (Shape s : lights) {
-      s.setOnMouseClicked(hdlr);
-      s.setOnMousePressed(hdlr);
-   }
-   doSetSignal();
-}
-
-void setSignal()
-{
-   if (Platform.isFxApplicationThread()) {
+   
+   private IfaceSignal for_signal;
+   private Shape[]     signal_lights;
+   
+   SignalDrawData(IfaceSignal sig,Shape bkg,Shape[] lights) {
+      for_signal = sig;
+      signal_lights = lights;
+      SignalHandler hdlr = new SignalHandler(for_signal);
+      bkg.setOnMouseClicked(hdlr);
+      bkg.setOnMousePressed(hdlr);
+      for (Shape s : lights) {
+         s.setOnMouseClicked(hdlr);
+         s.setOnMousePressed(hdlr);
+       }
       doSetSignal();
-   }
-   else {
-      Platform.runLater(() -> doSetSignal());
-   }
-}
-
-void doSetSignal()
-{
-   ShoreSignalState st = for_signal.getSignalState();
-   for (Shape s : signal_lights) {
-      s.setFill(SIGNAL_OFF);
-   }
-   switch (st) {
-      case OFF:
-	 break;
-      case GREEN:
-	 signal_lights[signal_lights.length - 1].setFill(Color.GREEN);
-	 break;
-      case RED:
-	 signal_lights[0].setFill(Color.RED);
-	 break;
-      case YELLOW:
-	 if (signal_lights.length == 2) {
-	    signal_lights[0].setFill(Color.RED);
-	    signal_lights[1].setFill(Color.GREEN);
-	 }
-	 else {
-	    signal_lights[1].setFill(Color.YELLOW);
-	 }
-	 break;
-   }
-}
-
-} // end of inner class SignalDrawData
+    }
+   
+   void setSignal() {
+      if (Platform.isFxApplicationThread()) {
+         doSetSignal();
+       }
+      else {
+         Platform.runLater(() -> doSetSignal());
+       }
+    }
+   
+   void doSetSignal() {
+      ShoreSignalState st = for_signal.getSignalState();
+      for (Shape s : signal_lights) {
+         s.setFill(SIGNAL_OFF);
+       }
+      switch (st) {
+         case OFF:
+            break;
+         case GREEN:
+            signal_lights[signal_lights.length - 1].setFill(Color.GREEN);
+            break;
+         case RED:
+            signal_lights[0].setFill(Color.RED);
+            break;
+         case YELLOW:
+            if (signal_lights.length == 2) {
+               signal_lights[0].setFill(Color.RED);
+               signal_lights[1].setFill(Color.GREEN);
+             }
+            else {
+               signal_lights[1].setFill(Color.YELLOW);
+             }
+            break;
+       }
+    }
+   
+}       // end of inner class SignalDrawData
 
 
 private class SignalHandler implements EventHandler<MouseEvent> {
-
-private IfaceSignal for_signal;
-
-SignalHandler(IfaceSignal sig)
-{
-   for_signal = sig;
-}
-
-@Override
-public void handle(MouseEvent evt)
-{
-   if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
-      if (evt.isControlDown()) {
-	 if (evt.isShiftDown()) {
-	    setAllSignals(ShoreSignalState.RED);
-	    return;
-	 }
-	 else if (evt.isMetaDown() || evt.isAltDown()) {
-	    setAllSignals(ShoreSignalState.GREEN);
-	    return;
-	 }
-      }
-      ShoreSignalState st = for_signal.getSignalState();
-      ShoreSignalType typ = for_signal.getSignalType();
-      ShoreSignalState next = ShoreSignalState.RED;
-      switch (typ) {
-	 case ENGINE:
-	 case RG:
-	 case RG_ANODE:
-	 case ENGINE_ANODE:
-	    next = (st == ShoreSignalState.RED ? ShoreSignalState.GREEN :
-		     ShoreSignalState.RED);
-	    break;
-	 case RGY:
-	 case RGY_ANODE:
-	    switch (st) {
-	       case RED:
-		  next = ShoreSignalState.GREEN;
-		  break;
-	       case YELLOW:
-		  next = ShoreSignalState.RED;
-		  break;
-	       case GREEN:
-	       case OFF:
-		  next = ShoreSignalState.GREEN;
-	    }
-	    break;
-      }
-      view_factory.getSafetyModel().setSignal(for_signal, next);
-   }
-}
-
-} // end of inner class SignalHandler
+   
+   private IfaceSignal for_signal;
+   
+   SignalHandler(IfaceSignal sig) {
+      for_signal = sig;
+    }
+   
+   @Override
+   public void handle(MouseEvent evt) {
+      if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
+         if (evt.isControlDown()) {
+            if (evt.isShiftDown()) {
+               setAllSignals(ShoreSignalState.RED);
+               return;
+             }
+            else if (evt.isMetaDown() || evt.isAltDown()) {
+               setAllSignals(ShoreSignalState.GREEN);
+               return;
+             }
+          }
+         ShoreSignalState st = for_signal.getSignalState();
+         ShoreSignalType typ = for_signal.getSignalType();
+         ShoreSignalState next = ShoreSignalState.RED;
+         switch (typ) {
+            case ENGINE:
+            case RG:
+            case RG_ANODE:
+            case ENGINE_ANODE:
+               next = (st == ShoreSignalState.RED ? ShoreSignalState.GREEN :
+                  ShoreSignalState.RED);
+               break;
+            case RGY:
+            case RGY_ANODE:
+               switch (st) {
+                  case RED:
+                     next = ShoreSignalState.GREEN;
+                     break;
+                  case YELLOW:
+                     next = ShoreSignalState.RED;
+                     break;
+                  case GREEN:
+                  case OFF:
+                     next = ShoreSignalState.GREEN;
+                }
+               break;
+          }
+         view_factory.getSafetyModel().setSignal(for_signal, next);
+       }
+    }
+   
+}       // end of inner class SignalHandler
 
 
 /********************************************************************************/
@@ -772,91 +768,91 @@ public void handle(MouseEvent evt)
 private void drawSensors()
 {
    sensor_map.clear();
-
+   
    for (IfaceSensor sen : for_diagram.getSensors()) {
       IfacePoint pt = sen.getAtPoint();
       if (pt == null) continue;
       Point2D cpt = getCoords(pt);
       Circle c = new Circle(cpt.getX(),cpt.getY(),SENSOR_RADIUS,SENSOR_OFF_COLOR);
       getChildren().add(c);
+      
+      Tooltip tt = new Tooltip(sen.getId());
+      tt.setShowDelay(Duration.millis(250));
+      Tooltip.install(c,tt);
+      
       SensorDrawData sdd = new SensorDrawData(sen,c);
       sensor_map.put(sen, sdd);
-   }
+    }
 }
 
 
 private class SensorDrawData {
-
-private IfaceSensor for_sensor;
-private Shape	    sensor_node;
-
-SensorDrawData(IfaceSensor s,Shape sh)
-{
-   for_sensor = s;
-   sensor_node = sh;
-   SensorHandler hdlr = new SensorHandler(for_sensor);
-   sh.setOnMouseClicked(hdlr);
-   sh.setOnMousePressed(hdlr);
-   doSetSensor();
-}
-
-void setSensor()
-{
-   if (Platform.isFxApplicationThread()) {
+   
+   private IfaceSensor  for_sensor;
+   private Shape        sensor_node;
+   
+   SensorDrawData(IfaceSensor s,Shape sh) {
+      for_sensor = s;
+      sensor_node = sh;
+      SensorHandler hdlr = new SensorHandler(for_sensor);
+      sh.setOnMouseClicked(hdlr);
+      sh.setOnMousePressed(hdlr);
       doSetSensor();
-   }
-   else {
-      Platform.runLater(() -> doSetSensor());
-   }
-}
-
-void doSetSensor()
-{
-   ShoreSensorState st = for_sensor.getSensorState();
-   Color fill = SENSOR_UNKNOWN_COLOR;
-   switch (st) {
-      case ON:
-	 fill = SENSOR_ON_COLOR;
-	 break;
-      case OFF:
-	 fill = SENSOR_OFF_COLOR;
-	 break;
-   }
-   sensor_node.setFill(fill);
-}
-
-} // end of inner class SensorDrawData
+    }
+   
+   void setSensor() {
+      if (Platform.isFxApplicationThread()) {
+         doSetSensor();
+       }
+      else {
+         Platform.runLater(() -> doSetSensor());
+       }
+    }
+   
+   void doSetSensor() {
+      ShoreSensorState st = for_sensor.getSensorState();
+      Color fill = SENSOR_UNKNOWN_COLOR;
+      switch (st) {
+         case ON:
+            fill = SENSOR_ON_COLOR;
+            break;
+         case OFF:
+            fill = SENSOR_OFF_COLOR;
+            break;
+       }
+      sensor_node.setFill(fill);
+    }
+   
+}       // end of inner class SensorDrawData
 
 
 private class SensorHandler implements EventHandler<MouseEvent> {
-
-private IfaceSensor for_sensor;
-
-SensorHandler(IfaceSensor sen)
-{
-   for_sensor = sen;
-}
-
-@Override
-public void handle(MouseEvent evt)
-{
-   if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
-      ShoreSensorState st = for_sensor.getSensorState();
-      ShoreSensorState next = st;
-      switch (st) {
-	 case OFF:
-	 case UNKNOWN:
-	    next = ShoreSensorState.ON;
-	    break;
-	 case ON:
-	    next = ShoreSensorState.OFF;
-	    break;
-      }
-      view_factory.getSafetyModel().setSensor(for_sensor, next);
-   }
-}
-
-} // end of inner class SensorHandler
+   
+   private IfaceSensor for_sensor;
+   
+   SensorHandler(IfaceSensor sen) {
+      for_sensor = sen;
+    }
+   
+   @Override
+   public void handle(MouseEvent evt) {
+      if (evt.getEventType() == MouseEvent.MOUSE_CLICKED && evt.isControlDown()) {
+         ShoreSensorState st = for_sensor.getSensorState();
+         ShoreSensorState next = st;
+         switch (st) {
+            case OFF:
+            case UNKNOWN:
+               next = ShoreSensorState.ON;
+               break;
+            case ON:
+               next = ShoreSensorState.OFF;
+               break;
+          }
+         view_factory.getSafetyModel().setSensor(for_sensor, next);
+       }
+    }
+   
+}       // end of inner class SensorHandler
 
 
 /********************************************************************************/
@@ -868,126 +864,119 @@ public void handle(MouseEvent evt)
 private void drawEngines()
 {
    engine_map.clear();
-
+   
    for (IfaceEngine en : for_trains.getAllEngines()) {
       EngineDrawData ed = new EngineDrawData(en);
       Shape sh = ed.getShape();
       if (sh != null) getChildren().add(sh);
       engine_map.put(en, ed);
-   }
+    }
 }
 
 
 private class EngineDrawData implements IfaceEngine.EngineCallback {
-
-private IfaceEngine for_engine;
-private Polygon	    engine_shape;
-
-EngineDrawData(IfaceEngine eng)
-{
-   for_engine = eng;
-   engine_shape = new Polygon(0,0,0,0,0,0,0,0,0,0);
-   engine_shape.setVisible(false);
-   Color c = eng.getEngineColor().darker();
-   engine_shape.setFill(c);
-   engine_shape.setBlendMode(BlendMode.SRC_OVER);
-   engine_shape.setStroke(Color.BLACK);
-   engine_shape.setStrokeWidth(1);
-   engine_shape.setStrokeType(StrokeType.CENTERED);
-   doSetEngine();
-   for_engine.addEngineCallback(this);
-}
-
-Shape getShape()
-{
-   return engine_shape;
-}
-
-@Override
-public void enginePositionChanged(IfaceEngine eng)
-{
-   setEngine();
-}
-
-void setEngine()
-{
-   if (Platform.isFxApplicationThread()) {
-      doSetEngine();
-   }
-   else {
-      Platform.runLater(() -> doSetEngine());
-   }
-}
-
-void doSetEngine()
-{
-   IfacePoint pt0 = for_engine.getCurrentPoint();
-   ShoreLog.logD("VIEW", "Recompute engine at " + pt0);
-   if (pt0 != null) {
-      IfaceBlock blk = pt0.getBlock();
-      if (!for_diagram.getBlocks().contains(blk)) pt0 = null;
-   }
-   if (pt0 == null) {
+   
+   private IfaceEngine for_engine;
+   private Polygon     engine_shape;
+   
+   EngineDrawData(IfaceEngine eng) {
+      for_engine = eng;
+      engine_shape = new Polygon(0,0,0,0,0,0,0,0,0,0);
       engine_shape.setVisible(false);
-      return;
-   }
-
-   IfacePoint pt1 = for_engine.getPriorPoint();
-   IfacePoint ptback = null;
-   IfacePoint ptfront = null;
-
-   if (pt1 == null) {
-      for (IfacePoint npt : pt0.getConnectedTo()) {
-	 if (ptback == null) ptback = npt;
-	 else if (ptfront == null) ptfront = npt;
-      }
-   }
-   else {
-      Set<IfacePoint> prior = view_factory.getLayoutModel().findPriorPoints(pt0, pt1);
-      for (IfacePoint npt : pt0.getConnectedTo()) {
-	 if (prior.contains(npt)) ptback = npt;
-	 else ptfront = npt;
-      }
-   }
-   if (ptback == null) ptback = pt0;
-   if (ptfront == null) ptfront = pt0;
-   Point2D back = new Point2D(ptback.getX(),ptback.getY());
-   Point2D front = new Point2D(ptfront.getX(),ptfront.getY());
-   double bfdist = back.distance(front);
-   double dxl = ENGINE_LENGTH * (front.getX() - back.getX()) / bfdist / 2;
-   double dyw = ENGINE_WIDTH * (front.getX() - back.getX()) / bfdist / 2;
-   double dyl = ENGINE_LENGTH * (front.getY() - back.getY()) / bfdist / 2;
-   double dxw = ENGINE_WIDTH * (front.getY() - back.getY()) / bfdist / 2;
-   ShoreLog.logD("VIEW", "Engine coords " + back + " " + front + "\n\t" + dxl +
-         " " + dyw + " " + dyl + " " + dxw + " " + "\n\t" + pt0.getX() +
-         " " + pt0.getY());
-   setPoint(0, -dxl - dxw, -dyl + dyw);
-   setPoint(1, dxl - dxw, dyl + dyw);
-   if (pt1 != null) {
-      double dzl = dxl * (ENGINE_LENGTH + ENGINE_POINT) / ENGINE_LENGTH;
-      double dzw = dyl * (ENGINE_LENGTH + ENGINE_POINT) / ENGINE_LENGTH;
-      setPoint(2, dzl, dzw);
-   }
-   else {
-      setPoint(2, dxl, dyl);
-   }
-   setPoint(3, dxl + dxw, dyl - dyw);
-   setPoint(4, -dxl + dxw, -dyl - dyw);
-   ShoreLog.logD("VIEW", "Draw engine " + engine_shape.getPoints());
-   engine_shape.setVisible(true);
-}
-
-private void setPoint(int n,double dx,double dy)
-{
-
-   IfacePoint pt0 = for_engine.getCurrentPoint();
-   List<Double> points = engine_shape.getPoints();
-   Point2D cpt = getCoords(pt0.getX() + dx, pt0.getY() + dy);
-   points.set(n * 2, cpt.getX());
-   points.set(n * 2 + 1, cpt.getY());
-}
-
-} // end of inner class SensorDrawData
+      Color c = eng.getEngineColor().darker();
+      engine_shape.setFill(c);
+      engine_shape.setBlendMode(BlendMode.SRC_OVER);
+      engine_shape.setStroke(Color.BLACK);
+      engine_shape.setStrokeWidth(1);
+      engine_shape.setStrokeType(StrokeType.CENTERED);
+      doSetEngine();
+      for_engine.addEngineCallback(this);
+    }
+   
+   Shape getShape() {
+      return engine_shape;
+    }
+   
+   @Override
+   public void enginePositionChanged(IfaceEngine eng) {
+      setEngine();
+    }
+   
+   void setEngine() {
+      if (Platform.isFxApplicationThread()) {
+         doSetEngine();
+       }
+      else {
+         Platform.runLater(() -> doSetEngine());
+       }
+    }
+   
+   void doSetEngine() {
+      IfacePoint pt0 = for_engine.getCurrentPoint();
+      ShoreLog.logD("VIEW", "Recompute engine " + for_engine.getEngineId() + " at " + pt0);
+      if (pt0 != null) {
+         IfaceBlock blk = pt0.getBlock();
+         if (!for_diagram.getBlocks().contains(blk)) pt0 = null;
+       }
+      if (pt0 == null) {
+         engine_shape.setVisible(false);
+         return;
+       }
+      
+      IfacePoint pt1 = for_engine.getPriorPoint();
+      IfacePoint ptback = null;
+      IfacePoint ptfront = null;
+      
+      if (pt1 == null) {
+         for (IfacePoint npt : pt0.getConnectedTo()) {
+            if (ptback == null) ptback = npt;
+            else if (ptfront == null) ptfront = npt;
+          }
+       }
+      else {
+         Set<IfacePoint> prior = view_factory.getLayoutModel().findPriorPoints(pt0, pt1);
+         for (IfacePoint npt : pt0.getConnectedTo()) {
+            if (prior.contains(npt)) ptback = npt;
+            else ptfront = npt;
+          }
+       }
+      if (ptback == null) ptback = pt0;
+      if (ptfront == null) ptfront = pt0;
+      Point2D back = new Point2D(ptback.getX(),ptback.getY());
+      Point2D front = new Point2D(ptfront.getX(),ptfront.getY());
+      double bfdist = back.distance(front);
+      double dxl = ENGINE_LENGTH * (front.getX() - back.getX()) / bfdist / 2;
+      double dyw = ENGINE_WIDTH * (front.getX() - back.getX()) / bfdist / 2;
+      double dyl = ENGINE_LENGTH * (front.getY() - back.getY()) / bfdist / 2;
+      double dxw = ENGINE_WIDTH * (front.getY() - back.getY()) / bfdist / 2;
+      ShoreLog.logD("VIEW", "Engine coords " + back + " " + front + "\n\t" + dxl +
+            " " + dyw + " " + dyl + " " + dxw + " " + "\n\t" + pt0.getX() +
+            " " + pt0.getY());
+      setPoint(0, -dxl - dxw, -dyl + dyw);
+      setPoint(1, dxl - dxw, dyl + dyw);
+      if (pt1 != null) {
+         double dzl = dxl * (ENGINE_LENGTH + ENGINE_POINT) / ENGINE_LENGTH;
+         double dzw = dyl * (ENGINE_LENGTH + ENGINE_POINT) / ENGINE_LENGTH;
+         setPoint(2, dzl, dzw);
+       }
+      else {
+         setPoint(2, dxl, dyl);
+       }
+      setPoint(3, dxl + dxw, dyl - dyw);
+      setPoint(4, -dxl + dxw, -dyl - dyw);
+      ShoreLog.logD("VIEW", "Draw engine " + engine_shape.getPoints());
+      engine_shape.setVisible(true);
+    }
+   
+   private void setPoint(int n,double dx,double dy) {
+      IfacePoint pt0 = for_engine.getCurrentPoint();
+      List<Double> points = engine_shape.getPoints();
+      Point2D cpt = getCoords(pt0.getX() + dx, pt0.getY() + dy);
+      points.set(n * 2, cpt.getX());
+      points.set(n * 2 + 1, cpt.getY());
+    }
+   
+}       // end of inner class SensorDrawData
 
 
 /********************************************************************************/
@@ -999,7 +988,7 @@ private void setPoint(int n,double dx,double dy)
 private void drawBlocks()
 {
    block_map.clear();
-
+   
    for (IfaceBlock blk : for_diagram.getBlocks()) {
       IfacePoint pt = blk.getAtPoint();
       Point2D cpt = getCoords(pt);
@@ -1016,73 +1005,70 @@ private void drawBlocks()
       t.setTextOrigin(VPos.CENTER);
       t.setX(cpt.getX() - w0 / 2);
       t.setY(cpt.getY());
-
+      
       Ellipse bkg = new Ellipse(cpt.getX(),cpt.getY(),w / 2,h / 2);
       bkg.setFill(BLOCK_BACKGROUD_COLOR);
-
+      
       getChildren().add(bkg);
       getChildren().add(t);
-
+      
       BlockDrawData bdd = new BlockDrawData(blk,bkg,t);
       block_map.put(blk, bdd);
-   }
+    }
 }
 
 
 private class BlockDrawData {
-
-private IfaceBlock for_block;
-private Shape	   label_shape;
-private Shape	   background_shape;
-
-BlockDrawData(IfaceBlock blk,Shape bkg,Shape lbl)
-{
-   for_block = blk;
-   background_shape = bkg;
-   label_shape = lbl;
-   setBlock();
-}
-
-void setBlock()
-{
-   if (Platform.isFxApplicationThread()) {
-      doSetBlock();
-   }
-   else {
-      Platform.runLater(() -> doSetBlock());
-   }
-}
-
-private void doSetBlock()
-{
-   ShoreBlockState st = for_block.getBlockState();
-   Color lcolor = BLOCK_LABEL_COLOR;
-   Color bcolor = BLOCK_BACKGROUD_COLOR;
-
-   switch (st) {
-      default:
-      case EMPTY:
-	 break;
-      case UNKNOWN:
-	 bcolor = BLOCK_BACKGROUND_UNKNOWN_COLOR;
-	 break;
-      case INUSE:
-	 lcolor = BLOCK_LABEL_INUSE_COLOR;
-	 bcolor = BLOCK_BACKGROUD_INUSE_COLOR;
-	 break;
-      case PENDING:
-	 lcolor = BLOCK_LABEL_PENDING_COLOR;
-	 bcolor = BLOCK_BACKGROUD_PENDING_COLOR;
-	 break;
-   }
-   label_shape.setFill(lcolor);
-   label_shape.setStroke(lcolor);
-   background_shape.setFill(bcolor);
-   BlockHandler hdlr = new BlockHandler(for_block);
-   label_shape.setOnMouseClicked(hdlr);
-   background_shape.setOnMouseClicked(hdlr);
-}
-
+   
+   private IfaceBlock   for_block;
+   private Shape	label_shape;
+   private Shape	background_shape;
+   
+   BlockDrawData(IfaceBlock blk,Shape bkg,Shape lbl) {
+      for_block = blk;
+      background_shape = bkg;
+      label_shape = lbl;
+      setBlock();
+    }
+   
+   void setBlock() {
+      if (Platform.isFxApplicationThread()) {
+         doSetBlock();
+       }
+      else {
+         Platform.runLater(() -> doSetBlock());
+       }
+    }
+   
+   private void doSetBlock() {
+      ShoreBlockState st = for_block.getBlockState();
+      Color lcolor = BLOCK_LABEL_COLOR;
+      Color bcolor = BLOCK_BACKGROUD_COLOR;
+      
+      switch (st) {
+         default:
+         case EMPTY:
+            break;
+         case UNKNOWN:
+            bcolor = BLOCK_BACKGROUND_UNKNOWN_COLOR;
+            break;
+         case INUSE:
+            lcolor = BLOCK_LABEL_INUSE_COLOR;
+            bcolor = BLOCK_BACKGROUD_INUSE_COLOR;
+            break;
+         case PENDING:
+            lcolor = BLOCK_LABEL_PENDING_COLOR;
+            bcolor = BLOCK_BACKGROUD_PENDING_COLOR;
+            break;
+       }
+      label_shape.setFill(lcolor);
+      label_shape.setStroke(lcolor);
+      background_shape.setFill(bcolor);
+      BlockHandler hdlr = new BlockHandler(for_block);
+      label_shape.setOnMouseClicked(hdlr);
+      background_shape.setOnMouseClicked(hdlr);
+    }
+   
 } // end of inner class BlockDrawData
 
 
@@ -1090,47 +1076,46 @@ private void setAllBlocks(ShoreBlockState state)
 {
    for (IfaceBlock blk : for_diagram.getBlocks()) {
       blk.setBlockState(state);
-   }
+    }
 }
 
 
 private class BlockHandler implements EventHandler<MouseEvent> {
-
-private IfaceBlock for_block;
-
-BlockHandler(IfaceBlock blk)
-{
-   for_block = blk;
-}
-
-@Override
-public void handle(MouseEvent evt)
-{
-   if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
-      if (evt.isControlDown()) {
-	 setAllBlocks(ShoreBlockState.EMPTY);
-	 return;
-      }
-      ShoreBlockState st = for_block.getBlockState();
-      ShoreBlockState next = ShoreBlockState.UNKNOWN;
-      switch (st) {
-	 case UNKNOWN:
-	    next = ShoreBlockState.EMPTY;
-	    break;
-	 case EMPTY:
-	    next = ShoreBlockState.PENDING;
-	    break;
-	 case PENDING:
-	    next = ShoreBlockState.INUSE;
-	    break;
-	 case INUSE:
-	    next = ShoreBlockState.EMPTY;
-	    break;
-      }
-      for_block.setBlockState(next);
-   }
-}
-} // end of inner class BlockHandler
+   
+   private IfaceBlock for_block;
+   
+   BlockHandler(IfaceBlock blk) {
+      for_block = blk;
+    }
+   
+   @Override
+   public void handle(MouseEvent evt) {
+      if (evt.getEventType() == MouseEvent.MOUSE_CLICKED) {
+         if (evt.isControlDown()) {
+            setAllBlocks(ShoreBlockState.EMPTY);
+            return;
+          }
+         ShoreBlockState st = for_block.getBlockState();
+         ShoreBlockState next = ShoreBlockState.UNKNOWN;
+         switch (st) {
+            case UNKNOWN:
+               next = ShoreBlockState.EMPTY;
+               break;
+            case EMPTY:
+               next = ShoreBlockState.PENDING;
+               break;
+            case PENDING:
+               next = ShoreBlockState.INUSE;
+               break;
+            case INUSE:
+               next = ShoreBlockState.EMPTY;
+               break;
+          }
+         for_block.setBlockState(next);
+       }
+    }
+   
+}       // end of inner class BlockHandler
 
 
 /********************************************************************************/
@@ -1163,9 +1148,9 @@ private Point2D getCoords(double x,double y)
    if (invert_y) {
       double y0 = display_bounds.getMinY();
       y = (display_bounds.getHeight() + y0) - y + y0;
-   }
+    }
    else y = y - display_bounds.getMinY();
-
+   
    x = BORDER_SPACE + (x) / scale_value;
    y = BORDER_SPACE + y / scale_value;
    Point2D rslt = new Point2D(x,y);
@@ -1192,7 +1177,7 @@ public void resize(double w,double h)
       super.setWidth(w);
       super.setHeight(h);
       drawDiagram();
-   }
+    }
 }
 
 
@@ -1203,44 +1188,38 @@ public void resize(double w,double h)
 /********************************************************************************/
 
 private class CallbackHandler implements ModelCallback {
-
-CallbackHandler()
-{
-}
-
-@Override
-public void switchChanged(IfaceSwitch sw)
-{
-   SwitchDrawData dd = switch_map.get(sw);
-   if (dd == null) return;
-   dd.setArrow();
-}
-
-@Override
-public void signalChanged(IfaceSignal sig)
-{
-   SignalDrawData dd = signal_map.get(sig);
-   if (dd == null) return;
-   dd.setSignal();
-}
-
-@Override
-public void sensorChanged(IfaceSensor sen)
-{
-   SensorDrawData dd = sensor_map.get(sen);
-   if (dd == null) return;
-   dd.setSensor();
-}
-
-@Override
-public void blockChanged(IfaceBlock blk)
-{
-   BlockDrawData dd = block_map.get(blk);
-   if (dd == null) return;
-   dd.setBlock();
-}
-
-} // end of inner class CallbackHandler
+   
+   CallbackHandler() { } 
+   
+   @Override
+   public void switchChanged(IfaceSwitch sw) {
+      SwitchDrawData dd = switch_map.get(sw);
+      if (dd == null) return;
+      dd.setArrow();
+    }
+   
+   @Override
+   public void signalChanged(IfaceSignal sig) {
+      SignalDrawData dd = signal_map.get(sig);
+      if (dd == null) return;
+      dd.setSignal();
+    }
+   
+   @Override
+   public void sensorChanged(IfaceSensor sen) {
+      SensorDrawData dd = sensor_map.get(sen);
+      if (dd == null) return;
+      dd.setSensor();
+    }
+   
+   @Override
+   public void blockChanged(IfaceBlock blk) {
+      BlockDrawData dd = block_map.get(blk);
+      if (dd == null) return;
+      dd.setBlock();
+    }
+   
+}       // end of inner class CallbackHandler
 
 
 } // end of class ViewDiagramFx

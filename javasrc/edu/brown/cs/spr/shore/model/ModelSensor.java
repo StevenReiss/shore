@@ -120,7 +120,7 @@ ModelSensor(ModelBase mdl,Element xml)
 /*                                                                              */
 /********************************************************************************/
 
-String getId()                                   { return sensor_id; }
+@Override public String getId()                         { return sensor_id; }
 
 @Override public ModelPoint getAtPoint()        { return sensor_point; }
 

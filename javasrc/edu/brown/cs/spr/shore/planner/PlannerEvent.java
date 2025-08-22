@@ -192,7 +192,7 @@ private static class EventFinish extends PlannerEvent {
     }
    
    @Override void noteDone() {
-      for_plan.firePlanCompleted(); 
+      for_plan.firePlanCompleted(false); 
     }
    
    @Override public String toString() {
@@ -267,7 +267,6 @@ private static class EventBlock extends PlannerEvent {
    @Override void waitForAction(IfaceEngine eng) {
       boolean oncourse = for_plan.waitForBlockEntry(enter_block); 
       if (!oncourse) for_plan.abort();
-      
     }
    
    @Override void noteDone() {
