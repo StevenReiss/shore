@@ -121,6 +121,7 @@ PlannerPlan(IfaceSafety safety,IfaceModel layout,IfaceTrains tm)
 
 IfaceModel getLayoutModel()                     { return layout_model; }
 IfaceSafety getSafetyModel()                    { return safety_model; }
+IfaceEngine getEngine()                         { return for_engine; }
 
 
 
@@ -201,16 +202,18 @@ private List<PlannerEvent> setupPlan()
       planevents.add(createEvent(PlannerEventType.ACTION_COMPLETE,step.getAction()));
     }
    
-   planevents.add(createEvent(PlannerEventType.FINISH)); 
-   
    // associate next block with each block event
    PlannerEvent bact = null;
    for (PlannerEvent evt : planevents) {
       if (evt.getEventType() == PlannerEventType.BLOCK) {
-         if (bact != null) bact.setNextBlock(evt.getBlock());
+         if (bact != null) {
+            bact.setNextBlock(evt.getBlock());
+          }
          bact = evt;
        }
     }
+   
+   planevents.add(createEvent(PlannerEventType.FINISH)); 
    
    return planevents;
 }

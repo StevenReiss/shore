@@ -191,7 +191,12 @@ private static class EventFinish extends PlannerEvent {
       return PlannerEventType.FINISH;
     }
    
+   @Override void waitForAction(IfaceEngine eng) {
+      // should wait for train to be exclusively in the finish block
+    }
+   
    @Override void noteDone() {
+      for_plan.getEngine().setThrottle(0.0);
       for_plan.firePlanCompleted(false); 
     }
    
