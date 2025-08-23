@@ -59,6 +59,12 @@ IfaceSensor getStartSensor();
 Collection<IfaceSensor> getEndSensors();
 
 /**
+ *      Get set of applicable blocks
+ **/
+Collection<IfaceBlock> getBlocks();
+
+
+/**
  *      Check if sensor is an end sensor
  **/
 boolean isEndSensor(IfaceSensor sensor);

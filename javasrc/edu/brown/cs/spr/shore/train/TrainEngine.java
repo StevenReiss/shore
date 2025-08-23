@@ -343,7 +343,7 @@ void setNoRearLight()                                   { has_rear_light = false
    Double v = saved_throttle.get(reason);
    
    ShoreLog.logD("TRAIN","SLOW TRAIN " + getEngineId() + " " +
-         reason + " " + speed + " " + engine_throttle + " " + v);
+         reason + " " + speed + " " + engine_throttle + " " + v + " " + throttle);
    
    if (v != null) {
       ShoreLog.logD("TRAIN","Train already slowed");
