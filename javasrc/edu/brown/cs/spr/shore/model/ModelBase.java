@@ -753,18 +753,53 @@ private void loadModel(File file) throws ShoreException
    if (hasErrors()) return;
    
    for (Element szxml : IvyXml.children(xml,"SPEEDZONE")) {
-      ModelSensor pt0 = model_sensors.get(IvyXml.getAttrString(szxml,"FROM"));
-      ModelSensor pt1 = model_sensors.get(IvyXml.getAttrString(szxml,"TO"));
-      if (pt0 == null || pt1 == null) {
-         noteError("Speedzone has bad sensor ids: " + IvyXml.convertXmlToString(szxml));
+      ModelSensor pt0 = null;
+      ModelSensor pt1 = null;
+      if (IvyXml.getAttrString(szxml,"FROM") != null) {
+         pt0 = model_sensors.get(IvyXml.getAttrString(szxml,"FROM"));
+         pt1 = model_sensors.get(IvyXml.getAttrString(szxml,"TO"));
        }
-      double speed = IvyXml.getAttrDouble(szxml,"SPEED",60.0);
-      boolean oneway = IvyXml.getAttrBool(szxml,"ONEWAY");
-      ModelSpeedZone mz1 = new ModelSpeedZone(this,pt0,pt1,speed); 
-      speed_zones.add(mz1);
-      if (!oneway) {
-         ModelSpeedZone mz2 = new ModelSpeedZone(this,pt1,pt0,speed);
-         speed_zones.add(mz2);
+      String blks = IvyXml.getAttrString(szxml,"BLOCKS");
+      if (blks == null && (pt0 == null || pt1 == null)) {
+         noteError("Speedzone has bad sensor ids: " + IvyXml.convertXmlToString(szxml));
+         continue;
+       }
+      else if (blks != null && (pt0 != null || pt1 != null)) {
+         noteError("Speedzone can't have blocks and start/end: " +
+               IvyXml.convertXmlToString(szxml));
+         continue;
+       }
+      double speed = IvyXml.getAttrDouble(szxml,"SPEED",50.0);
+      
+      if (blks != null) {
+         Set<ModelBlock> blocks = new HashSet<>();
+         StringTokenizer tok = new StringTokenizer(blks," ,");
+         while (tok.hasMoreTokens()) {
+            String bid = tok.nextToken();
+            ModelBlock blk = model_blocks.get(bid);
+            if (blk == null) {
+               noteError("Speedzone block " + bid + " not found");
+             }
+            else {
+               blocks.add(blk);
+             }
+          }
+         if (blocks.isEmpty()) {
+            noteError("Speedzone has no blocks");
+          }
+         else {
+            ModelSpeedZone mz3 = new ModelSpeedZone(this,blocks,speed); 
+            speed_zones.add(mz3);
+          }
+       }
+      else {
+         boolean oneway = IvyXml.getAttrBool(szxml,"ONEWAY");
+         ModelSpeedZone mz1 = new ModelSpeedZone(this,pt0,pt1,speed); 
+         speed_zones.add(mz1);
+         if (!oneway) {
+            ModelSpeedZone mz2 = new ModelSpeedZone(this,pt1,pt0,speed);
+            speed_zones.add(mz2);
+          }
        }
     }
    
@@ -1249,8 +1284,13 @@ private void outputSpeedZones(PrintStream ps)
    if (speed_zones != null && !speed_zones.isEmpty()) {
       for (ModelSpeedZone sz : speed_zones) {
          ps.println("SPEED ZONE");
-         ps.println("    FROM: " + sz.getStartSensor());
-         ps.println("    TO:   " + sz.getEndSensors()); 
+         if (sz.getStartSensor() != null) {
+            ps.println("    FROM: " + sz.getStartSensor());
+            ps.println("    TO:   " + sz.getEndSensors()); 
+          }
+         else {
+            ps.print("     BLOCKS: " + sz.getBlocks());
+          }
          ps.print("    WITH:");
          for (IfaceSensor s : sz.getZoneSensors()) {
             if (s == sz.getStartSensor()) continue;

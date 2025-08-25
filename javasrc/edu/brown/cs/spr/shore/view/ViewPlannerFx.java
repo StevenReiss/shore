@@ -57,6 +57,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
@@ -64,6 +65,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.TextAlignment;
 import javafx.util.StringConverter;
 
 class ViewPlannerFx extends HBox implements ViewConstants
@@ -165,10 +169,16 @@ private class TrainPlanner extends GridPane {
       start_button.setDisable(true);
 //    start_button.setMinWidth(120);
       
+      Label title = new Label("Define a Plan");
+      title.setAlignment(Pos.CENTER);
+      title.setTextAlignment(TextAlignment.CENTER);
+      title.setTextFill(Color.RED);
+      title.setFont(Font.font(20));
+      add(title,1,0,REMAINING,1);
       ObservableList<PlanAction> starts = startOptions();
       for (int i = 0; i <= steps; ++i) {
          String lbl = (i == 0 ? "Start From:" : "Step " + i + ":");
-         add(new Label(lbl),0,i,1,1);
+         add(new Label(lbl),0,i+1,1,1);
          ChoiceBox<PlanAction> cb = new ChoiceBox<>();
          cb.setMinWidth(120);
          cb.setConverter(new TargetConverter());
@@ -182,9 +192,10 @@ private class TrainPlanner extends GridPane {
              }
           } 
          prv = cb;   
-         add(cb,1,i,1,1);
+         add(cb,1,i+1,1,1);
          Spinner<Integer> sp = new Spinner<>(0,20,0);
-         add(sp,2,i,1,1);
+         sp.setPrefWidth(60);
+         add(sp,2,i+1,1,1);
          choice_boxes.add(cb);
          count_boxes.add(sp);
          cb.valueProperty().addListener(new ChoiceListener(this,i));
@@ -194,10 +205,11 @@ private class TrainPlanner extends GridPane {
       choice_boxes.get(0).setValue(starts.get(0));
       
       HBox buttons = new HBox();
-      buttons.setSpacing(5.0);
+      buttons.setSpacing(10.0);
       buttons.setAlignment(Pos.CENTER);
       buttons.getChildren().addAll(signal_button,start_button);
-      add(buttons,0,steps+1,REMAINING,1);
+      add(buttons,0,steps+1+1,REMAINING,1);
+      setMargin(buttons,new Insets(10));
     }
    
    ChoiceBox<PlanAction> getChoiceBox(int idx) {

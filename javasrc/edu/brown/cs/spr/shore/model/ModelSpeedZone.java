@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
+import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSpeedZone;
 
@@ -62,6 +63,7 @@ class ModelSpeedZone implements IfaceSpeedZone, ModelConstants
 private ModelSensor     start_sensor;
 private List<ModelSensor> end_sensors;
 private double          speed_percent;
+private Set<ModelBlock>   for_blocks;
 private List<ModelSensor> all_sensors;
 
 
@@ -78,10 +80,20 @@ ModelSpeedZone(ModelBase mb,ModelSensor start,ModelSensor end,double speed)
    end_sensors = new ArrayList<>();
    end_sensors.add(end);
    speed_percent = speed;
+   for_blocks = null;
    all_sensors = getSensors(mb);
    if (all_sensors == null) {
       mb.noteError("Not path for speed zone from " + start + " to " + end);
     }
+}
+
+ModelSpeedZone(ModelBase mb,Collection<ModelBlock> blocks,double speed)
+{
+   start_sensor = null;
+   end_sensors = null;
+   speed_percent = speed;
+   for_blocks = new HashSet<>(blocks);
+   all_sensors = getSensors(mb);
 }
 
 
@@ -93,18 +105,29 @@ ModelSpeedZone(ModelBase mb,ModelSensor start,ModelSensor end,double speed)
 
 @Override public double getSpeedPercent()
 {
-   return speed_percent;
+   double v = speed_percent;
+   if (v >= 1) v /= 100;
+   return v;
 }
 
 
 @Override public Collection<IfaceSensor> getEndSensors() 
 {
+   if (end_sensors == null) return null;
    return new ArrayList<>(end_sensors);
+}
+
+
+@Override public Collection<IfaceBlock> getBlocks() 
+{
+   if (for_blocks == null) return null; 
+   return new ArrayList<>(for_blocks); 
 }
 
 
 @Override public boolean isEndSensor(IfaceSensor s)
 {
+   if (end_sensors == null) return false;
    return end_sensors.contains(s);
 }
 
@@ -131,12 +154,23 @@ ModelSpeedZone(ModelBase mb,ModelSensor start,ModelSensor end,double speed)
 
 private List<ModelSensor> getSensors(ModelBase mb)
 {
-   ModelPoint pt0 = start_sensor.getAtPoint();
-   
    Set<ModelSensor> rslt = new LinkedHashSet<>();
-   for (ModelSensor ms : end_sensors) {
-      List<ModelSensor> sens = findShortestPath(mb,pt0,ms.getAtPoint());
-      rslt.addAll(sens);
+   
+   if (for_blocks == null) {
+      ModelPoint pt0 = start_sensor.getAtPoint();
+      
+      for (ModelSensor ms : end_sensors) {
+         List<ModelSensor> sens = findShortestPath(mb,pt0,ms.getAtPoint());
+         rslt.addAll(sens);
+       }
+    }
+   else {
+      for (ModelSensor ms : mb.getModelSensors()) {
+         if (ms.getAtPoint() == null) continue;
+         if (for_blocks.contains(ms.getBlock())) {
+            rslt.add(ms);
+          }
+       }
     }
    
    return new ArrayList<>(rslt);
