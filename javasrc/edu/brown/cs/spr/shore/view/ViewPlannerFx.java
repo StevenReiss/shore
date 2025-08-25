@@ -279,6 +279,7 @@ private final class TargetConverter extends StringConverter<PlanAction> {
     }
       
    @Override public String toString(PlanAction t) {
+      if (t == null) return "            ";
       return t.getName();
     }
    
