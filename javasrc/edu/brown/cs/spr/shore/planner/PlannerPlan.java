@@ -45,6 +45,7 @@ import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfaceSafety;
+import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
 import edu.brown.cs.spr.shore.iface.IfaceEngine.EngineCallback;
@@ -145,6 +146,10 @@ IfaceSafety getSafetyModel()                    { return safety_model; }
 @Override public void execute(IfaceEngine eng)
 {
    List<PlannerEvent> steps = setupPlan();
+   
+   ShoreLog.logD("PLANNER","Plan setup " + for_engine + " " + eng + "\n\t" +
+         steps);
+   
    for_engine = eng;
    
    PlanFollower runner = new PlanFollower(steps);
@@ -263,17 +268,27 @@ private IfaceBlock addEvents(PlanStep ps,PlanStep prior,IfaceBlock curblk,List<P
        }
     }
    
+   PlannerEvent startevent = createEvent(PlannerEventType.ACTION_STARTED,ps.getAction());
+   
    switch (act.getActionType()) {
       case START :
          for (int i = 0; i < actblocks.size()-1; ++i) {
             IfaceBlock b = actblocks.get(i);
             events.add(createEvent(PlannerEventType.BLOCK,curblk,b));
+            if (startevent != null) {
+               events.add(startevent);
+               startevent = null;
+             }
             curblk = b;
           }
          break; 
       case END :
          for (IfaceBlock b : actblocks) {
             events.add(createEvent(PlannerEventType.BLOCK,curblk,b));
+            if (startevent != null) {
+               events.add(startevent);
+               startevent = null;
+             }
             curblk = b;
           }
          break;
@@ -286,6 +301,10 @@ private IfaceBlock addEvents(PlanStep ps,PlanStep prior,IfaceBlock curblk,List<P
           }
          IfaceBlock b2 = loopblks.get(index);
          events.add(createEvent(PlannerEventType.BLOCK,curblk,b2));
+         if (startevent != null) {
+            events.add(startevent);
+            startevent = null;
+          }
          curblk = b2;
          curblk = loopblks.get(index);
          for (int i = 0; i < ps.getCount(); ++i) {
@@ -295,7 +314,8 @@ private IfaceBlock addEvents(PlanStep ps,PlanStep prior,IfaceBlock curblk,List<P
                events.add(createEvent(PlannerEventType.BLOCK,curblk,b));
                curblk = b;
              }
-            events.add(createEvent(PlannerEventType.ACTION_COMPLETE,act,i+1));
+            int idx = i+1;
+            events.add(createEvent(PlannerEventType.ACTION_COMPLETE,act,idx));
           }
          break;
     }
@@ -347,6 +367,15 @@ void firePlanCompleted(boolean abort)
 }
 
 
+void firePlanStepStarted(PlannerActionBase act) 
+{
+   for (PlanCallback cb : plan_listeners) {
+      cb.planStepStarted(this,act); 
+    }
+}
+
+
+
 void firePlanStepCompleted(PlannerActionBase act,int ct) 
 {
    for (PlanCallback cb : plan_listeners) {
@@ -364,7 +393,7 @@ void firePlanStepCompleted(PlannerActionBase act,int ct)
 
 void setupSwitches(IfaceBlock prior,IfaceBlock enter,IfaceBlock next) 
 {
-   ShoreLog.logD("PLANNER","Set switches " + prior + " " + enter + " " + next);
+   ShoreLog.logD("PLANNER","Setup switches " + prior + " " + enter + " " + next);
    
    IfacePoint gap0 = null;
    IfacePoint p0 = null;
@@ -380,11 +409,19 @@ void setupSwitches(IfaceBlock prior,IfaceBlock enter,IfaceBlock next)
          p0 = conn.getExitSensor(enter).getAtPoint();
          if (p0.getBlock() != enter) {
             p0 = conn.getEntrySensor(enter).getAtPoint();
-            ShoreLog.logD("PLANNER","Use entry sensor");
+            ShoreLog.logD("PLANNER","Use entry sensor " + p0);
           }
        }
     }
    if (gap0 == null || gap1 == null) return;
+   if (prior == null) {
+      for (IfaceSignal sig : layout_model.getSignals()) {
+         if (sig.isUnused()) continue;
+         if (sig.getFromBlock() == enter && sig.isBlockRelevant(next)) { 
+            p0 = sig.getAtPoints().get(0);
+          }
+       }
+    }
    
    ShoreLog.logD("PLANNER","Points " + gap0 + " " + p0 + " " + gap1 + " " + p1);
    

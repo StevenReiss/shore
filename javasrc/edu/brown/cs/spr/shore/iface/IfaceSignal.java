@@ -80,6 +80,12 @@ IfaceBlock getFromBlock();
 
 
 /**
+ *      Test if given block is one of the to blocks for this signal
+ **/
+boolean isBlockRelevant(IfaceBlock blk);
+
+
+/**
  *      Return the possible connections associated with this signal (to blocks).
  *      Multiple connections are possible because a switch can occur after the
  *      signal but before the end of th block.

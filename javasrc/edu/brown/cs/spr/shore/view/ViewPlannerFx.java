@@ -493,39 +493,45 @@ private final class EngineChanged implements IfaceEngine.EngineCallback {
 
 /********************************************************************************/
 /*                                                                              */
-/*      PlanExecutor -- class to show a plan in action                          */
+/*      PlanViewer -- class to show a plan in action                            */
 /*                                                                              */
 /********************************************************************************/
 
 private final class PlanViewer extends VBox implements PlanCallback {
    
    private PlanExecutable plan_executable;
-   private int cur_step;
-   private int step_count;
-   private ListView<String> list_view;
+   private ListView<PlanViewStep> list_view;
    private Button abort_button;
    private Button pause_button; 
    private Button close_button;
+   private int active_step;
    
    PlanViewer(PlanExecutable pe) {
       plan_executable = pe;
-      cur_step = 0;
-      step_count = pe.getStepCount(0);
+      active_step = 0;
       
       setupDisplay();
       
       pe.addPlanCallback(this);
     }
    
-   boolean isActive(String step) {
-      ShoreLog.logD("VIEW","Check if step " + step + " is active " + 
-            cur_step + " " + step_count);
+   boolean isActive(PlanViewStep step) {
+      int idx = list_view.getItems().indexOf(step);
+      ShoreLog.logD("VIEW","Check if step " + step + " is active " +
+            idx + " " + active_step);
+      
+      if (idx == active_step) return true;
+      
       return false;
     }
 
-   boolean isComplete(String step) {
+   boolean isComplete(PlanViewStep step) {
+      int idx = list_view.getItems().indexOf(step);
       ShoreLog.logD("VIEW","Check if step " + step + " is complete " + 
-            cur_step + " " + step_count);
+            idx + " " + active_step);
+      
+      if (idx < active_step) return true;
+      
       return false;
     }            
    
@@ -539,7 +545,7 @@ private final class PlanViewer extends VBox implements PlanCallback {
       title.setTextFill(Color.RED);
       title.setFont(Font.font(20));
       
-      ObservableList<String> steps = getSteps();
+      ObservableList<PlanViewStep> steps = getSteps();
       list_view = new ListView<>(steps);
       list_view.setCellFactory(new ViewerCellFactory(this));
       
@@ -551,8 +557,8 @@ private final class PlanViewer extends VBox implements PlanCallback {
       getChildren().addAll(title,list_view,buttons);
     }
    
-   private ObservableList<String> getSteps() {
-      List<String> rslt = new ArrayList<>();
+   private ObservableList<PlanViewStep> getSteps() {
+      List<PlanViewStep> rslt = new ArrayList<>();
       PlanAction prev = null;
       for (int i = 0; i < plan_executable.getNumberOfSteps(); ++i) {
          PlanAction act = plan_executable.getStepAction(i);
@@ -561,44 +567,66 @@ private final class PlanViewer extends VBox implements PlanCallback {
          String txt = act.getName() + " ";
          txt = txt.trim();                              // ensure unique
          if (prev != null) {
-            rslt.add(prev.getName() + " to " + txt);
+            String nm = prev.getName() + " to " + txt;
+            PlanViewStep pvs = new PlanViewStep(nm,prev,0);
+            rslt.add(pvs);
           }
          if (typ != PlanActionType.LOOP) {
-            rslt.add(txt);
+            PlanViewStep pvs = new PlanViewStep(txt,prev,-1);
+            rslt.add(pvs);
           }
          else {
-            for (int j = 1; j <= actct; ++j) {
-               if (j == actct) rslt.add(act.getName());
-               else rslt.add(txt + " #" + j);
+            for (int j = 0; j <= actct; ++j) {
+               String nm = act.getName();
+               if (j != actct) nm += " #" + (j+1);
+               int idx = -1;
+               if (j > 0 && j != actct) idx = j;
+               else if (j > 0) idx = 0;
+               PlanViewStep pvs = new PlanViewStep(nm,act,idx);
+               rslt.add(pvs);
              }
-            rslt.add(txt);
           }
          prev = act;
        }
+      
+      ShoreLog.logD("VIEW","Plan steps: " + rslt);
       return FXCollections.observableArrayList(rslt);
+    }
+   
+   private boolean checkActive(PlanAction act,int ct) {
+      PlanViewStep cur = list_view.getItems().get(active_step);
+      if (cur.isActive(act,ct)) return false;
+      
+      int idx = 0;
+      for (PlanViewStep pvs : list_view.getItems()) {
+         if (pvs.isActive(act,ct)) {
+            ShoreLog.logD("VIEW","Set active step to " + pvs);
+            active_step = idx;
+            return true;
+          }
+         ++idx;
+       }
+      
+      return false;
     }
    
    @Override public void planStarted(PlanExecutable p) {
       
     }
+   @Override public void planStepStarted(PlanExecutable p,PlanAction act) {
+      ShoreLog.logD("VIEW","Plan step started " + act);
+      
+      if (checkActive(act,-1)) {
+         list_view.refresh();
+       }
+    }
    
    @Override public void planStepCompleted(PlanExecutable p,PlanAction act,int ct) {
-      ShoreLog.logD("PLANNER","PLAN STEP COMPLETED " + act + " " + ct);
-      int idx = 0;
-      for  ( ; idx < plan_executable.getNumberOfSteps(); ++idx) {
-         if (plan_executable.getStepAction(idx) == act) {
-            break;
-          }
+      ShoreLog.logD("VIEW","Plan step completed " + act + " " + ct);
+      
+      if (checkActive(act,ct)) {
+         list_view.refresh();
        }
-      if (ct == 0) {
-         cur_step = idx+1;
-         step_count = 0;
-       }
-      else {
-         cur_step = idx;
-         step_count = ct;
-       }
-      list_view.refresh();
     }
    
    @Override public void planCompleted(PlanExecutable p,boolean abort) {
@@ -608,7 +636,35 @@ private final class PlanViewer extends VBox implements PlanCallback {
 }       // end of inner class PlanViewer
 
 
-private class ViewerCellFactory implements Callback<ListView<String>,ListCell<String>>
+private final class PlanViewStep {
+   
+   private String step_name;
+   private PlanAction step_action;
+   private int step_count;
+   
+   PlanViewStep(String name,PlanAction act,int ct) {
+      step_name = name;
+      step_action = act;
+      step_count = ct;
+    }
+   
+   String getName()                                     { return step_name; }
+   
+   boolean isActive(PlanAction act,int ct) {
+      if (act != step_action) return false;
+      if (ct != step_count) return false;
+      return true;
+    }
+   
+   @Override public String toString() { 
+      return step_name + ": " + step_action + ":" + step_count;
+    }
+   
+}       // end of inner class PlanViewStep
+
+
+private class ViewerCellFactory 
+      implements Callback<ListView<PlanViewStep>,ListCell<PlanViewStep>>
 {
    private PlanViewer plan_viewer;
    
@@ -616,7 +672,7 @@ private class ViewerCellFactory implements Callback<ListView<String>,ListCell<St
       plan_viewer = pv;
     }
    
-   @Override public ListCell<String> call(ListView<String> param) {
+   @Override public ListCell<PlanViewStep> call(ListView<PlanViewStep> param) {
       return new ViewerListCell(plan_viewer);
     }
    
@@ -624,7 +680,7 @@ private class ViewerCellFactory implements Callback<ListView<String>,ListCell<St
 
 
 
-private final class ViewerListCell extends ListCell<String> {
+private final class ViewerListCell extends ListCell<PlanViewStep> {
    
    private PlanViewer plan_viewer;
    
@@ -632,13 +688,14 @@ private final class ViewerListCell extends ListCell<String> {
       plan_viewer = pv;
     }
    
-   @Override protected void updateItem(String item,boolean empty) {
+   @Override protected void updateItem(PlanViewStep item,boolean empty) {
       super.updateItem(item,empty);
+      ShoreLog.logD("VIEW","Update item " + item + " " + empty);
       if (empty || item == null) {
          setText(null);
        }
       else {
-         setText(item);
+         setText(item.getName());
          Font font = getFont();
          if (plan_viewer.isActive(item)) {
             font = Font.font(font.getFamily(),FontWeight.BOLD,

@@ -240,6 +240,26 @@ private class PointData implements Comparable<PointData> {
     }
 }
 
+
+/********************************************************************************/
+/*                                                                              */
+/*      Output methods                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public String toString() 
+{
+   if (start_sensor != null) {
+      return "ZONE[" + start_sensor + "->" + end_sensors + "]";
+    }
+   else if (for_blocks != null) {
+      return "ZONE[" + for_blocks + "]";
+    }
+   return "ZONE[]";
+}
+
+
+
 }       // end of class ModelSpeedZone
 
 

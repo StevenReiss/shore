@@ -38,6 +38,7 @@ package edu.brown.cs.spr.shore.model;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -123,7 +124,7 @@ Collection<ModelPoint> getModelPoints()
 
 @Override public Collection<IfacePoint> getPoints()
 {
-   return new ArrayList<>(diagram_points.values());
+   return new LinkedHashSet<>(diagram_points.values());
 }
 
 Collection<ModelSwitch> getModelSwitches()

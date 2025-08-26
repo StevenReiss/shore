@@ -551,9 +551,7 @@ void enterBlock(IfaceBlock blk)
 
 public void exitBlock(IfaceBlock blk)
 {
-   Platform.runLater(() -> {
-      train_blocks.remove(blk);
-    });
+   Platform.runLater(() -> { train_blocks.remove(blk); });
 }
 
 void setCurrentPoints(IfacePoint cur,IfacePoint prior)

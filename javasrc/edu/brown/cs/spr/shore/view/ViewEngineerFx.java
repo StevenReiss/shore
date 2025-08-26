@@ -292,14 +292,14 @@ private final class ThrottleChange implements ChangeListener<Number> {
             throttle_slider.getMin() + " " + throttle_slider.getMax() + " " +
             for_engine.getEngineState() + " " + control_pressed);
       
-      if (!chng) {
-         // throttle set by program & reported here -- no need to change things
-         return;
-       }
-     
       if (control_pressed) {
          ShoreLog.logD("VIEW","Set throttle with control");
          for_engine.resumeTrain(null);
+       }
+      
+      if (!chng) {
+         // throttle set by program & reported here -- no need to change things
+         return;
        }
       
       switch (for_engine.getEngineState()) {

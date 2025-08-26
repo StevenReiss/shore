@@ -361,6 +361,7 @@ private boolean goesTo(IfacePoint prev,IfacePoint pt,IfacePoint tgt,Set<IfacePoi
    ShoreLog.logD("MODEL","Find next block " + prev + " -> " + cur);
    
    Set<IfacePoint> next = findSuccessorPoints(cur,prev,true);
+   next.remove(cur);            // ignore how we came in
    ShoreLog.logD("MODEL","Next points: " + next);
    for (IfacePoint pt : next) {
       IfaceBlock curblk = pt.getBlock();

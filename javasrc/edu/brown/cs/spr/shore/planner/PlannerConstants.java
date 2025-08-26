@@ -44,6 +44,7 @@ public interface PlannerConstants extends IfaceConstants
 enum PlannerEventType {
    START,                       // start of a plan
    FINISH,                      // end of a plan
+   ACTION_STARTED,              // plan action started 
    ACTION_COMPLETE,             // plan action completed
    BLOCK,                       // enter a new block
    PAUSE,                       // stop train at a station, etc

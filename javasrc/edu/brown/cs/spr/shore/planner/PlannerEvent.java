@@ -61,6 +61,10 @@ static PlannerEvent createEvent(PlannerEventType typ,PlannerPlan plan,
       case FINISH : 
          evt = new EventFinish(plan);
          break;
+      case ACTION_STARTED :
+         PlannerActionBase act0 = (PlannerActionBase) data[0];
+         evt = new EventActionStart(plan,act0);
+         break;
       case ACTION_COMPLETE :
          PlannerActionBase act = (PlannerActionBase) data[0];
          int ct = 0;
@@ -214,6 +218,36 @@ private static class EventFinish extends PlannerEvent {
 /*                                                                              */
 /********************************************************************************/
 
+private static class EventActionStart extends PlannerEvent {
+
+   private PlannerActionBase done_action;
+
+   EventActionStart(PlannerPlan plan,PlannerActionBase act) {
+      super(plan);
+      done_action = act;
+    }
+   
+   @Override PlannerEventType getEventType() {
+      return PlannerEventType.ACTION_COMPLETE;
+    }
+   
+   @Override void noteDone() {
+      for_plan.firePlanStepStarted(done_action); 
+    } 
+   
+   @Override public String toString() {
+      return "START " + done_action.getName();
+    }
+   
+}       // end of inner class EventActionStart
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Action complete event                                                   */
+/*                                                                              */
+/********************************************************************************/
+
 private static class EventActionComplete extends PlannerEvent {
    
    private PlannerActionBase done_action;
@@ -234,6 +268,9 @@ private static class EventActionComplete extends PlannerEvent {
     } 
    
    @Override public String toString() {
+      if (done_count > 0) {
+         return "DONE " + done_action.getName() + "#" + done_count;
+       }
       return "DONE " + done_action.getName();
     }
    
@@ -279,7 +316,7 @@ private static class EventBlock extends PlannerEvent {
     }
    
    @Override public String toString() {
-      return enter_block.getId();
+      return "BLOCK-" + enter_block.getId();
     }
 }
 

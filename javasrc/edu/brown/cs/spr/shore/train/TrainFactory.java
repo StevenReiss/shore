@@ -217,6 +217,11 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
    
    @Override public void blockChanged(IfaceBlock blk) {
       ShoreLog.logD("TRAIN","Train block changed " + blk);
+      
+      if (zone_updater != null) {
+         zone_updater.blockChanged(blk);
+       }
+      
       switch (blk.getBlockState()) {
          case EMPTY :
             TrainData td = train_locations.remove(blk);
@@ -228,9 +233,6 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
             break;
          case UNKNOWN :
             break;
-       }
-      if (zone_updater != null) {
-         zone_updater.blockChanged(blk);
        }
     }
    
@@ -408,23 +410,25 @@ private class TrainData {
                break;
              }
           }
-         switch (next_block.getBlockState()) {
-            case EMPTY :
-               break;
-            case INUSE :
-               if (train_locations.get(next_block) == this) break;
-               slow = true;
-               break;
-            case UNKNOWN :
-               break;
-            case PENDING :
-               IfaceBlock pendon = next_block.getPendingFrom();
-               ShoreLog.logD("TRAIN","Check next block pending " + 
-                     active_block + " " + next_block + " " + pendon);
-               // handle case of already in new block
-               if (pendon == active_block || active_block == next_block) break;
-               slow = true;
-               break;
+         if (next_block != null) {
+            switch (next_block.getBlockState()) {
+               case EMPTY :
+                  break;
+               case INUSE :
+                  if (train_locations.get(next_block) == this) break;
+                  slow = true;
+                  break;
+               case UNKNOWN :
+                  break;
+               case PENDING :
+                  IfaceBlock pendon = next_block.getPendingFrom();
+                  ShoreLog.logD("TRAIN","Check next block pending " + 
+                        active_block + " " + next_block + " " + pendon);
+                  // handle case of already in new block
+                  if (pendon == active_block || active_block == next_block) break;
+                  slow = true;
+                  break;
+             }
           }
        }
       
@@ -440,6 +444,8 @@ private class TrainData {
             next + " " + exit_signal + " " + slow + " " + stop);
       
       if (stop) {
+         // slow train in case it hasn't been before
+         for_engine.slowTrain(ShoreSlowReason.SIGNAL,SLOW_THROTTLE); 
          for_engine.stopTrain();
        } 
       else if (slow) {
@@ -494,10 +500,15 @@ private final class ZoneUpdater implements IfaceModel.ModelCallback {
       if (buffer != null) {
          buffer.noteBlock(blk);
        }
+      else {
+         ShoreLog.logD("TRAIN","Block " + blk + " not relevant for zones");
+       }
     }
    
    @Override public void sensorChanged(IfaceSensor s) {
       SensorBuffer buffer = getBuffer(s.getBlock());
+      ShoreLog.logD("TRAIN","Zone sensor change " + s + " " +
+            (buffer != null));
       if (buffer != null) {
          buffer.noteSensor(s);
        }
@@ -506,8 +517,8 @@ private final class ZoneUpdater implements IfaceModel.ModelCallback {
    private SensorBuffer getBuffer(IfaceBlock blk) {
       TrainData td = train_locations.get(blk);
       if (td == null) return null;
-      ShoreLog.logD("TRAIN","Check speed zone sensors " + td + " " + blk);
       IfaceEngine eng = td.getEngine();
+      ShoreLog.logD("TRAIN","Find buffer for block " + eng + " " + blk);
       SensorBuffer buffer = train_sensors.get(eng);
       if (buffer == null) {
          buffer = new SensorBuffer(eng,max_size);
@@ -550,7 +561,8 @@ private final class SensorBuffer {
    
    void noteSensor(IfaceSensor s) {
       if (block_zone != null) return;
-      ShoreLog.logD("TRAIN","Check speed sensor " + sensor_zone + " " + s + " " +
+      ShoreLog.logD("TRAIN","Check speed sensor " + for_engine + " " + 
+            sensor_zone + " " + s + " " +
             s.getSensorState());
       
       if (sensor_zone == null) {

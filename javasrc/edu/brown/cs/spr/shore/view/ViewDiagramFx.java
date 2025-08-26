@@ -913,12 +913,13 @@ private class EngineDrawData implements IfaceEngine.EngineCallback {
    
    void doSetEngine() {
       IfacePoint pt0 = for_engine.getCurrentPoint();
-      ShoreLog.logD("VIEW", "Recompute engine " + for_engine.getEngineId() + " at " + pt0);
+      ShoreLog.logD("VIEW", "Recompute engine " + for_engine.getEngineId() + " at " + pt0 +
+            " " + for_diagram.getId());
       if (pt0 != null) {
-         IfaceBlock blk = pt0.getBlock();
-         if (!for_diagram.getBlocks().contains(blk)) pt0 = null;
+         if (!for_diagram.getPoints().contains(pt0)) pt0 = null;
        }
       if (pt0 == null) {
+         ShoreLog.logD("VIEW","Point " + pt0 + " not in diagram");
          engine_shape.setVisible(false);
          return;
        }

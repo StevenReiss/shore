@@ -157,7 +157,6 @@ void handleBlockChange(IfaceBlock blk)
       case PENDING :
          active_blocks.remove(blk);
          break;
-  
       default :
         break;
     }
@@ -248,7 +247,7 @@ private void checkPendingBlocks(IfaceBlock blk)
    if (bd == null || bd.getAtPoint() == null ||  bd.getPriorPoint() == null) {
       if (bd == null) {
          ShoreLog.logD("SAFETY","No pending check  because " + blk + 
-               " has no active block");
+               " has no active block data");
        }
       else {
          ShoreLog.logD("SAFETY","No pending check for direction " + 

@@ -45,6 +45,7 @@ import java.util.StringTokenizer;
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
+import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
@@ -152,7 +153,7 @@ ModelSignal(ModelBase model,Element xml)
    return at_points.get(0).getBlock();
 }
 
-boolean isBlockRelevant(ModelBlock blk) 
+@Override public boolean isBlockRelevant(IfaceBlock blk)   
 {
    if (to_blocks == null) return true;
    if (to_blocks.contains(blk.getId())) return true;
