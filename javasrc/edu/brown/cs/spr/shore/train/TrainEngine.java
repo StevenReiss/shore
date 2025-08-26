@@ -46,6 +46,7 @@ import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
+import javafx.application.Platform;
 import javafx.scene.paint.Color;
 
 class TrainEngine implements TrainConstants, IfaceEngine, Comparable<IfaceEngine>
@@ -394,7 +395,7 @@ void setNoRearLight()                                   { has_rear_light = false
    
    Double v = saved_throttle.remove(reason);
    if (v == null) {
-      ShoreLog.logD("TRAIN","No saved throttle for " + reason + " " +
+      ShoreLog.logE("TRAIN","No saved throttle for " + reason + " " +
             saved_throttle);
       return;
     }
@@ -550,7 +551,9 @@ void enterBlock(IfaceBlock blk)
 
 public void exitBlock(IfaceBlock blk)
 {
-   train_blocks.remove(blk);
+   Platform.runLater(() -> {
+      train_blocks.remove(blk);
+    });
 }
 
 void setCurrentPoints(IfacePoint cur,IfacePoint prior)

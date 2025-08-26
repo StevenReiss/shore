@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfacePlanner;
@@ -48,6 +47,7 @@ import edu.brown.cs.spr.shore.iface.IfaceSafety;
 import edu.brown.cs.spr.shore.iface.IfaceSignal; 
 import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanAction;
 import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanActionType;
+import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanCallback;
 import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanExecutable;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 import javafx.application.Platform;
@@ -62,12 +62,17 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.control.Spinner;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
+import javafx.util.Callback;
 import javafx.util.StringConverter;
 
 class ViewPlannerFx extends HBox implements ViewConstants
@@ -266,9 +271,9 @@ private class TrainPlanner extends GridPane {
       for_engine = eng;
    }
    
-   PlanExecutable createPlan() {
+   PlanExecutable createPlan(IfaceEngine eng) {
       if (!isComplete()) return null;
-      PlanExecutable plan = planner_model.createPlan();
+      PlanExecutable plan = planner_model.createPlan(eng);
       for (int i = 0; i < choice_boxes.size(); ++i) {
          PlanAction pa = choice_boxes.get(i).getValue();
          if (pa == null) {
@@ -386,13 +391,17 @@ private class PlanStarter implements EventHandler<ActionEvent> {
    @Override public void handle(ActionEvent evt) {
       IfaceEngine eng = for_planner.getEngine();
       if (eng == null) return;
-      PlanExecutable pe = for_planner.createPlan();
+      PlanExecutable pe = for_planner.createPlan(eng);
       ShoreLog.logD("VIEW","Create plan " + pe);
       if (pe == null) return;
       PlanAction act = for_planner.getStartAction();
       if (act == null) return;
       IfaceSignal sig = act.getSignal();
       if (sig == null) return;
+      
+      PlanViewer pv = new PlanViewer(pe);
+      getChildren().add(pv);
+      
       safety_model.setSignal(sig,ShoreSignalState.GREEN);
       // create a display for the executing plan
       // add a callback for this display to track state
@@ -479,6 +488,176 @@ private final class EngineChanged implements IfaceEngine.EngineCallback {
     }
    
 }       // end of inner class EngineChanged
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      PlanExecutor -- class to show a plan in action                          */
+/*                                                                              */
+/********************************************************************************/
+
+private final class PlanViewer extends VBox implements PlanCallback {
+   
+   private PlanExecutable plan_executable;
+   private int cur_step;
+   private int step_count;
+   private ListView<String> list_view;
+   private Button abort_button;
+   private Button pause_button; 
+   private Button close_button;
+   
+   PlanViewer(PlanExecutable pe) {
+      plan_executable = pe;
+      cur_step = 0;
+      step_count = pe.getStepCount(0);
+      
+      setupDisplay();
+      
+      pe.addPlanCallback(this);
+    }
+   
+   boolean isActive(String step) {
+      ShoreLog.logD("VIEW","Check if step " + step + " is active " + 
+            cur_step + " " + step_count);
+      return false;
+    }
+
+   boolean isComplete(String step) {
+      ShoreLog.logD("VIEW","Check if step " + step + " is complete " + 
+            cur_step + " " + step_count);
+      return false;
+    }            
+   
+   private void setupDisplay() {
+      pause_button = new Button("PAUSE");
+      abort_button = new Button("ABORT");
+      close_button = new Button("CLOSE");
+      Label title = new Label("Plan for " + plan_executable.getEngine().getEngineName());
+      title.setAlignment(Pos.CENTER);
+      title.setTextAlignment(TextAlignment.CENTER);
+      title.setTextFill(Color.RED);
+      title.setFont(Font.font(20));
+      
+      ObservableList<String> steps = getSteps();
+      list_view = new ListView<>(steps);
+      list_view.setCellFactory(new ViewerCellFactory(this));
+      
+      HBox buttons = new HBox();
+      buttons.setSpacing(10.0);
+      buttons.setAlignment(Pos.CENTER);
+      buttons.getChildren().addAll(abort_button,pause_button,close_button);
+      
+      getChildren().addAll(title,list_view,buttons);
+    }
+   
+   private ObservableList<String> getSteps() {
+      List<String> rslt = new ArrayList<>();
+      PlanAction prev = null;
+      for (int i = 0; i < plan_executable.getNumberOfSteps(); ++i) {
+         PlanAction act = plan_executable.getStepAction(i);
+         int actct = plan_executable.getStepCount(i);
+         PlanActionType typ = act.getActionType();
+         String txt = act.getName() + " ";
+         txt = txt.trim();                              // ensure unique
+         if (prev != null) {
+            rslt.add(prev.getName() + " to " + txt);
+          }
+         if (typ != PlanActionType.LOOP) {
+            rslt.add(txt);
+          }
+         else {
+            for (int j = 1; j <= actct; ++j) {
+               if (j == actct) rslt.add(act.getName());
+               else rslt.add(txt + " #" + j);
+             }
+            rslt.add(txt);
+          }
+         prev = act;
+       }
+      return FXCollections.observableArrayList(rslt);
+    }
+   
+   @Override public void planStarted(PlanExecutable p) {
+      
+    }
+   
+   @Override public void planStepCompleted(PlanExecutable p,PlanAction act,int ct) {
+      ShoreLog.logD("PLANNER","PLAN STEP COMPLETED " + act + " " + ct);
+      int idx = 0;
+      for  ( ; idx < plan_executable.getNumberOfSteps(); ++idx) {
+         if (plan_executable.getStepAction(idx) == act) {
+            break;
+          }
+       }
+      if (ct == 0) {
+         cur_step = idx+1;
+         step_count = 0;
+       }
+      else {
+         cur_step = idx;
+         step_count = ct;
+       }
+      list_view.refresh();
+    }
+   
+   @Override public void planCompleted(PlanExecutable p,boolean abort) {
+      plan_executable.removePlanCallback(this);
+    }
+   
+}       // end of inner class PlanViewer
+
+
+private class ViewerCellFactory implements Callback<ListView<String>,ListCell<String>>
+{
+   private PlanViewer plan_viewer;
+   
+   ViewerCellFactory(PlanViewer pv) {
+      plan_viewer = pv;
+    }
+   
+   @Override public ListCell<String> call(ListView<String> param) {
+      return new ViewerListCell(plan_viewer);
+    }
+   
+}       // end of inner class ViewerCellFactory
+
+
+
+private final class ViewerListCell extends ListCell<String> {
+   
+   private PlanViewer plan_viewer;
+   
+   ViewerListCell(PlanViewer pv) {
+      plan_viewer = pv;
+    }
+   
+   @Override protected void updateItem(String item,boolean empty) {
+      super.updateItem(item,empty);
+      if (empty || item == null) {
+         setText(null);
+       }
+      else {
+         setText(item);
+         Font font = getFont();
+         if (plan_viewer.isActive(item)) {
+            font = Font.font(font.getFamily(),FontWeight.BOLD,
+                  font.getSize());
+          }
+         else if (plan_viewer.isComplete(item)) {
+            font = Font.font(font.getFamily(),FontWeight.LIGHT,
+                  font.getSize());
+          }
+         else {
+            font = Font.font(font.getFamily(),FontWeight.NORMAL,
+                  font.getSize());
+          }
+         setFont(font);
+       }
+    }
+   
+}       // end of inner class ViewerListCell
+
 
 }       // end of class ViewPlannerFx
 

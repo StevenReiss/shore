@@ -421,7 +421,8 @@ private class TrainData {
                IfaceBlock pendon = next_block.getPendingFrom();
                ShoreLog.logD("TRAIN","Check next block pending " + 
                      active_block + " " + next_block + " " + pendon);
-               if (pendon == active_block) break;
+               // handle case of already in new block
+               if (pendon == active_block || active_block == next_block) break;
                slow = true;
                break;
           }
@@ -529,7 +530,7 @@ private final class SensorBuffer {
    private int tail_index;
    private int buffer_size;
    private int buffer_length;
-   private IfaceSpeedZone current_zone;
+   private IfaceSpeedZone sensor_zone;
    private IfaceSpeedZone block_zone;
    private boolean is_done;
    private ZoneCheckTask end_task;
@@ -541,18 +542,18 @@ private final class SensorBuffer {
       tail_index = 0;
       buffer_size = 0;
       buffer_length = last_sensors.length;
-      current_zone = null;
+      sensor_zone = null;
       block_zone = null;
       is_done = false;
       end_task = null;
     }
    
    void noteSensor(IfaceSensor s) {
-      ShoreLog.logD("TRAIN","Check speed sensor " + current_zone + " " + s + " " +
+      if (block_zone != null) return;
+      ShoreLog.logD("TRAIN","Check speed sensor " + sensor_zone + " " + s + " " +
             s.getSensorState());
       
-      if (block_zone != null) return;
-      if (current_zone == null) {
+      if (sensor_zone == null) {
          if (s.getSensorState() == ShoreSensorState.ON) {
             for (IfaceSpeedZone sz : layout_model.getSpeedZones()) {
                if (sz.getStartSensor() == null) continue;
@@ -564,9 +565,9 @@ private final class SensorBuffer {
                      if (contains(sen1)) fnd = true;
                    }
                   if (!fnd) {
-                     current_zone = sz;
+                     sensor_zone = sz;
                      clear();
-                     ShoreLog.logD("TRAIN","Slow train for speed zone");
+                     ShoreLog.logD("TRAIN","Slow train for speed zone " + sz);
                      for_engine.slowTrain(ShoreSlowReason.SPEED_ZONE,
                            sz.getSpeedPercent());
                      break;
@@ -578,7 +579,7 @@ private final class SensorBuffer {
        }
       else {
          if (s.getSensorState() == ShoreSensorState.ON) {
-            for (IfaceSensor ss : current_zone.getZoneSensors()) {
+            for (IfaceSensor ss : sensor_zone.getZoneSensors()) {
                if (ss == s) {
                   add(s);
                   synchronized (this) {
@@ -592,8 +593,8 @@ private final class SensorBuffer {
              }
             ShoreLog.logD("TRAIN","Add sensor " + s);
           }
-         else if (current_zone.isEndSensor(s) && s.getSensorState() == ShoreSensorState.OFF) {
-            for (IfaceSensor ss : current_zone.getZoneSensors()) {
+         else if (sensor_zone.isEndSensor(s) && s.getSensorState() == ShoreSensorState.OFF) {
+            for (IfaceSensor ss : sensor_zone.getZoneSensors()) {
                if (ss.getSensorState() == ShoreSensorState.ON) {
                   is_done = false;
                   ShoreLog.logD("TRAIN","Still have a sensor on in zone " + ss);
@@ -641,25 +642,25 @@ private final class SensorBuffer {
       if (!is_done) return;
       ShoreLog.logD("TRAIN","Resume speed after zone " + for_engine.getEngineId());
       for_engine.resumeTrain(ShoreSlowReason.SPEED_ZONE);
-      current_zone = null;
+      sensor_zone = null;
       block_zone = null;
       clear();
     }
    
    void noteBlock(IfaceBlock blk) {
-      if (current_zone != null) return;
-      ShoreLog.logD("TRAIN","Check speed zone block " + blk);
+      ShoreLog.logD("TRAIN","Check speed zone block " + blk + " " + block_zone + " " + sensor_zone);
+      if (sensor_zone != null) return;
       if (block_zone == null) {
          if (blk.getBlockState() == ShoreBlockState.INUSE) {
             for (IfaceSpeedZone sz : layout_model.getSpeedZones()) {
                Collection<IfaceBlock> blks = sz.getBlocks();
-               if (blks.contains(blk)) {
+               if (blks != null && blks.contains(blk)) {
                   block_zone = sz;
                   break;
                 }
              }
             if (block_zone != null) {
-               ShoreLog.logD("TRAIN","Slow train for block speed zone");
+               ShoreLog.logD("TRAIN","Slow train for block speed zone " + blk + " " + block_zone);
                for_engine.slowTrain(ShoreSlowReason.SPEED_ZONE,
                      block_zone.getSpeedPercent());
              }
@@ -667,10 +668,12 @@ private final class SensorBuffer {
        }
       else {
          if (blk.getBlockState() == ShoreBlockState.EMPTY) {
-            for (IfaceBlock zblk : block_zone.getBlocks()) {
-               if (zblk.getBlockState() == ShoreBlockState.INUSE) {
-                  ShoreLog.logD("TRAIN","Block still in use for speed zone");
-                  return;
+            if (block_zone.getBlocks() != null) {
+               for (IfaceBlock zblk : block_zone.getBlocks()) {
+                  if (zblk.getBlockState() == ShoreBlockState.INUSE) {
+                     ShoreLog.logD("TRAIN","Block still in use for speed zone");
+                     return;
+                   }
                 }
              }
             is_done = true;

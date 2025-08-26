@@ -47,7 +47,7 @@ Collection<PlanAction> getStartActions();
 Collection<PlanAction> getNextActions(PlanAction t);
 PlanAction findAction(String name);
 
-PlanExecutable createPlan(Object... actions);
+PlanExecutable createPlan(IfaceEngine eng,Object... actions);
 
 
 int getMaxSteps();
@@ -65,6 +65,11 @@ interface PlanExecutable {
    void abort();
    void addPlanCallback(PlanCallback cb);
    void removePlanCallback(PlanCallback cb);
+   
+   int getNumberOfSteps();
+   PlanAction getStepAction(int i);
+   int getStepCount(int i);
+   IfaceEngine getEngine();
 }
 
 

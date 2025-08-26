@@ -43,6 +43,7 @@ import java.util.TreeSet;
 import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.xml.IvyXml;
+import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfacePlanner;
 import edu.brown.cs.spr.shore.iface.IfaceSafety;
@@ -166,9 +167,9 @@ List<PlannerActionBase> getAllActions()
 /*                                                                              */
 /********************************************************************************/
 
-@Override public PlannerPlan createPlan(Object... actions) 
+@Override public PlannerPlan createPlan(IfaceEngine eng,Object... actions) 
 {
-   PlannerPlan plan = new PlannerPlan(safety_model,layout_model,train_model);
+   PlannerPlan plan = new PlannerPlan(safety_model,layout_model,train_model,eng);
    
    for (int i = 0; i < actions.length; ++i) {
       if (actions[i] instanceof PlanAction) {

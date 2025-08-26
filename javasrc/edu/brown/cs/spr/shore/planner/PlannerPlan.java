@@ -80,7 +80,7 @@ private IfaceBlock  engine_block;
 /*                                                                              */
 /********************************************************************************/
 
-PlannerPlan(IfaceSafety safety,IfaceModel layout,IfaceTrains tm)
+PlannerPlan(IfaceSafety safety,IfaceModel layout,IfaceTrains tm,IfaceEngine eng)
 {
    layout_model = layout;
    safety_model = safety;
@@ -88,7 +88,7 @@ PlannerPlan(IfaceSafety safety,IfaceModel layout,IfaceTrains tm)
    plan_steps = new ArrayList<>();
    plan_listeners = new SwingEventListenerList<>(PlanCallback.class); 
    abort_plan = false;
-   for_engine = null;
+   for_engine = eng;
    engine_block = null;
 }
 
@@ -121,8 +121,19 @@ PlannerPlan(IfaceSafety safety,IfaceModel layout,IfaceTrains tm)
 
 IfaceModel getLayoutModel()                     { return layout_model; }
 IfaceSafety getSafetyModel()                    { return safety_model; }
-IfaceEngine getEngine()                         { return for_engine; }
+@Override public IfaceEngine getEngine()        { return for_engine; } 
 
+@Override public int getNumberOfSteps()        { return plan_steps.size(); }
+@Override public PlanAction getStepAction(int i)      
+{
+   if (i < 0 || i >= plan_steps.size()) return null;
+   return plan_steps.get(i).getAction();
+}
+@Override public int getStepCount(int i) 
+{
+   if (i < 0 || i >= plan_steps.size()) return 0;
+   return plan_steps.get(i).getCount();
+}
 
 
 /********************************************************************************/
