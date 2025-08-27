@@ -248,7 +248,8 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
       if (s.getSensorState() != ShoreSensorState.ON)  return;
       IfaceBlock blk = s.getBlock();
       TrainData td = train_locations.get(blk);
-      ShoreLog.logD("TRAIN","Train sensor changed " + s + " " + blk + " " + td);
+      ShoreLog.logD("TRAIN","Train sensor changed " + s + " " + s.getSensorState() + " " +
+            blk + " " + td);
       if (td == null) {
          IfaceConnection conn = s.getConnection();
          ShoreLog.logD("TRAIN","Use connection " + conn);
@@ -479,6 +480,7 @@ private void setupZoneUpdater()
     }
    
    if (ctr != 0) {
+      ShoreLog.logD("TRAIN","Zone updater setup");
       zone_updater = new ZoneUpdater(maxsensor);
       if (maxsensor != 0) train_timer = new Timer("Train timer");
     }
