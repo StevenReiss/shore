@@ -34,6 +34,7 @@ byte CONTROL_DEFSENSOR  = (byte) 0x45;          // assoc sensor with switch stat
 byte CONTROL_SETSENSOR  = (byte) 0x46;          // note sensor state
 byte CONTROL_DEFSIGNAL  = (byte) 0x47;          // set type of signal
 byte CONTROL_DEFSWITCH  = (byte) 0x48;          // assoc r-index with switch
+byte CONTROL_REPLY      = (byte) 0x49;          // reply to indicate message received
 
 
 
@@ -47,7 +48,7 @@ byte CONTROL_ID         = (byte) 0x50;          // this is our ID
 byte CONTROL_SENSOR     = (byte) 0x51;          // sensor set to value
 byte CONTROL_SWITCH     = (byte) 0x52;          // switch set to value
 byte CONTROL_SIGNAL     = (byte) 0x53;          // signal set to value
-// byte CONTROL_ENDSYNC    = (byte) 0x54;
+byte CONTROL_SENSOR_SYNC = (byte) 0x54;         // sensor set w/ sync request
 
 
 

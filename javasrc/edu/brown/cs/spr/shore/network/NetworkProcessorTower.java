@@ -346,7 +346,7 @@ private ControllerInfo findController(SocketAddress sa)
    ControllerInfo ci = findController(sa);
    ControllerInfo ci1 = id_map.get(id);
    if (ci1 == null && data[0] != CONTROL_ID) {
-      ShoreLog.logD("NETWORK","Message without heartbeat " + id);
+      ShoreLog.logI("NETWORK","Message without heartbeat " + id);
       //    id_map.put(id,ci);
       //    ShoreLog.logD("NETWORK","Assign id to controller " + id);
       //    ci.setId(id);
@@ -355,10 +355,15 @@ private ControllerInfo findController(SocketAddress sa)
       ShoreLog.logE("NETWORK","Conflicing controllers for " + id);
     }
    
+   if (needsSync(data[0])) {
+      ci.sendReply(1);
+    }
+   
    switch (data[0]) {
       case CONTROL_ID :
          ci.noteConnection(id,which);
          break;
+      case CONTROL_SENSOR_SYNC : 
       case CONTROL_SENSOR :
          if (layout_model != null) {
             IfaceSensor s = findSensor(id,which);
@@ -395,6 +400,17 @@ private ControllerInfo findController(SocketAddress sa)
     }
 }
 
+
+
+private boolean needsSync(byte cmd)
+{
+   switch (cmd) {
+      case CONTROL_SENSOR_SYNC :
+         return true;
+    }
+   
+   return false;
+}
 
 /********************************************************************************/
 /*                                                                              */
@@ -567,6 +583,11 @@ private class ControllerInfo {
    
    void sendDefSwitchMessage(byte sid,byte rsid) {
       byte[] msg = { CONTROL_DEFSWITCH, controller_id, sid, rsid };
+      sendMessage(net_address,msg,0,4);
+    }
+   
+   void sendReply(int val) {
+      byte [] msg = { CONTROL_REPLY, controller_id, (byte) val, 0  };
       sendMessage(net_address,msg,0,4);
     }
     

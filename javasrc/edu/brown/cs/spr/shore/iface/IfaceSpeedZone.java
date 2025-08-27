@@ -36,7 +36,6 @@
 package edu.brown.cs.spr.shore.iface;
 
 import java.util.Collection;
-import java.util.List;
 
 public interface IfaceSpeedZone extends IfaceConstants
 {
@@ -72,8 +71,13 @@ boolean isEndSensor(IfaceSensor sensor);
 /**
  *      Return the set of sensors in the zone
  **/
-List<IfaceSensor> getZoneSensors();
+Collection<IfaceSensor> getZoneSensors();
 
+
+/**
+ *      Check if sensor is a zone sensor
+ **/
+boolean isZoneSensor(IfaceSensor sensor);
 
 }       // end of interface IfaceSpeedZone
 

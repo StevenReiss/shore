@@ -91,6 +91,8 @@ private Map<ShoreSlowReason,Double> saved_throttle;
 
 private SwingEventListenerList<EngineCallback> engine_listeners;
 
+private static boolean use_emergency_stop = false;
+
 
 
 /********************************************************************************/
@@ -381,7 +383,15 @@ void setNoRearLight()                                   { has_rear_light = false
     }
    
    train_factory.getNetworkModel().sendThrottle(this,start_speed);
-   train_factory.getNetworkModel().sendEmergencyStop(this,true);
+   if (use_emergency_stop) {
+      train_factory.getNetworkModel().sendEmergencyStop(this,true);
+    }
+}
+
+
+boolean hasSavedThrottle(ShoreSlowReason reason)
+{
+   return saved_throttle.get(reason) != null;
 }
 
 
@@ -400,7 +410,7 @@ void setNoRearLight()                                   { has_rear_light = false
       return;
     }
    
-   ShoreLog.logD("TRAIN","RESUME TRAIN " + reason + " " + saved_throttle + " " + v);
+   ShoreLog.logD("TRAIN","RESUME SLOW TRAIN " + reason + " " + saved_throttle + " " + v);
    
    Double v1 = saved_throttle.remove(ShoreSlowReason.STOP);
    if (v1 != null) {

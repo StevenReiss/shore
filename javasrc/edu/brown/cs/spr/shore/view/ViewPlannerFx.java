@@ -90,6 +90,9 @@ private IfaceSafety safety_model;
 private List<TrainPlanner> train_plans;
 private TrainPlanner train_planner;
 
+private static int      STEP_START = -1;
+private static int      STEP_DONE = 0;
+
 
 
 /********************************************************************************/
@@ -512,6 +515,8 @@ private final class PlanViewer extends VBox implements PlanCallback {
       
       setupDisplay();
       
+      ShoreLog.logD("VIEW","Set active step (inital) to " + list_view.getItems().get(0));
+            
       pe.addPlanCallback(this);
     }
    
@@ -564,24 +569,23 @@ private final class PlanViewer extends VBox implements PlanCallback {
          PlanAction act = plan_executable.getStepAction(i);
          int actct = plan_executable.getStepCount(i);
          PlanActionType typ = act.getActionType();
-         String txt = act.getName() + " ";
-         txt = txt.trim();                              // ensure unique
+         String txt = act.getName();                             
          if (prev != null) {
             String nm = prev.getName() + " to " + txt;
-            PlanViewStep pvs = new PlanViewStep(nm,prev,0);
+            PlanViewStep pvs = new PlanViewStep(nm,prev,STEP_DONE);
             rslt.add(pvs);
           }
          if (typ != PlanActionType.LOOP) {
-            PlanViewStep pvs = new PlanViewStep(txt,prev,-1);
+            PlanViewStep pvs = new PlanViewStep(txt,prev,STEP_START);
             rslt.add(pvs);
           }
          else {
             for (int j = 0; j <= actct; ++j) {
                String nm = act.getName();
                if (j != actct) nm += " #" + (j+1);
-               int idx = -1;
+               int idx = STEP_START;
                if (j > 0 && j != actct) idx = j;
-               else if (j > 0) idx = 0;
+               else if (j > 0) idx = STEP_DONE;
                PlanViewStep pvs = new PlanViewStep(nm,act,idx);
                rslt.add(pvs);
              }
@@ -589,7 +593,14 @@ private final class PlanViewer extends VBox implements PlanCallback {
          prev = act;
        }
       
-      ShoreLog.logD("VIEW","Plan steps: " + rslt);
+      PlanViewStep fini = new PlanViewStep("Finished plan",prev,STEP_START);
+      rslt.add(fini);
+      
+      ShoreLog.logD("VIEW","Plan steps: ");
+      for (int i = 0; i < rslt.size(); ++i) {
+         ShoreLog.logD("VIEW","\t" + i + ": " + rslt.get(i));
+       }
+      
       return FXCollections.observableArrayList(rslt);
     }
    
@@ -602,6 +613,7 @@ private final class PlanViewer extends VBox implements PlanCallback {
          if (pvs.isActive(act,ct)) {
             ShoreLog.logD("VIEW","Set active step to " + pvs);
             active_step = idx;
+            list_view.scrollTo(pvs);
             return true;
           }
          ++idx;
@@ -616,7 +628,7 @@ private final class PlanViewer extends VBox implements PlanCallback {
    @Override public void planStepStarted(PlanExecutable p,PlanAction act) {
       ShoreLog.logD("VIEW","Plan step started " + act);
       
-      if (checkActive(act,-1)) {
+      if (checkActive(act,STEP_START)) {
          list_view.refresh();
        }
     }
@@ -704,6 +716,7 @@ private final class ViewerListCell extends ListCell<PlanViewStep> {
          else if (plan_viewer.isComplete(item)) {
             font = Font.font(font.getFamily(),FontWeight.LIGHT,
                   font.getSize());
+            
           }
          else {
             font = Font.font(font.getFamily(),FontWeight.NORMAL,

@@ -197,6 +197,7 @@ void addSignal(ModelSignal sig)
 
 @Override public byte getTowerSensor()          { return tower_index; }
 
+ShoreSensorState getForceState()                 { return force_state; }
 
 
 /********************************************************************************/

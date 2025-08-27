@@ -1338,6 +1338,9 @@ private void outputTowers(PrintStream ps)
          if (ent.getValue().isHighThreshold()) {
             ps.print(" (HIGH)");
           }
+         if (ent.getValue().getForceState() != null) {
+            ps.print(" (" + ent.getValue().getForceState() + ")");
+          }
          ps.println();
        }
       if (!sigmap.isEmpty()) {

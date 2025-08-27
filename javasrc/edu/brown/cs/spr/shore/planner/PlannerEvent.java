@@ -268,10 +268,7 @@ private static class EventActionComplete extends PlannerEvent {
     } 
    
    @Override public String toString() {
-      if (done_count > 0) {
-         return "DONE " + done_action.getName() + "#" + done_count;
-       }
-      return "DONE " + done_action.getName();
+      return "DONE " + done_action.getName() + "#" + done_count;
     }
    
 }       // end of inner class EventActionComplete

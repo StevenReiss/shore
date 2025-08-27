@@ -147,8 +147,10 @@ IfaceSafety getSafetyModel()                    { return safety_model; }
 {
    List<PlannerEvent> steps = setupPlan();
    
-   ShoreLog.logD("PLANNER","Plan setup " + for_engine + " " + eng + "\n\t" +
-         steps);
+   ShoreLog.logD("PLANNER","Plan setup " + for_engine.getEngineName() + " " + eng);
+   for (int i = 0; i < steps.size(); ++i) {
+      ShoreLog.logD("PLANNER","\t" + i + ": " + steps.get(i));
+    }
    
    for_engine = eng;
    
@@ -215,7 +217,6 @@ private List<PlannerEvent> setupPlan()
    for (PlanStep step : plan_steps) {
       curblk = addEvents(step,prior,curblk,planevents);
       prior = step;
-      planevents.add(createEvent(PlannerEventType.ACTION_COMPLETE,step.getAction()));
     }
    
    // associate next block with each block event
@@ -248,6 +249,7 @@ private IfaceBlock addEvents(PlanStep ps,PlanStep prior,IfaceBlock curblk,List<P
                ps.getAction());
        }
       else {
+         int insert = events.size()-1;
          IfaceBlock sblk = pe.geStartBlock();
          if (sblk != curblk) {
             // handle partial loop
@@ -256,7 +258,8 @@ private IfaceBlock addEvents(PlanStep ps,PlanStep prior,IfaceBlock curblk,List<P
             for (int i = 0; i < lblks.size()-1; ++i) {
                int nidx = (idx+1+i) % lblks.size();
                IfaceBlock blk0 = lblks.get(nidx);
-               events.add(createEvent(PlannerEventType.BLOCK,curblk,blk0));
+               events.add(insert++,
+                     createEvent(PlannerEventType.BLOCK,curblk,blk0));
                curblk = blk0;
                if (blk0 == sblk) break;
              }
@@ -319,6 +322,8 @@ private IfaceBlock addEvents(PlanStep ps,PlanStep prior,IfaceBlock curblk,List<P
           }
          break;
     }
+   
+   events.add(createEvent(PlannerEventType.ACTION_COMPLETE,act));
    
    return curblk;
 }

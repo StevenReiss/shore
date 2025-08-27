@@ -64,7 +64,7 @@ private ModelSensor     start_sensor;
 private List<ModelSensor> end_sensors;
 private double          speed_percent;
 private Set<ModelBlock>   for_blocks;
-private List<ModelSensor> all_sensors;
+private Set<ModelSensor> all_sensors;
 
 
 
@@ -138,11 +138,17 @@ ModelSpeedZone(ModelBase mb,Collection<ModelBlock> blocks,double speed)
 }
 
 
-@Override public List<IfaceSensor> getZoneSensors() 
+@Override public Collection<IfaceSensor> getZoneSensors() 
 {
-   List<IfaceSensor> rslt = new ArrayList<>();
+   Set<IfaceSensor> rslt = new HashSet<>(); 
    rslt.addAll(all_sensors);
    return rslt;
+}
+
+
+@Override public boolean isZoneSensor(IfaceSensor s)
+{
+   return all_sensors.contains(s); 
 }
 
 
@@ -152,7 +158,7 @@ ModelSpeedZone(ModelBase mb,Collection<ModelBlock> blocks,double speed)
 /*                                                                              */
 /********************************************************************************/
 
-private List<ModelSensor> getSensors(ModelBase mb)
+private Set<ModelSensor> getSensors(ModelBase mb)
 {
    Set<ModelSensor> rslt = new LinkedHashSet<>();
    
@@ -173,7 +179,7 @@ private List<ModelSensor> getSensors(ModelBase mb)
        }
     }
    
-   return new ArrayList<>(rslt);
+   return rslt;
 }
 
 
