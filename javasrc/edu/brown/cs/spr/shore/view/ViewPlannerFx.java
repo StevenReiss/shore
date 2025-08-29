@@ -71,6 +71,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
@@ -542,8 +543,12 @@ private final class PlanViewer extends VBox implements PlanCallback {
    
    private void setupDisplay() {
       pause_button = new Button("PAUSE");
+      pause_button.setOnAction(new ViewerPause(this));
       abort_button = new Button("ABORT");
+      abort_button.setOnAction(new ViewerAbort(this));
       close_button = new Button("CLOSE");
+      close_button.setOnAction(new ViewerClose(this));
+      
       Label title = new Label("Plan for " + plan_executable.getEngine().getEngineName());
       title.setAlignment(Pos.CENTER);
       title.setTextAlignment(TextAlignment.CENTER);
@@ -622,9 +627,17 @@ private final class PlanViewer extends VBox implements PlanCallback {
       return false;
     }
    
-   @Override public void planStarted(PlanExecutable p) {
-      
+   void abortPlan() {
+      ShoreLog.logD("VIEW","Abort plan");
+      plan_executable.abort();
     }
+   
+   void pausePlan() {
+      ShoreLog.logD("VIEW","Pause plan");
+    }
+   
+   @Override public void planStarted(PlanExecutable p) { }
+   
    @Override public void planStepStarted(PlanExecutable p,PlanAction act) {
       ShoreLog.logD("VIEW","Plan step started " + act);
       
@@ -647,6 +660,12 @@ private final class PlanViewer extends VBox implements PlanCallback {
    
 }       // end of inner class PlanViewer
 
+
+/********************************************************************************/
+/*                                                                              */
+/*      Displayed step in a plan                                                */
+/*                                                                              */
+/********************************************************************************/
 
 private final class PlanViewStep {
    
@@ -674,6 +693,13 @@ private final class PlanViewStep {
    
 }       // end of inner class PlanViewStep
 
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Classes for displaying the step in a listview                           */
+/*                                                                              */
+/********************************************************************************/
 
 private class ViewerCellFactory 
       implements Callback<ListView<PlanViewStep>,ListCell<PlanViewStep>>
@@ -703,30 +729,85 @@ private final class ViewerListCell extends ListCell<PlanViewStep> {
    @Override protected void updateItem(PlanViewStep item,boolean empty) {
       super.updateItem(item,empty);
       ShoreLog.logD("VIEW","Update item " + item + " " + empty);
+      
       if (empty || item == null) {
          setText(null);
+         setGraphic(null);
        }
       else {
-         setText(item.getName());
-         Font font = getFont();
+         Text tn = new Text(item.getName());
          if (plan_viewer.isActive(item)) {
-            font = Font.font(font.getFamily(),FontWeight.BOLD,
-                  font.getSize());
+            Font fn = tn.getFont();
+            fn = Font.font(fn.getFamily(),FontWeight.BOLD,fn.getSize());
+            tn.setFont(fn);
+            tn.setStrikethrough(false);
           }
          else if (plan_viewer.isComplete(item)) {
-            font = Font.font(font.getFamily(),FontWeight.LIGHT,
-                  font.getSize());
-            
+            tn.setStrikethrough(true);
           }
          else {
-            font = Font.font(font.getFamily(),FontWeight.NORMAL,
-                  font.getSize());
+            tn.setStrikethrough(false);
           }
-         setFont(font);
+         setText(null);
+         setGraphic(tn);
        }
     }
    
 }       // end of inner class ViewerListCell
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Viewer actions                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+private class ViewerPause implements EventHandler<ActionEvent> {
+   
+   private PlanViewer for_viewer;
+   
+   ViewerPause(PlanViewer pv) {
+      for_viewer = pv;
+    }
+   
+   @Override public void handle(ActionEvent evt) {
+      for_viewer.pausePlan();
+    }
+   
+}       // end of inner class ViewerPause
+
+
+private class ViewerAbort implements EventHandler<ActionEvent> {
+
+   private PlanViewer for_viewer;
+
+   ViewerAbort(PlanViewer pv) {
+      for_viewer = pv;
+    }
+   
+   @Override public void handle(ActionEvent evt) {
+      for_viewer.abortPlan();
+    }
+
+}       // end of inner class ViewerAbort
+
+
+private class ViewerClose implements EventHandler<ActionEvent> {
+
+   private PlanViewer for_viewer;
+   
+   ViewerClose(PlanViewer pv) {
+      for_viewer = pv;
+    }
+   
+   @Override public void handle(ActionEvent evt) {
+      for_viewer.setVisible(false);
+    }
+   
+}       // end of inner class ViewerClose
+
+
 
 
 }       // end of class ViewPlannerFx

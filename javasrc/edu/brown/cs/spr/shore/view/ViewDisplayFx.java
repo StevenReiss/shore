@@ -128,6 +128,10 @@ public ViewDisplayFx()
       SplitPane overall = new FullSplitPane(lpanel,epanel);
       overall.setOrientation(Orientation.HORIZONTAL);
       Scene scn = new Scene(overall);
+      
+//    URL r = getClass().getClassLoader().getResource("engineer.css");
+//    scn.getStylesheets().add(r.toExternalForm());
+      
 // lpanel.prefHeightProperty().bind(scn.heightProperty());
 // epanel.prefHeightProperty().bind(overall.heightProperty());
 // overall.prefHeightProperty().bind(scn.heightProperty());

@@ -122,7 +122,7 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
    
    URL r = getClass().getClassLoader().getResource("engineer.css");
    getStylesheets().add(r.toExternalForm());
-   
+
    // top row for labels
    Label hdr1 = new Label("ID: " + for_engine.getEngineId() + "   ");
    Label hdr2 = new Label("LOCO " + for_engine.getEngineName());
