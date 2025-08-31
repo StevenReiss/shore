@@ -105,6 +105,16 @@ enum ShoreSwitchState {
 
 
 /**
+ *      Range of a sensor
+ ***/
+enum ShoreSensorRange {
+   NORMAL,                      // 1000 - 2500
+   HIGH,                        // 3000 - 4000 ?
+   LOW,                         // 200 - 500
+}
+
+
+/**
  *      State of track block
  **/
 enum ShoreBlockState { 

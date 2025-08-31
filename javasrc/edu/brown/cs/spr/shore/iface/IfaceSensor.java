@@ -104,11 +104,11 @@ Collection<IfaceSignal> getSignals();
  **/
 IfacePoint getAtPoint();
 
-
+ 
 /**
- *      Tell if the sensor should have a high threshold
+ *      Get sensor range
  **/
-boolean isHighThreshold();
+ShoreSensorRange getSensorRange();
 
 
 /**

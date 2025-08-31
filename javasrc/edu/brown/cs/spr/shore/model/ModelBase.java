@@ -1334,9 +1334,10 @@ private void outputTowers(PrintStream ps)
       ps.println("TOWER " + i);
       ps.println("   SENSORS: ");
       for (Map.Entry<Byte,ModelSensor> ent : senmap.entrySet()) {
-         ps.print("      " + ent.getKey() + ":  " + ent.getValue());
-         if (ent.getValue().isHighThreshold()) {
-            ps.print(" (HIGH)");
+         ModelSensor ms = ent.getValue();
+         ps.print("      " + ent.getKey() + ":  " + ms);
+         if (ms.getSensorRange() != ShoreSensorRange.NORMAL) {
+            ps.print("("+ ms.getSensorRange() + ")");
           }
          if (ent.getValue().getForceState() != null) {
             ps.print(" (" + ent.getValue().getForceState() + ")");

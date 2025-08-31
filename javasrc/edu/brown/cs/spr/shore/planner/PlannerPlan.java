@@ -72,6 +72,8 @@ private IfaceSafety safety_model;
 private boolean    abort_plan;
 private IfaceEngine for_engine;
 private IfaceBlock  engine_block;
+private boolean pause_plan;
+private Double pause_throttle;
 
 
 
@@ -91,6 +93,8 @@ PlannerPlan(IfaceSafety safety,IfaceModel layout,IfaceTrains tm,IfaceEngine eng)
    abort_plan = false;
    for_engine = eng;
    engine_block = null;
+   pause_plan = false;
+   pause_throttle = 0.0;
 }
 
 
@@ -162,12 +166,43 @@ IfaceSafety getSafetyModel()                    { return safety_model; }
 
 @Override public void abort()
 {
-   ShoreLog.logD("PLANNER","ABORT plan");
+   ShoreLog.logD("PLANNER","ABORT plan for " + getEngine());
    
    synchronized (this) {
       abort_plan = true;
       notifyAll();
     }
+}
+
+
+@Override public void pause()
+{
+   ShoreLog.logD("PLANNER","PAUSE plan for " + getEngine() + " " + pause_plan);
+   
+   if (pause_plan) return;
+   pause_throttle = getEngine().getThrottle();
+   for_engine.setThrottle(0);
+   
+   synchronized (this) {
+      pause_plan = true;
+      notifyAll();
+    }
+}
+
+
+
+@Override public void resume()
+{
+   ShoreLog.logD("PLANNER","RESUME plan for " + getEngine() + " " + pause_throttle);
+   
+   if (!pause_plan) return;
+   
+   synchronized (this) {
+      pause_plan = false;
+      notifyAll();
+    }
+   for_engine.setThrottle(pause_throttle);
+   pause_throttle = 0.0;
 }
 
 
@@ -457,6 +492,8 @@ boolean waitForBlockEntry(IfaceBlock blk)
 {
    synchronized (this) {
       for ( ; ; ) {
+         waitForPause();
+         if (abort_plan) return false;
          IfacePoint pt = for_engine.getCurrentPoint();
          if (pt != null) {
             IfaceBlock atblk = pt.getBlock();
@@ -484,6 +521,20 @@ boolean waitForBlockEntry(IfaceBlock blk)
 }
 
 
+private void waitForPause()
+{
+   synchronized (this) {
+      while (pause_plan) {
+         try {
+            wait(5000);
+          }
+         catch (InterruptedException e) { }
+       }
+    }
+}
+
+
+
 /********************************************************************************/
 /*                                                                              */
 /*      Plan Follower Thread                                                    */
@@ -506,6 +557,7 @@ private final class PlanFollower extends Thread implements EngineCallback {
          PlannerEvent event = plan_events.get(event_index);
          ShoreLog.logD("PLANNER","Work on step " + event_index + " " + event);
          if (abort_plan) break;
+         waitForPause();
          event.waitForAction(for_engine); 
          if (abort_plan) break;
          event.noteDone();

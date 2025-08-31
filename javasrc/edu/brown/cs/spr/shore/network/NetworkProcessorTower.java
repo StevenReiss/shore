@@ -201,17 +201,27 @@ private boolean sendDefSensor(IfaceSensor sen)
     }
    
    
-   int s = 64;
-   if (sw != null) {
-      s = sw.getTowerSwitch() * 4 + state.ordinal();
+// int s = 64;
+// if (sw != null && state != ShoreSwitchState.UNKNOWN) {
+//    s = sw.getTowerSwitch() * 4 + state.ordinal();
+//    int idx1 = sw.getTowerRSwitch();
+//    if (state == ShoreSwitchState.R && idx1 >= 0) {
+//       s = idx1 * 4 + ShoreSwitchState.N.ordinal();
+//     }
+//  }
+// if (sen.getSensorRange() == ShoreSensorRange.HIGH) s |= 128;
+// ci.sendDefSensorMessage(sen.getTowerSensor(),s);
+   
+   int s1 = 3*2;
+   if (sw !=null && state != ShoreSwitchState.UNKNOWN) {
+      s1 = sw.getTowerSwitch() * 2 + state.ordinal();
       int idx1 = sw.getTowerRSwitch();
       if (state == ShoreSwitchState.R && idx1 >= 0) {
-         s = idx1 * 4 + ShoreSwitchState.N.ordinal();
+         s1 = idx1 * 2 + ShoreSwitchState.N.ordinal();
        }
     }
-   if (sen.isHighThreshold()) s |= 128;
-   
-   ci.sendDefSensorMessage(sen.getTowerSensor(),s);
+   s1 += sen.getSensorRange().ordinal() * 8;
+   ci.sendDefSensorMessage(sen.getTowerSensor(),s1);
    
    return true;
 }

@@ -63,6 +63,8 @@ interface PlanExecutable {
    default void addStep(PlanAction act)         { addStep(act,0); }
    void execute(IfaceEngine eng);
    void abort();
+   void pause();
+   void resume();
    void addPlanCallback(PlanCallback cb);
    void removePlanCallback(PlanCallback cb);
    

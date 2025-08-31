@@ -50,7 +50,7 @@ import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 
-class ModelSensor implements IfaceSensor, ModelConstants
+class ModelSensor implements IfaceSensor, ModelConstants 
 {
 
 
@@ -73,7 +73,7 @@ private byte tower_id;
 private byte tower_index;
 private ShoreSensorState force_state;
 private boolean is_ignored;
-private boolean is_high;
+private ShoreSensorRange sensor_range;
 
 
 
@@ -92,7 +92,7 @@ ModelSensor(ModelBase mdl,Element xml)
    tower_id = (byte) IvyXml.getAttrInt(xml,"TOWER");
    tower_index = (byte) IvyXml.getAttrInt(xml,"INDEX");
    is_ignored = IvyXml.getAttrBool(xml,"IGNORED");
-   is_high = IvyXml.getAttrBool(xml,"HIGH");
+   sensor_range = IvyXml.getAttrEnum(xml,"RANGE",ShoreSensorRange.NORMAL);
    
    if (IvyXml.getAttrPresent(xml,"STATE")) {
       force_state = IvyXml.getAttrEnum(xml,"STATE",ShoreSensorState.UNKNOWN);
@@ -167,9 +167,9 @@ void assignSwitch(ModelSwitch sw,ShoreSwitchState state)
    return sensor_point.getBlock();
 }  
 
-@Override public boolean isHighThreshold() 
+@Override public ShoreSensorRange getSensorRange() 
 {
-   return is_high;
+   return sensor_range;
 }
 
 
