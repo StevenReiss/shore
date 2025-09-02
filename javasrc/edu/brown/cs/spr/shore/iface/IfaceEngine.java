@@ -110,6 +110,7 @@ double getSpeedMax();
 void stopTrain();
 void slowTrain(ShoreSlowReason reason,double speed);
 void resumeTrain(ShoreSlowReason reason);
+void setNotPresent();
 
 
 /********************************************************************************/

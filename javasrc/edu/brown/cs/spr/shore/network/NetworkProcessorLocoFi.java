@@ -353,7 +353,8 @@ private final class LocoFiStatusUpdater extends Thread {
                IfaceEngine eng = findEngine(ei.getEngineId());
                if (eng != null) {
                   engine_model.setEngineSocket(eng,null);
-                }
+                  eng.setNotPresent();
+                } 
              }
           }
          finalDelay();

@@ -247,8 +247,10 @@ ShoreSensorState getForceState()                 { return force_state; }
 void normalizeSensor(ModelBase mdl)
 {
    if (tower_id < 0 || tower_index < 0) {
-      mdl.noteError("Sensor " + getId() + " " + tower_id + " " + tower_index + 
-            "is bad");
+      if (force_state == null) {
+         mdl.noteError("Sensor " + getId() + " " + tower_id + " " + tower_index + 
+               " has bad tower id or index");
+       }
     }
 }
 

@@ -65,6 +65,7 @@ import edu.brown.cs.spr.shore.iface.IfaceSpeedZone;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.shore.ShoreException;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
+import edu.brown.cs.spr.shore.train.TrainFactory;
 import javafx.application.Platform;
 
 public class ModelBase implements ModelConstants, IfaceModel
@@ -93,7 +94,7 @@ public static void main(String [] args)
    
    File f1 = new File(System.getProperty("user.home"));
    File f2 = new File(f1,"shore.report");
-   mb.createReport(f2);
+   mb.createReport(f2,null);
 }
 
 
@@ -1118,6 +1119,7 @@ private void checkModel() throws ShoreException
    
    Set<Integer> done = new HashSet<>();
    for (ModelSensor sen : model_sensors.values()) {
+      if (sen.getTowerId() < 0) continue;
       int idx = sen.getTowerId() * 1024 + sen.getTowerSensor();
       if (!done.add(idx)) {
          noteError("Sensor tower conflict for " + sen.getId());
@@ -1165,7 +1167,7 @@ private void checkModel() throws ShoreException
 /*                                                                              */
 /********************************************************************************/
 
-public void createReport(File output)
+public void createReport(File output,TrainFactory tf)
 {
    PrintStream ps = System.out;
    try {
@@ -1185,7 +1187,10 @@ public void createReport(File output)
    outputSignals(ps);
    outputConnections(ps);
    outputSpeedZones(ps);
-   outputTowers(ps);
+   if (tf != null) tf.outputTrains(ps);
+   outputTowers(ps); 
+   
+   if (output != null) ps.close();
 }
 
 
@@ -1214,7 +1219,7 @@ private void outputSwitches(PrintStream ps)
 
 private void outputSignals(PrintStream ps)
 {
-   ps.println("SIGNALS:");
+   ps.println("SIGNALS:\n");
    for (ModelSignal sg : model_signals.values()) {
       if (sg.getModelStopSensors() == null) continue;
       ps.println("   Signal " + sg.getId() + "  " + sg.getSignalType() + 
@@ -1246,7 +1251,7 @@ private void outputSignals(PrintStream ps)
 
 private void outputConnections(PrintStream ps)
 {
-   ps.println("CONNECTIONS:");
+   ps.println("CONNECTIONS:\n");
    for (ModelConnection conn : block_connections) {
       ModelBlock fblk = conn.getFromBlock();
       ModelBlock tblk = conn.getOtherBlock(fblk); 
@@ -1274,7 +1279,7 @@ private void outputConnections(PrintStream ps)
       if (sw0 != null) {
          ps.print(" " + sw0 + " = " + conn.getExitSwitchState(tblk));
        }
-      ps.println();
+      ps.println("\n");
     }
    ps.println("\f"); 
 }
@@ -1283,6 +1288,7 @@ private void outputConnections(PrintStream ps)
 private void outputSpeedZones(PrintStream ps)
 {
    if (speed_zones != null && !speed_zones.isEmpty()) {
+      ps.println("SPEED ZONES:\n");
       for (ModelSpeedZone sz : speed_zones) {
          ps.println("SPEED ZONE");
          if (sz.getStartSensor() != null) {
@@ -1290,7 +1296,16 @@ private void outputSpeedZones(PrintStream ps)
             ps.println("    TO:   " + sz.getEndSensors()); 
           }
          else {
-            ps.println("    BLOCKS: " + sz.getBlocks());
+            ps.print("    BLOCKS: ");
+            int ct = 0;
+            for (IfaceBlock blk : sz.getBlocks()) {
+               if (ct++ == 3) {
+                  ps.print("\n            ");
+                  ct = 0;
+                }
+               ps.print(blk);
+             }
+            ps.println();
           }
          ps.print("    WITH:");
          int ct = 0;
@@ -1336,7 +1351,11 @@ private void outputTowers(PrintStream ps)
              }
           }
        }
-      ps.println("TOWER " + i);
+      
+      if (i != 0) {
+         ps.println("\f");
+       }
+      ps.println("\n\nTOWER " + i);
       ps.println("   SENSORS: ");
       for (Map.Entry<Byte,ModelSensor> ent : senmap.entrySet()) {
          ModelSensor ms = ent.getValue();
@@ -1372,7 +1391,6 @@ private void outputTowers(PrintStream ps)
             ps.println();
           }
        }
-      ps.println("\f");
     }
 }
 

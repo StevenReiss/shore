@@ -522,10 +522,6 @@ boolean hasSavedThrottle(ShoreSlowReason reason)
   
 
 
-
-
-
-
 /********************************************************************************/
 /*                                                                              */
 /*      Block tracking methods                                                  */
@@ -568,10 +564,21 @@ void setCurrentPoints(IfacePoint cur,IfacePoint prior)
 {
    current_point = cur;
    prior_point = prior;
-   enterBlock(cur.getBlock());
+   if (cur != null) {
+      enterBlock(cur.getBlock());
+    }
    fireEnginePositionChanged();
 }
 
+
+@Override public void setNotPresent()
+{
+   if (current_point != null) {
+      exitBlock(current_point.getBlock());
+    }
+   current_point = null;
+   fireEnginePositionChanged();
+}
 
 
 

@@ -35,6 +35,7 @@
 
 package edu.brown.cs.spr.shore.train;
 
+import java.io.PrintStream;
 import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.HashMap;
@@ -203,6 +204,22 @@ private void loadTrains()
          eng.setNoRearLight(); 
        }
     }
+}
+
+
+public void outputTrains(PrintStream ps)
+{
+   ps.println("TRAINS:\n");
+   
+   for (IfaceEngine eng : getAllEngines()) {
+      ps.println("ENGINE " + eng.getEngineId());
+      ps.println("    NAME:  " + eng.getEngineName());
+      ps.println("    COLOR: " + eng.getEngineColor());
+      ps.println();
+      ps.println();
+    }
+   
+   ps.println("\f");
 }
 
 

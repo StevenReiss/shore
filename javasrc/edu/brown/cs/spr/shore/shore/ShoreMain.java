@@ -36,6 +36,7 @@
 package edu.brown.cs.spr.shore.shore;
 
 import java.io.File;
+import java.util.Date;
 
 import edu.brown.cs.spr.shore.model.ModelBase;
 import edu.brown.cs.spr.shore.network.NetworkMonitor;
@@ -108,13 +109,14 @@ private ShoreMain(String [] args)
 
 private void process()
 {
-   ShoreLog.logD("SHORE","STARTING with " + model_file);
+   ShoreLog.logD("SHORE","STARTING with " + model_file + " at " + (new Date()));
    
    model_base = new ModelBase(model_file); 
-   if (report_file != null) {
-      model_base.createReport(report_file); 
-    }
    train_base = new TrainFactory(model_base); 
+   
+   if (report_file != null) {
+      model_base.createReport(report_file,train_base);   
+    }
    network_monitor = new NetworkMonitor(model_base,train_base);
    train_base.setNetworkModel(network_monitor);
    

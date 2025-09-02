@@ -181,6 +181,7 @@ private boolean sendDefSensor(IfaceSensor sen)
    if (sen.getTowerSensor() < 0) return false;
    
    int id = sen.getTowerId();
+   if (id < 0) return false;
    ControllerInfo ci = id_map.get(id);
    if (ci == null) return false;
    
