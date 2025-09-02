@@ -199,6 +199,44 @@ void addSignal(ModelSignal sig)
 
 ShoreSensorState getForceState()                 { return force_state; }
 
+@Override public byte getDefinitionCode()
+{
+   if (tower_index < 0) return 0;
+   
+   IfaceSwitch sw = null;
+   ShoreSwitchState state = ShoreSwitchState.UNKNOWN;
+   if (n_switch!= null && n_switch.getTowerId() == tower_id) {
+      sw = n_switch;
+      state = ShoreSwitchState.N;
+    }
+   else if (r_switch != null && r_switch.getTowerId() == tower_id) {
+      sw = r_switch;
+      state = ShoreSwitchState.R;
+    } 
+   int code = 0;
+   if (sw != null && state != ShoreSwitchState.UNKNOWN) {
+      code = sw.getTowerSwitch() * 2 + state.ordinal();
+      int idx1 = sw.getTowerRSwitch();
+      if (state == ShoreSwitchState.R && idx1 >= 0) {
+         code = idx1 * 2 + ShoreSwitchState.N.ordinal();
+       }
+    }
+   else {
+      code = 3 * 2;
+    }
+   
+   if (is_ignored || force_state != null) {
+      code += ShoreSensorRange.IGNORE.ordinal() * 8; 
+    }
+   else {
+      code += getSensorRange().ordinal() * 8;
+    }
+   code &= 0xff;
+   
+   return (byte) code;
+}
+
+
 
 /********************************************************************************/
 /*                                                                              */

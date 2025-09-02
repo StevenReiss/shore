@@ -72,6 +72,7 @@ interface PlanExecutable {
    PlanAction getStepAction(int i);
    int getStepCount(int i);
    IfaceEngine getEngine();
+   boolean isPaused();
 }
 
 
@@ -79,6 +80,7 @@ interface PlanCallback extends EventListener {
    default void planStarted(PlanExecutable p)                                   { }
    default void planStepStarted(PlanExecutable p,PlanAction act)                { }
    default void planStepCompleted(PlanExecutable p,PlanAction act,int ct)       { }
+   default void planPaused(PlanExecutable p,boolean paused)                     { }
    default void planCompleted(PlanExecutable p,boolean abort)                   { }
 }
 

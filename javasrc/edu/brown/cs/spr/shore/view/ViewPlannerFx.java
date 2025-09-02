@@ -658,6 +658,11 @@ private final class PlanViewer extends VBox implements PlanCallback {
       plan_executable.removePlanCallback(this);
     }
    
+   @Override public void planPaused(PlanExecutable p,boolean paused) {
+      if (paused) pause_button.setText("Resume");
+      else pause_button.setText("Pause");
+    }
+   
 }       // end of inner class PlanViewer
 
 

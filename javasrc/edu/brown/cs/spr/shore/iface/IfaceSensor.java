@@ -121,6 +121,12 @@ byte getTowerId();
  **/
 byte getTowerSensor();
 
+ 
+/**
+ *      Get the definition code to send to the tower
+ **/
+byte getDefinitionCode();
+
 }       // end of interface IfaceSensor
 
 

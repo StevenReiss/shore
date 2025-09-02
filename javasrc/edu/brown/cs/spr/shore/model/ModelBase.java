@@ -1290,12 +1290,17 @@ private void outputSpeedZones(PrintStream ps)
             ps.println("    TO:   " + sz.getEndSensors()); 
           }
          else {
-            ps.print("     BLOCKS: " + sz.getBlocks());
+            ps.println("    BLOCKS: " + sz.getBlocks());
           }
          ps.print("    WITH:");
+         int ct = 0;
          for (IfaceSensor s : sz.getZoneSensors()) {
             if (s == sz.getStartSensor()) continue;
             if (sz.isEndSensor(s)) continue;
+            if (ct++ == 5) {
+               ps.print("\n         ");
+               ct = 1;
+             }
             ps.print(" " + s);
           }
          ps.println();
@@ -1342,6 +1347,7 @@ private void outputTowers(PrintStream ps)
          if (ent.getValue().getForceState() != null) {
             ps.print(" (" + ent.getValue().getForceState() + ")");
           }
+         ps.print(" {" + ms.getDefinitionCode() + "}");
          ps.println();
        }
       if (!sigmap.isEmpty()) {

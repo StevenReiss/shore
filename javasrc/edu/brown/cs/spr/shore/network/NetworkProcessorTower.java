@@ -183,45 +183,10 @@ private boolean sendDefSensor(IfaceSensor sen)
    int id = sen.getTowerId();
    ControllerInfo ci = id_map.get(id);
    if (ci == null) return false;
-   IfaceSwitch sw = null;
-   ShoreSwitchState state = ShoreSwitchState.UNKNOWN;
-   for (IfaceSwitch sw1 : layout_model.getSwitches()) {
-      if (sw1.getTowerId() == id) {
-         if (sw1.getNSensor() == sen) {
-            sw = sw1;
-            state = ShoreSwitchState.N;
-            break;
-          }
-         else if (sw1.getRSensor() == sen) {
-            sw = sw1;
-            state = ShoreSwitchState.R;
-            break;
-          }
-       }
-    }
    
+   byte code = sen.getDefinitionCode();
    
-// int s = 64;
-// if (sw != null && state != ShoreSwitchState.UNKNOWN) {
-//    s = sw.getTowerSwitch() * 4 + state.ordinal();
-//    int idx1 = sw.getTowerRSwitch();
-//    if (state == ShoreSwitchState.R && idx1 >= 0) {
-//       s = idx1 * 4 + ShoreSwitchState.N.ordinal();
-//     }
-//  }
-// if (sen.getSensorRange() == ShoreSensorRange.HIGH) s |= 128;
-// ci.sendDefSensorMessage(sen.getTowerSensor(),s);
-   
-   int s1 = 3*2;
-   if (sw !=null && state != ShoreSwitchState.UNKNOWN) {
-      s1 = sw.getTowerSwitch() * 2 + state.ordinal();
-      int idx1 = sw.getTowerRSwitch();
-      if (state == ShoreSwitchState.R && idx1 >= 0) {
-         s1 = idx1 * 2 + ShoreSwitchState.N.ordinal();
-       }
-    }
-   s1 += sen.getSensorRange().ordinal() * 8;
-   ci.sendDefSensorMessage(sen.getTowerSensor(),s1);
+   ci.sendDefSensorMessage(sen.getTowerSensor(),code);
    
    return true;
 }

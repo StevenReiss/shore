@@ -109,8 +109,13 @@ enum ShoreSwitchState {
  ***/
 enum ShoreSensorRange {
    NORMAL,                      // 1000 - 2500
-   HIGH,                        // 3000 - 4000 ?
+   HIGH,                        // 3000 - 3950
    LOW,                         // 200 - 500
+   R3,
+   R4,
+   R5,
+   R6,
+   IGNORE,                      // ignore the sesnor
 }
 
 

@@ -67,7 +67,7 @@ class PlannerPlan implements PlanExecutable, PlannerConstants
 
 private List<PlanStep> plan_steps;
 private SwingEventListenerList<PlanCallback> plan_listeners; 
-private IfaceModel layout_model;
+private IfaceModel layout_model; 
 private IfaceSafety safety_model;
 private boolean    abort_plan;
 private IfaceEngine for_engine;
@@ -127,6 +127,7 @@ PlannerPlan(IfaceSafety safety,IfaceModel layout,IfaceTrains tm,IfaceEngine eng)
 IfaceModel getLayoutModel()                     { return layout_model; }
 IfaceSafety getSafetyModel()                    { return safety_model; }
 @Override public IfaceEngine getEngine()        { return for_engine; } 
+@Override public boolean isPaused()             { return pause_plan; } 
 
 @Override public int getNumberOfSteps()        { return plan_steps.size(); }
 @Override public PlanAction getStepAction(int i)      
@@ -187,6 +188,7 @@ IfaceSafety getSafetyModel()                    { return safety_model; }
       pause_plan = true;
       notifyAll();
     }
+   firePlanPaused();
 }
 
 
@@ -203,6 +205,7 @@ IfaceSafety getSafetyModel()                    { return safety_model; }
     }
    for_engine.setThrottle(pause_throttle);
    pause_throttle = 0.0;
+   firePlanPaused();
 }
 
 
@@ -420,6 +423,14 @@ void firePlanStepCompleted(PlannerActionBase act,int ct)
 {
    for (PlanCallback cb : plan_listeners) {
       cb.planStepCompleted(this,act,ct); 
+    }
+}
+
+
+void firePlanPaused()
+{
+   for (PlanCallback cb : plan_listeners) {
+      cb.planPaused(this,pause_plan);
     }
 }
 
