@@ -464,6 +464,7 @@ private final class EngineChanged implements IfaceEngine.EngineCallback {
    
    @Override public void enginePositionChanged(IfaceEngine eng) {
       IfacePoint pt = eng.getCurrentPoint();
+      if (pt == null) return;
       if (pt.getType() == ShorePointType.SIGNAL) {
          PlanAction tgt = train_planner.getStartAction();
          if (tgt == null || tgt.getSignal() == null) return;
