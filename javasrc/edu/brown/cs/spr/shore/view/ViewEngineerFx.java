@@ -63,6 +63,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
@@ -669,6 +670,7 @@ private class FrontLightToggle extends IconToggle implements EventHandler<Action
    
    FrontLightToggle() {
       super("Front","light");
+      setContentDisplay(ContentDisplay.TOP);
     }
    
    @Override public void handle(ActionEvent evt) {
@@ -686,6 +688,7 @@ private class RearLightToggle extends IconToggle implements EventHandler<ActionE
    
    RearLightToggle() {
       super("Rear","light");
+      setContentDisplay(ContentDisplay.TOP);
     }
    
    @Override public void handle(ActionEvent evt) {
