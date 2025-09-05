@@ -225,6 +225,12 @@ void setNoRearLight()                                   { has_rear_light = false
     }
    else {
       ShoreLog.logD("TRAIN","Throttle overridden " + saved_throttle);
+      double th = v;
+      for (Map.Entry<ShoreSlowReason,Double> ent : saved_throttle.entrySet()) {
+         if (ent.getKey() == ShoreSlowReason.ESTOP) continue;
+         th = Math.min(th,ent.getValue());
+       }
+      train_factory.getNetworkModel().sendThrottle(this,v);
     }
 }
 

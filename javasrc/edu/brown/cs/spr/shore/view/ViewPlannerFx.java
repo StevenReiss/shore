@@ -67,6 +67,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.Spinner;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -502,13 +503,14 @@ private final class EngineChanged implements IfaceEngine.EngineCallback {
 /*                                                                              */
 /********************************************************************************/
 
-private final class PlanViewer extends VBox implements PlanCallback {
+private final class PlanViewer extends StackPane implements PlanCallback {
    
    private PlanExecutable plan_executable;
    private ListView<PlanViewStep> list_view;
    private Button abort_button;
    private Button pause_button; 
    private Button close_button;
+   private Text complete_text;
    private int active_step;
    
    PlanViewer(PlanExecutable pe) {
@@ -543,12 +545,14 @@ private final class PlanViewer extends VBox implements PlanCallback {
     }            
    
    private void setupDisplay() {
+      VBox box = new VBox();
       pause_button = new Button("PAUSE");
       pause_button.setOnAction(new ViewerPause(this));
       abort_button = new Button("ABORT");
       abort_button.setOnAction(new ViewerAbort(this));
       close_button = new Button("CLOSE");
       close_button.setOnAction(new ViewerClose(this));
+      close_button.setVisible(false);
       
       Label title = new Label("Plan for " + plan_executable.getEngine().getEngineName());
       title.setAlignment(Pos.CENTER);
@@ -565,7 +569,13 @@ private final class PlanViewer extends VBox implements PlanCallback {
       buttons.setAlignment(Pos.CENTER);
       buttons.getChildren().addAll(abort_button,pause_button,close_button);
       
-      getChildren().addAll(title,list_view,buttons);
+      complete_text = new Text();
+      complete_text.setFont(Font.font(45.0));
+      complete_text.setRotate(-45.0);
+      complete_text.setVisible(false);
+      
+      box.getChildren().addAll(title,list_view,buttons);
+      getChildren().addAll(box,complete_text);
     }
    
    private ObservableList<PlanViewStep> getSteps() {
@@ -634,7 +644,21 @@ private final class PlanViewer extends VBox implements PlanCallback {
     }
    
    void pausePlan() {
-      ShoreLog.logD("VIEW","Pause plan");
+      if (plan_executable.isPaused()) {
+         plan_executable.resume();
+       }
+      else {
+         plan_executable.pause();
+       }
+    }
+   
+   private void finishPlan(String txt,Color color) {
+      complete_text.setText(txt);
+      complete_text.setFill(color);
+      complete_text.setVisible(true);
+      close_button.setVisible(true);
+      pause_button.setVisible(false);
+      abort_button.setVisible(false);
     }
    
    @Override public void planStarted(PlanExecutable p) { }
@@ -655,7 +679,12 @@ private final class PlanViewer extends VBox implements PlanCallback {
    
    @Override public void planCompleted(PlanExecutable p,boolean abort) {
       plan_executable.removePlanCallback(this);
-      setVisible(false);
+      if (abort) {
+         finishPlan("Aborted",Color.RED);
+       }
+      else {
+         finishPlan("Complete",Color.GREEN);
+       }
     }
    
    @Override public void planPaused(PlanExecutable p,boolean paused) {
@@ -808,6 +837,7 @@ private class ViewerClose implements EventHandler<ActionEvent> {
    
    @Override public void handle(ActionEvent evt) {
       for_viewer.setVisible(false);
+      getChildren().remove(for_viewer);
     }
    
 }       // end of inner class ViewerClose

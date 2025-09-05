@@ -402,6 +402,7 @@ public class ServiceFinder implements ServiceListener, ServiceTypeListener {
     }
 
    @Override public void serviceAdded(ServiceEvent event) {
+      checkService(event);
       ShoreLog.logI("NETWORK","Service added: " + finder_id + "> " + event.getInfo().getName());
     }
 
@@ -410,16 +411,9 @@ public class ServiceFinder implements ServiceListener, ServiceTypeListener {
     }
 
    @Override public void serviceResolved(ServiceEvent event) {
-      ServiceInfo si = event.getInfo();
-      try {
-         tower_processor.handleServiceResolved(si);
-         locofi_processor.handleServiceResolved(si);
-       }
-      catch (Throwable t) {
-         ShoreLog.logE("NETWORK","Problem resolving service",t);
-       }
+      checkService(event);
       ShoreLog.logI("NETWORK","Service resolved: " + finder_id + "> " + event.getInfo() + " " +
-            si.getName());
+            event.getInfo().getName());
     }
    
    @Override public void serviceTypeAdded(ServiceEvent event) {
@@ -428,6 +422,17 @@ public class ServiceFinder implements ServiceListener, ServiceTypeListener {
    
    @Override public void subTypeForServiceTypeAdded(ServiceEvent event) {
       ShoreLog.logI("NETWORK","Service added: " + event);
+    }
+   
+   private void checkService(ServiceEvent evt) {
+      ServiceInfo si = evt.getInfo();
+      try {
+         tower_processor.handleServiceResolved(si);
+         locofi_processor.handleServiceResolved(si);
+       }
+      catch (Throwable t) {
+         ShoreLog.logE("NETWORK","Problem checking service",t);
+       }
     }
    
 }	// end of inner class ServiceFinder
