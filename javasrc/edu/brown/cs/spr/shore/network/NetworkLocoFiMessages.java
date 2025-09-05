@@ -63,6 +63,7 @@ byte [] LOCOFI_QUERY_ABOUT_LOCO_CMD	 = {0x11, 0x00};
 byte [] LOCOFI_EMERGENCY_STOP_CMD	 = {0x12, 0x00};       //the second argument 00 is for stop
 byte [] LOCOFI_EMERGENCY_START_CMD	 = {0x12, 0x01};       //the second argument 01 is for resume
 byte [] LOCOFI_GET_CONSIST_CMD		 = {0x13, 0x00};
+byte [] LOCOFI_CLEAR_CONSIST_CMD         = {0x13, 0x01};
 byte [] LOCOFI_CREATE_CONSIST_LEAD_CMD	 = {0x14, 0x00};
 byte [] LOCOFI_CREATE_CONSIST_HELPER_CMD = {0x14, 0x01};
 byte [] LOCOFI_DELETE_CONSIST_CMD	 = {0x15, 0x00};

@@ -641,7 +641,6 @@ private final class PlanViewer extends VBox implements PlanCallback {
    
    @Override public void planStepStarted(PlanExecutable p,PlanAction act) {
       ShoreLog.logD("VIEW","Plan step started " + act);
-      
       if (checkActive(act,STEP_START)) {
          list_view.refresh();
        }
@@ -649,7 +648,6 @@ private final class PlanViewer extends VBox implements PlanCallback {
    
    @Override public void planStepCompleted(PlanExecutable p,PlanAction act,int ct) {
       ShoreLog.logD("VIEW","Plan step completed " + act + " " + ct);
-      
       if (checkActive(act,ct)) {
          list_view.refresh();
        }
@@ -657,6 +655,7 @@ private final class PlanViewer extends VBox implements PlanCallback {
    
    @Override public void planCompleted(PlanExecutable p,boolean abort) {
       plan_executable.removePlanCallback(this);
+      setVisible(false);
     }
    
    @Override public void planPaused(PlanExecutable p,boolean paused) {

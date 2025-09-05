@@ -1361,7 +1361,7 @@ private void outputTowers(PrintStream ps)
          ModelSensor ms = ent.getValue();
          ps.print("      " + ent.getKey() + ":  " + ms);
          if (ms.getSensorRange() != ShoreSensorRange.NORMAL) {
-            ps.print("("+ ms.getSensorRange() + ")");
+            ps.print(" ("+ ms.getSensorRange() + ")");
           }
          if (ent.getValue().getForceState() != null) {
             ps.print(" (" + ent.getValue().getForceState() + ")");

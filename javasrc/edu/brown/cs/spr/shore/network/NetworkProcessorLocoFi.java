@@ -240,6 +240,7 @@ private EngineInfo setupEngine(SocketAddress sa)
       if (nei != null) ei = nei;
       else {
          ShoreLog.logD("NETWORK","New engine " + ei.getEngineId());
+         ei.sendClearConsist();
          ei.sendQueryAboutMessage();
          IfaceEngine eng = findEngine(ei.getEngineId());
          engine_model.setEngineSocket(eng,sa);
@@ -326,6 +327,7 @@ private final class LocoFiStatusUpdater extends Thread {
       for ( ; ; ) {
          List<EngineInfo> todel = null;
          for (EngineInfo ei : engine_map.values()) {
+            ei.sendHeartbeatMessage(true);
             if (ei.sendQueryStateMessage()) {
                bad_count.remove(ei);
                delay();
@@ -443,7 +445,7 @@ private final class RpmHandler implements MessageHandler {
    
    @Override public void handleMessage(DatagramPacket msg) {
       String msgtxt = decodeMessage(msg.getData(),msg.getOffset(),msg.getLength());
-      ShoreLog.logD("NETWORK","Received RPM from " + msg.getAddress() + " " +
+      ShoreLog.logD("NETWORK","Received FROM from " + msg.getAddress() + " " +
             msg.getPort() + " " + msg.getLength() + " " + msg.getOffset() + ": " +
             msgtxt);
       
@@ -588,6 +590,12 @@ private class EngineInfo {
       eng.setSpeedParameters(startstep,maxstep,ntn,maxdisp,kmph);
       
       return true;
+    }
+   
+   boolean sendClearConsist() {
+      byte [] msg = LOCOFI_CLEAR_CONSIST_CMD;
+      byte [] ack = sendReplyMessage(net_address,msg,0,msg.length);
+      return ack != null;
     }
    
    boolean sendSpeedReportMessage() {

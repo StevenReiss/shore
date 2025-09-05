@@ -514,7 +514,7 @@ boolean waitForBlockEntry(IfaceBlock blk)
              }
             if (engine_block == null) engine_block = atblk;
             if (atblk != engine_block) {
-               ShoreLog.logD("PLANNER","Unexpected block " + atblk + " " +
+               ShoreLog.logE("PLANNER","Unexpected block " + atblk + " " +
                      engine_block + " " + blk);
                return false;
              }
@@ -522,6 +522,7 @@ boolean waitForBlockEntry(IfaceBlock blk)
          else {
             ShoreLog.logD("PLANNER","Engine  " + for_engine.getEngineId() +
                   " has no data");
+            return false;
           }
          try {
             wait(5000);

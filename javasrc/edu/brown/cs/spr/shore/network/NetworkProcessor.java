@@ -120,7 +120,7 @@ protected synchronized void sendMessage(DatagramSocket sock,
       sock.send(packet);
     }
    catch (Throwable e) {
-      ShoreLog.logE("Problem sending packet " + who+ " " + sock,e);
+      ShoreLog.logE("Problem sending packet " + who + " " + sock,e);
     }
 }
 

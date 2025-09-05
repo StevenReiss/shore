@@ -104,29 +104,9 @@ public NetworkMonitor(IfaceModel model,IfaceTrains trains)
       catch (Throwable e) { }
     }
    alt_socket = null;
-   InetAddress useaddr = null;
+   InetAddress useaddr = getWifiInterface();
    
    try {
-      useaddr = InetAddress.getLocalHost();
-      NetworkInterface netif= null;
-      for (int i = 10; i >= 0; --i) {
-         NetworkInterface ni = NetworkInterface.getByIndex(i);
-         if (isWifiInterface(ni)) {
-            netif = ni;
-            break;
-          }
-       }
-      useaddr = InetAddress.getLocalHost();
-      if (useaddr.isLoopbackAddress()) {
-         for (Enumeration<InetAddress> en = netif.getInetAddresses(); en.hasMoreElements(); ) {
-            InetAddress ia1 = en.nextElement();
-            if (ia1 instanceof Inet4Address) {
-               useaddr = ia1;
-               break;
-             }
-          }
-       }
-      
       our_socket = new DatagramSocket(UDP_PORT,useaddr);
       our_socket.setReceiveBufferSize(BUFFER_SIZE);
       our_socket.setReuseAddress(true);
@@ -202,6 +182,41 @@ public NetworkMonitor(IfaceModel model,IfaceTrains trains)
 }
 
 
+private InetAddress getWifiInterface()
+{
+   InetAddress useaddr = null;
+   
+   try {
+      useaddr = InetAddress.getLocalHost();
+      NetworkInterface netif= null;
+      for (int i = 10; i >= 0; --i) {
+         NetworkInterface ni = NetworkInterface.getByIndex(i);
+         if (isWifiInterface(ni)) {
+            netif = ni;
+            break;
+          }
+       }
+      useaddr = InetAddress.getLocalHost();
+      if (useaddr.isLoopbackAddress()) {
+         for (Enumeration<InetAddress> en = netif.getInetAddresses(); en.hasMoreElements(); ) {
+            InetAddress ia1 = en.nextElement();
+            if (ia1 instanceof Inet4Address) {
+               useaddr = ia1;
+               break;
+             }
+          }
+       }
+    }
+   catch (IOException e) {
+      ShoreLog.logE("NETWORK","Can't get network interface",e);
+      System.err.println("Problem with network connection: " + e);
+      System.exit(1);
+    }
+   
+   return useaddr;
+}
+
+
 private boolean isWifiInterface(NetworkInterface ni)
 {
    if (ni == null) return false;
@@ -210,7 +225,6 @@ private boolean isWifiInterface(NetworkInterface ni)
       if (ni.isLoopback()) return false;
       if (!ni.isUp()) return false;
       if (ni.isPointToPoint()) return false;
-      
     }
    catch (SocketException e) {
       return false;
