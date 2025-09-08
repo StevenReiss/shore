@@ -112,6 +112,12 @@ ShoreSensorRange getSensorRange();
 
 
 /**
+ *      Get adjacent sensors
+ **/
+Collection<IfaceSensor> getAdjacentSensors();
+
+
+/**
  *      Get the id of the tower connected to this sensor.  
  **/
 byte getTowerId();

@@ -37,10 +37,12 @@ package edu.brown.cs.spr.shore.train;
 
 import java.io.PrintStream;
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
@@ -253,6 +255,10 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
        }
     }
    
+   @Override public void preSensorChanged(IfaceSensor s) {
+      handlePreSensorChanged(s);
+    }
+   
    @Override public void sensorChanged(IfaceSensor s) {
       ShoreLog.logD("TRAIN","Handle sensor changed " + s);
       handleSensorChanged(s);
@@ -260,6 +266,73 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
          zone_updater.sensorChanged(s);
        }
     }
+   
+   private void handlePreSensorChanged(IfaceSensor s)
+   {
+      if (s.getSensorState() != ShoreSensorState.ON) return;
+      IfaceBlock blk = s.getBlock();
+      
+      // first check if this is a new point or not -- ignore if not
+      TrainData td = train_locations.get(blk);
+      if (td == null) {
+         if (blk.getBlockState() == ShoreBlockState.PENDING) {
+            IfaceBlock bold = blk.getPendingFrom();
+            td = train_locations.get(bold);
+          }
+       }
+      if (td == null || td.seenPoint(s.getAtPoint())) {
+         ShoreLog.logD("TRAIN","Sensor not relevant to skip checking");
+         return;
+       }
+      
+      // next check if this sensor is adjacent to the current sensor for the engine
+      // and just return if so
+      IfacePoint engat = td.getEngine().getCurrentPoint();
+      if (engat == null) return;
+      IfaceSensor engsensor = layout_model.findSensorForPoint(engat);
+      if (engsensor.getAdjacentSensors().contains(s)) {
+         ShoreLog.logD("TRAIN","Sensor is proper successor for engine " + td.getEngine());
+         return;
+       }
+      
+      // finally, get prior sensor and check for a sensor inbetween current and this
+      // that is not in the prior direction
+      
+      IfacePoint engpr = td.getEngine().getPriorPoint();
+      if (engpr.getType() == ShorePointType.GAP) {
+         for (IfacePoint p1 : engpr.getConnectedTo()) {
+            if (p1 == s.getAtPoint()) continue;
+            engpr = p1;
+            break;
+          }
+       }
+      IfaceSensor psensor = layout_model.findSensorForPoint(engpr);
+      if (psensor == null) {
+         ShoreLog.logD("TRAIN","Can't compute skipped sensor without prior one");
+         return;
+       }
+      List<IfaceSensor> skipped = findSkippedSensors(s,engsensor,psensor);
+      for (IfaceSensor skip : skipped) {
+         ShoreLog.logD("TRAIN","SKIPPED SENSOR " + skip);
+         skip.setSensorState(ShoreSensorState.ON);
+         skip.setSensorState(ShoreSensorState.OFF);
+       }
+   }
+   
+   private List<IfaceSensor> findSkippedSensors(IfaceSensor at,IfaceSensor cur,IfaceSensor prior) {
+      List<IfaceSensor> rslt = new ArrayList<>();
+      // for now only look for a single skipped sensor
+      for (IfaceSensor s1 : cur.getAdjacentSensors()) {
+         if (s1 == prior) continue;
+         if (s1 == at) break;
+         for (IfaceSensor s2 : s1.getAdjacentSensors()) {
+            if (s2 == cur || s2 == prior) continue;
+            if (s2 == at) rslt.add(s1);
+          }
+       }
+      return rslt;
+    }
+   
    
    private void handleSensorChanged(IfaceSensor s) {
       if (s.getSensorState() != ShoreSensorState.ON)  return;
@@ -388,6 +461,13 @@ private class TrainData {
       block_points.clear();
       next_block = null;
       exit_signal = null;
+    }
+   
+   boolean seenPoint(IfacePoint cur) {
+      if (cur.getBlock() != active_block) return true;
+      if (block_points.contains(cur)) return true;
+      
+      return false;
     }
    
    void setCurrentPoints(IfacePoint cur,IfacePoint prior) {

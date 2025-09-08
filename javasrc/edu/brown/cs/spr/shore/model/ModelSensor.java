@@ -38,6 +38,8 @@ package edu.brown.cs.spr.shore.model;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Set;
 
 import org.w3c.dom.Element;
@@ -74,6 +76,7 @@ private byte tower_index;
 private ShoreSensorState force_state;
 private boolean is_ignored;
 private ShoreSensorRange sensor_range;
+private Set<IfaceSensor> adjacent_sensors;
 
 
 
@@ -109,6 +112,7 @@ ModelSensor(ModelBase mdl,Element xml)
    sensor_state = ShoreSensorState.UNKNOWN;
    for_signals = new HashSet<>();
    in_connection = null;
+   adjacent_sensors = null;
 }
 
 
@@ -173,6 +177,12 @@ void assignSwitch(ModelSwitch sw,ShoreSwitchState state)
 }
 
 
+@Override public Collection<IfaceSensor> getAdjacentSensors() 
+{
+   return adjacent_sensors;
+}
+
+
 @Override public ShoreSensorState getSensorState()   { return sensor_state; }
 
 @Override public void setSensorState(ShoreSensorState st)
@@ -185,6 +195,10 @@ void assignSwitch(ModelSwitch sw,ShoreSwitchState state)
    ShoreLog.logD("MODEL","Set sensor state " + sensor_id + "=" + st);
    
    sensor_state = st;
+   
+   // trigger any missed intervening sensors
+   for_model.firePreSensorChanged(this);
+   
    for_model.fireSensorChanged(this);
 }
 
@@ -250,6 +264,26 @@ void normalizeSensor(ModelBase mdl)
       if (force_state == null) {
          mdl.noteError("Sensor " + getId() + " " + tower_id + " " + tower_index + 
                " has bad tower id or index");
+       }
+    }
+   
+   adjacent_sensors = new HashSet<>();
+   Queue<ModelPoint> worklist = new LinkedList<>(); 
+   Set<ModelPoint> done = new HashSet<>();
+   ModelPoint p0 = getAtPoint();
+   worklist.add(p0);
+   done.add(p0);
+   while (!worklist.isEmpty()) {
+      ModelPoint mp = worklist.remove();
+      for (ModelPoint next : mp.getModelConnectedTo()) {
+         if (!done.add(next)) continue;
+         ModelSensor ms = mdl.findSensorForPoint(next);
+         if (ms != null) {
+            adjacent_sensors.add(ms);
+          }
+         else {
+            worklist.add(next);
+          }
        }
     }
 }

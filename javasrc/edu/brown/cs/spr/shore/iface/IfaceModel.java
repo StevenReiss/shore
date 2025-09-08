@@ -149,6 +149,13 @@ Set<IfacePoint> findSuccessorPoints(IfacePoint current,
 Set<IfacePoint> findSuccessorPoints(IfacePoint current,IfacePoint entry,
       boolean useswitch);
 
+
+/**
+ *      Find sensor for a givebn point
+ **/
+IfaceSensor findSensorForPoint(IfacePoint pt);
+
+
 /**
  *      Call to note setup error
  **/
@@ -160,6 +167,7 @@ void noteError(String msg);
  *      Callback interface for any changes to model componetns
  **/
 interface ModelCallback extends EventListener {
+   default void preSensorChanged(IfaceSensor sensor)    { }
    default void sensorChanged(IfaceSensor sensor)       { }
    default void switchChanged(IfaceSwitch sw)           { }
    default void signalChanged(IfaceSignal sig)          { }

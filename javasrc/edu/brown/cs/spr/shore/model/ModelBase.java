@@ -226,7 +226,7 @@ Collection<ModelSwitch> getModelSwitches()
 }
 
 
-ModelSensor findSensorForPoint(ModelPoint pt)
+@Override public ModelSensor findSensorForPoint(IfacePoint pt)
 {
    if (pt == null) return null;
    
@@ -547,6 +547,14 @@ void fireSensorChanged(ModelSensor sensor)
     }
    else {
       Platform.runLater(() -> { fireSensorChanged(sensor); });
+    }
+}
+
+
+void firePreSensorChanged(ModelSensor sensor)
+{
+   for (ModelCallback cb : model_listeners) {
+      cb.preSensorChanged(sensor);
     }
 }
 
