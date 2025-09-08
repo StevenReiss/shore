@@ -47,6 +47,7 @@ import org.w3c.dom.Element;
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
+import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
@@ -269,10 +270,12 @@ void normalizeSensor(ModelBase mdl)
    
    adjacent_sensors = new HashSet<>();
    Queue<ModelPoint> worklist = new LinkedList<>(); 
-   Set<ModelPoint> done = new HashSet<>();
+   Set<IfacePoint> done = new HashSet<>();
    ModelPoint p0 = getAtPoint();
-   worklist.add(p0);
-   done.add(p0);
+   if (p0 != null) {
+      worklist.add(p0);    
+      done.add(p0);
+    }
    while (!worklist.isEmpty()) {
       ModelPoint mp = worklist.remove();
       for (ModelPoint next : mp.getModelConnectedTo()) {
@@ -283,6 +286,15 @@ void normalizeSensor(ModelBase mdl)
           }
          else {
             worklist.add(next);
+          }
+         if (next.getType() == ShorePointType.SWITCH) {
+            IfaceSwitch sw = mdl.findSwitchForPoint(next);
+            if (done.contains(sw.getNSensor().getAtPoint())) {
+               done.add(sw.getRSensor().getAtPoint());
+             }
+            else if (done.contains(sw.getRSensor().getAtPoint())) {
+               done.add(sw.getNSensor().getAtPoint());
+             }
           }
        }
     }
