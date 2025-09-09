@@ -328,11 +328,8 @@ private ControllerInfo findController(SocketAddress sa)
       //    ci.setId(id);
     }
    else if (ci != ci1 && ci1 != null) {
-      ShoreLog.logE("NETWORK","Conflicing controllers for " + id);
-    }
-   
-   if (needsSync(data[0])) {
-      ci.sendReply(1);
+      ShoreLog.logE("NETWORK","Conflicting controllers for " + id + " " + ci + " " + 
+            ci1 + " " + sa);
     }
    
    switch (data[0]) {
@@ -384,8 +381,18 @@ private boolean needsSync(byte cmd)
       case CONTROL_SENSOR_SYNC :
          return true;
     }
-   
    return false;
+}
+
+@Override protected void checkSync(DatagramPacket packet)  
+{
+   byte [] data = packet.getData();
+   if (!needsSync(data[0])) return;
+   SocketAddress sa = packet.getSocketAddress();
+   ControllerInfo ci = findController(sa);
+   if (ci != null) {
+      ci.sendReply(data[2],data[3]);
+    }
 }
 
 /********************************************************************************/
@@ -485,10 +492,13 @@ private class ControllerInfo {
       if (id != controller_id) {
          setId(id);
          id_map.put(id,this);
-         ShoreLog.logD("NETWORK","Assign id to controller " + id + " " + first);
+         ShoreLog.logD("NETWORK","Assign id to controller " + id + " " + 
+               first + " " + this);
          first = 1;
        }
       else if (id_map.get(id) != this) {
+         ShoreLog.logE("NETWORK","Wrong controller for id " + id + " " +
+               this + " " +id_map);
          id_map.put(id,this);
          first = 1;
        }
@@ -516,6 +526,7 @@ private class ControllerInfo {
        }
       if (now - last_heartbeat > HEARTBEAT_TIME) { 
          int val = (int) controller_id;
+         ShoreLog.logD("NETWORK","Controller time out " + this);
          id_map.remove(val);
          setToUnknown();
          controller_id = -1;
@@ -525,7 +536,10 @@ private class ControllerInfo {
       return true;
     }
    
-   void setId(int id)                                   { controller_id = (byte) id; }
+   void setId(int id) {
+      ShoreLog.logD("NETWORK","Set controller id " + id + " " + this);
+      controller_id = (byte) id;
+    }
    
    void sendSyncMessage() {
       byte [] msg = { CONTROL_SYNC, MESSAGE_ALL, 0, 0 };
@@ -562,9 +576,13 @@ private class ControllerInfo {
       sendMessage(net_address,msg,0,4);
     }
    
-   void sendReply(int val) {
-      byte [] msg = { CONTROL_REPLY, controller_id, (byte) val, 0  };
+   void sendReply(int val1,int val2) {
+      byte [] msg = { CONTROL_REPLY, controller_id, (byte) val1, (byte) val2 };
       sendMessage(net_address,msg,0,4);
+    }
+   
+   @Override public String toString() {
+      return "CONTROLLER[" + controller_id + ":" + net_address + "]";
     }
     
 }       // end of inner class ControllerInfo

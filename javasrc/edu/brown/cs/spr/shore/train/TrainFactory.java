@@ -234,6 +234,12 @@ public void outputTrains(PrintStream ps)
 
 private final class TrainModelUpdater implements IfaceModel.ModelCallback {
    
+   private Map<IfaceSensor,List<IfaceSensor>> turn_offs;
+   
+   TrainModelUpdater() {
+      turn_offs = new HashMap<>();
+    }
+   
    @Override public void blockChanged(IfaceBlock blk) {
       ShoreLog.logD("TRAIN","Train block changed " + blk);
       
@@ -272,16 +278,26 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
       if (s.getSensorState() != ShoreSensorState.ON) return;
       IfaceBlock blk = s.getBlock();
       
+      ShoreLog.logD("TRAIN","Check for skipped sensor " + s + " " + blk);
+      
       // first check if this is a new point or not -- ignore if not
       TrainData td = train_locations.get(blk);
       if (td == null) {
-         if (blk.getBlockState() == ShoreBlockState.PENDING) {
+         for (TrainData td1 : train_locations.values()) {
+            if (td1.getNextBlock() == blk) {
+               ShoreLog.logD("TRAIN","Check skipped location " + blk + " " + td1.getNextBlock());
+               td = td1;
+               break;
+             }
+          }
+         if (td == null && blk.getBlockState() == ShoreBlockState.PENDING) {
             IfaceBlock bold = blk.getPendingFrom();
+            ShoreLog.logD("TRAIN","SKIP check previous block " + blk + " " + bold);
             td = train_locations.get(bold);
           }
        }
       if (td == null || td.seenPoint(s.getAtPoint())) {
-         ShoreLog.logD("TRAIN","Sensor not relevant to skip checking");
+         ShoreLog.logD("TRAIN","Sensor not relevant to skip checking " + td);
          return;
        }
       
@@ -302,6 +318,7 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
       if (engpr.getType() == ShorePointType.GAP) {
          for (IfacePoint p1 : engpr.getConnectedTo()) {
             if (p1 == s.getAtPoint()) continue;
+            if (p1 == engat) continue;
             engpr = p1;
             break;
           }
@@ -311,11 +328,18 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
          ShoreLog.logD("TRAIN","Can't compute skipped sensor without prior one");
          return;
        }
+      
+      ShoreLog.logD("TRAIN","Find SKIPPED sensors " + s + " " + engsensor + " " + psensor);
       List<IfaceSensor> skipped = findSkippedSensors(s,engsensor,psensor);
       for (IfaceSensor skip : skipped) {
          ShoreLog.logD("TRAIN","SKIPPED SENSOR " + skip);
+         List<IfaceSensor> offs = turn_offs.get(s);
+         if (offs == null) {
+            offs = new ArrayList<>();
+            turn_offs.put(s,offs);
+          }
+         offs.add(s);
          skip.setSensorState(ShoreSensorState.ON);
-         skip.setSensorState(ShoreSensorState.OFF);
        }
    }
    
@@ -335,6 +359,14 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
    
    
    private void handleSensorChanged(IfaceSensor s) {
+      // turn off any skipped sensors -- possibly only do if s is now off
+      List<IfaceSensor> offs = turn_offs.remove(s);
+      if (offs != null) {
+         for (IfaceSensor s1 : offs) {
+            s1.setSensorState(ShoreSensorState.OFF);
+          }
+       }
+      
       if (s.getSensorState() != ShoreSensorState.ON)  return;
       IfaceBlock blk = s.getBlock();
       TrainData td = train_locations.get(blk);
@@ -452,6 +484,7 @@ private class TrainData {
    
    TrainEngine getEngine()                      { return for_engine; }
    IfaceBlock getBlock()                        { return active_block; }
+   IfaceBlock getNextBlock()                    { return next_block; }
    
    void setBlock(IfaceBlock blk) {
       ShoreLog.logD("TRAIN","Associate train " + for_engine.getEngineId() + 

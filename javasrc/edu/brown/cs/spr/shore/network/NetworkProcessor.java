@@ -44,6 +44,8 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.jmdns.ServiceInfo;
 
@@ -125,6 +127,10 @@ protected synchronized void sendMessage(DatagramSocket sock,
 }
 
 
+
+protected void checkSync(DatagramPacket packet)                 { }
+
+
 @SuppressWarnings("unchecked")
 protected <T extends Enum<T>> T getState(int v,T dflt)
 {
@@ -191,6 +197,48 @@ protected void startReader(DatagramSocket ds,MessageHandler hdlr)
 }
 
 
+
+/********************************************************************************/
+/*                                                                              */
+/*      Processing thread                                                       */
+/*                                                                              */
+/********************************************************************************/
+
+private final class MessageThread extends Thread {
+
+   private MessageHandler message_handler;
+   private BlockingQueue<DatagramPacket> message_queue;
+   
+   MessageThread(MessageHandler handler) {
+      super("UDP_MESSAGE_PROCESSOR");
+      message_handler = handler;
+      message_queue = new LinkedBlockingQueue<DatagramPacket>();
+    }
+   
+   void processMessage(DatagramPacket packet) {
+      String msgtxt = decodeMessage(packet.getData(),packet.getOffset(),packet.getLength());
+      ShoreLog.logD("NETWORK","Queue message from " + packet.getAddress() + " " +
+            packet.getPort() + ": " + msgtxt);
+      message_queue.offer(packet);
+    }
+   
+   @Override public void run() {
+      for ( ; ; ) {
+         try {
+            DatagramPacket packet = message_queue.take();
+            message_handler.handleMessage(packet);
+          }
+         catch (InterruptedException e) { }
+         catch (Throwable t) {
+            ShoreLog.logE("NETWORK","Problem processing message",t);
+          }
+        
+       }
+    }
+   
+}       // end of inner class MessageThread
+
+
 /********************************************************************************/
 /*                                                                              */
 /*      Reader Thread                                                           */
@@ -201,21 +249,30 @@ private class ReaderThread extends Thread {
 
    private DatagramSocket reader_socket;
    private MessageHandler message_handler;
+   private MessageThread message_thread;
    
    ReaderThread(DatagramSocket s,MessageHandler hdlr) {
       super("UDP_READER_" + s.getLocalPort());
       reader_socket = s;
-      message_handler = hdlr;
       if (hdlr == null) hdlr = NetworkProcessor.this;
+      message_handler = hdlr;
+      message_thread = new MessageThread(message_handler);
+      message_thread.start();
     }
    
    @Override public void run() {
-      byte [] buf = new byte[BUFFER_SIZE];
-      DatagramPacket packet = new DatagramPacket(buf,buf.length);
       while (reader_socket != null) {
+         byte [] buf = new byte[BUFFER_SIZE];
+         DatagramPacket packet = new DatagramPacket(buf,buf.length);
          try {
             reader_socket.receive(packet);
-            message_handler.handleMessage(packet);
+            checkSync(packet);
+            if (message_thread != null) {
+               message_thread.processMessage(packet);
+             }
+            else {
+               message_handler.handleMessage(packet);
+             }
           }
          catch (SocketTimeoutException e) { }
          catch (IOException e) {

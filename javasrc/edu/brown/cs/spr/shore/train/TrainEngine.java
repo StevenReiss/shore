@@ -352,7 +352,8 @@ void setNoRearLight()                                   { has_rear_light = false
    Double v = saved_throttle.get(reason);
    
    ShoreLog.logD("TRAIN","SLOW TRAIN " + getEngineId() + " " +
-         reason + " " + speed + " " + engine_throttle + " " + v + " " + throttle);
+         reason + " " + speed + " " + engine_throttle + " " + v + " " + throttle + " " +
+         saved_throttle);
    
    if (v != null) {
       ShoreLog.logD("TRAIN","Train already slowed");
@@ -442,9 +443,11 @@ boolean hasSavedThrottle(ShoreSlowReason reason)
    if (v0 < 0) return;
    if (havedflt && saved_throttle.size() == 1) {
       // only default -- remove it
-      saved_throttle.clear();
+      // or perhaps not -- seems to be set incorrectly latter?
+//    saved_throttle.clear();
     }
    
+   ShoreLog.logD("TRAIN","Set resumed throttle to " + v0);
    train_factory.getNetworkModel().sendThrottle(this,v0);
 }
 
