@@ -269,7 +269,12 @@ private synchronized byte [] sendReplyMessage(SocketAddress who,byte[] msg,int o
    ReplyHandler rh = new ReplyHandler();
    reply_map.put(who,rh);
    sendMessage(who,msg,off,len);
-   return rh.getReply();
+   
+   byte[] reply = rh.getReply();
+   if (reply == null) {
+      ShoreLog.logE("NETWORK","No reply received from " + who + " " + msg[0]);
+    }
+   return reply;
 }
 
 
@@ -413,9 +418,6 @@ private final class ReplyHandler {
             catch (InterruptedException e) { }
             is_done = true;
           }
-       }
-      if (reply_data == null) {
-         ShoreLog.logE("NETWORK","No reply recieved");
        }
       return reply_data;
     }

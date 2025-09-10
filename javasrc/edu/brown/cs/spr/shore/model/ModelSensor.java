@@ -169,6 +169,7 @@ void assignSwitch(ModelSwitch sw,ShoreSwitchState state)
 
 @Override  public IfaceBlock getBlock()         
 {
+   if (sensor_point == null) return null;
    return sensor_point.getBlock();
 }  
 

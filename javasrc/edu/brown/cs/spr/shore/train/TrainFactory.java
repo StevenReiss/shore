@@ -315,7 +315,7 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
       // that is not in the prior direction
       
       IfacePoint engpr = td.getEngine().getPriorPoint();
-      if (engpr.getType() == ShorePointType.GAP) {
+      if (engpr != null && engpr.getType() == ShorePointType.GAP) {
          for (IfacePoint p1 : engpr.getConnectedTo()) {
             if (p1 == s.getAtPoint()) continue;
             if (p1 == engat) continue;
@@ -338,7 +338,7 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
             offs = new ArrayList<>();
             turn_offs.put(s,offs);
           }
-         offs.add(s);
+         offs.add(skip);
          skip.setSensorState(ShoreSensorState.ON);
        }
    }
@@ -361,17 +361,38 @@ private final class TrainModelUpdater implements IfaceModel.ModelCallback {
    private void handleSensorChanged(IfaceSensor s) {
       // turn off any skipped sensors -- possibly only do if s is now off
       List<IfaceSensor> offs = turn_offs.remove(s);
+      ShoreLog.logD("TRAIN","Turn off skipped sensors for " + s + " " + offs);
       if (offs != null) {
          for (IfaceSensor s1 : offs) {
             s1.setSensorState(ShoreSensorState.OFF);
           }
        }
       
-      if (s.getSensorState() != ShoreSensorState.ON)  return;
       IfaceBlock blk = s.getBlock();
       TrainData td = train_locations.get(blk);
       ShoreLog.logD("TRAIN","Train sensor changed " + s + " " + s.getSensorState() + " " +
             blk + " " + td);
+      
+      if (s.getSensorState() != ShoreSensorState.ON) {
+         if (blk.getBlockState() != ShoreBlockState.INUSE) return;
+         if (td != null && td.getBlock() == blk) return;
+         for (IfaceSensor s1 : layout_model.getSensors()) {
+            if (s1.getAtPoint() == null) continue;
+            if (s1.getBlock() == blk && s1.getSensorState() != ShoreSensorState.OFF) {
+               return;
+             }
+          }
+         ShoreLog.logD("TRAIN","Check RESET Block state " + blk + " " + s + " " +
+               (td != null));
+         if (td != null) {
+            ShoreLog.logD("TRAIN","Block states " + td.getBlock() + " " +
+                  td.getPriorBlock() + " " + td.getNextBlock() + " " + " " +
+                  td.getEngine() + " " + blk.getBlockState());
+          }
+         
+         return;
+       }
+      
       if (td == null) {
          IfaceConnection conn = s.getConnection();
          ShoreLog.logD("TRAIN","Use connection " + conn);
@@ -485,6 +506,7 @@ private class TrainData {
    TrainEngine getEngine()                      { return for_engine; }
    IfaceBlock getBlock()                        { return active_block; }
    IfaceBlock getNextBlock()                    { return next_block; }
+   IfaceBlock getPriorBlock()                   { return prior_block; }
    
    void setBlock(IfaceBlock blk) {
       ShoreLog.logD("TRAIN","Associate train " + for_engine.getEngineId() + 

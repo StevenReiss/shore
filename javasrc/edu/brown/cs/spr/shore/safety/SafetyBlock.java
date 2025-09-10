@@ -330,7 +330,9 @@ private class BlockData {
          safety_factory.schedule(new VerifyTask(this),VERIFY_DELAY);
        }
       
-      for_block.setBlockState(ShoreBlockState.INUSE);
+      if (s.getSensorState() == ShoreSensorState.ON) {
+         for_block.setBlockState(ShoreBlockState.INUSE);
+       }
       
       return hit_sensors.add(s); 
     }
