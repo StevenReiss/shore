@@ -55,7 +55,8 @@ import edu.brown.cs.spr.shore.iface.IfaceTrains;
 import edu.brown.cs.spr.shore.iface.IfaceModel.ModelCallback;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
 import javafx.application.Platform;
-import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
@@ -93,7 +94,7 @@ import javafx.scene.text.TextAlignment;
 import javafx.util.Duration;
 
 
-class ViewDiagramFx extends Pane implements ViewConstants {
+          class ViewDiagramFx extends Pane implements ViewConstants {
 
 
 /********************************************************************************/
@@ -106,9 +107,9 @@ private ViewFactory			 view_factory;
 private IfaceDiagram			 for_diagram;
 private IfaceTrains			 for_trains;
 private Rectangle2D			 display_bounds;
-private boolean				 invert_y;
+private boolean	                 invert_display;
 private double				 scale_value;
-private List<List<IfacePoint>>		 line_segments;
+private List<List<IfacePoint>>		 line_segments; 
 private Map<IfaceSwitch, SwitchDrawData> switch_map;
 private Map<IfaceSignal, SignalDrawData> signal_map;
 private Map<IfaceSensor, SensorDrawData> sensor_map;
@@ -176,7 +177,7 @@ ViewDiagramFx(ViewFactory fac,IfaceDiagram dgm,IfaceTrains trains)
    view_factory = fac;
    for_diagram = dgm;
    for_trains = trains;
-   invert_y = false;
+   invert_display = dgm.invertDisplay();
    double minx = Integer.MAX_VALUE;
    double maxx = 0;
    double miny = Integer.MAX_VALUE;
@@ -408,6 +409,12 @@ private void drawGaps()
 }
 
 
+/********************************************************************************/
+/*                                                                              */
+/*      Handle labels                                                           */
+/*                                                                              */
+/********************************************************************************/
+
 private void drawLabels()
 {
    for (IfacePoint pt : for_diagram.getPoints()) {
@@ -420,20 +427,52 @@ private void drawLabels()
       if (txt == null || txt.isEmpty()) continue;
       
       Point2D loc = getCoords(pt);
-      Label lbl = new Label(txt);
+      Label lbl = new DiagramLabel(txt,loc);
+//    Label lbl = new Label(txt);
       // set size and color and other properties from label
-      lbl.setFont(LABEL_FONT);
-      lbl.setWrapText(false);
-      lbl.setMinWidth(Region.USE_PREF_SIZE);
-      lbl.layoutXProperty().bind(
-            new SimpleDoubleProperty(loc.getX()).subtract(lbl.prefWidthProperty().divide(2)));
-      lbl.layoutYProperty().bind(
-            new SimpleDoubleProperty(loc.getY()).subtract(lbl.prefHeightProperty().divide(2)));
+//    lbl.setFont(LABEL_FONT);
+//    lbl.setWrapText(false);
+//    lbl.setMinWidth(Region.USE_PREF_SIZE);
+//    lbl.layoutXProperty().bind(
+//          new SimpleDoubleProperty(loc.getX()).subtract(lbl.prefWidthProperty().divide(2)));
+//    lbl.layoutYProperty().bind(
+//          new SimpleDoubleProperty(loc.getY()).subtract(lbl.prefHeightProperty().divide(2)));
       
       getChildren().add(lbl);
     }
 }
 
+
+private final class DiagramLabel extends Label implements ChangeListener<Number> {
+   
+   private Point2D center_point;
+   
+   DiagramLabel(String txt,Point2D ctr) {
+      super(txt);
+      setFont(LABEL_FONT);
+      setWrapText(false);
+      setMinWidth(Region.USE_PREF_SIZE);
+      center_point = new Point2D(ctr.getX(),ctr.getY());
+      widthProperty().addListener(this);
+      heightProperty().addListener(this);
+      changed(null,0,0);
+//    layoutXProperty().bind(
+//          new SimpleDoubleProperty(center_point.getX()).subtract(prefWidthProperty().divide(2)));
+//    layoutYProperty().bind(
+//          new SimpleDoubleProperty(center_point.getY()).subtract(prefHeightProperty().divide(2)));
+    }
+   
+   @Override public void changed(ObservableValue<? extends Number> obs,Number ov,Number nv) {
+      double pw = getWidth();
+      double ph = getHeight();
+      if (pw > 0 && ph > 0) {
+         double x = center_point.getX() - pw/2;
+         double y = center_point.getY() - ph/2;
+         setLayoutX(x);
+         setLayoutY(y);
+       }
+    }
+}       // end of inner class DiagramLabel
 
 /********************************************************************************/
 /*                                                                              */
@@ -1145,16 +1184,24 @@ private Point2D getCoords(IfacePoint pt)
 
 private Point2D getCoords(double x,double y)
 {
-   x = x - display_bounds.getMinX();
-   if (invert_y) {
-      double y0 = display_bounds.getMinY();
-      y = (display_bounds.getHeight() + y0) - y + y0;
+   double x1;
+   double y1;
+   if (invert_display) {
+      y1 = display_bounds.getMaxY() - y;
+      x1 = display_bounds.getMaxX() - x;
+//    double y0 = display_bounds.getMinY();
+//    y = (display_bounds.getHeight() + y0) - y + y0;
+//    double x0 = display_bounds.getMinX();
+//    x = (display_bounds.getWidth() - x0) - x + x0;
     }
-   else y = y - display_bounds.getMinY();
+   else {
+      y1 = y - display_bounds.getMinY();
+      x1 = x - display_bounds.getMinX();
+    }
    
-   x = BORDER_SPACE + (x) / scale_value;
-   y = BORDER_SPACE + y / scale_value;
-   Point2D rslt = new Point2D(x,y);
+   x1 = BORDER_SPACE + x1 / scale_value;
+   y1 = BORDER_SPACE + y1 / scale_value;
+   Point2D rslt = new Point2D(x1,y1);
    return rslt;
 }
 

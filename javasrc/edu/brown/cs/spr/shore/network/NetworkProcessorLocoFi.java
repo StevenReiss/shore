@@ -177,6 +177,14 @@ void sendReboot(IfaceEngine eng)
 }
 
 
+void sendCarCount(IfaceEngine eng,int ct)
+{
+   EngineInfo ei = findEngineInfo(eng);
+   if (ei == null) return;
+   ei.sendCarCount(ct);
+}
+
+
 /********************************************************************************/
 /*                                                                              */
 /*      Engines query methods                                                   */
@@ -250,6 +258,7 @@ private EngineInfo setupEngine(SocketAddress sa)
          ei.sendQueryStateMessage();
          ei.sendSpeedReportMessage();
          ei.sendRpmReportMessage();
+         ei.sendCarCount(0);
        }
     }
    
@@ -593,6 +602,38 @@ private class EngineInfo {
       
       return true;
     }
+   
+   
+   boolean sendCarCount(int car) {
+      IfaceEngine eng = findEngine(engine_id);
+      if (eng == null) {
+         return false;
+       }
+      
+      byte [] msg = LOCOFI_SETTINGS_READ_CMD;
+      byte [] data = sendReplyMessage(net_address,msg,0,msg.length);
+      if (data == null) {
+         return false;
+       }
+      
+      int hdrlen = LOCOFI_SETTINGS_WRITE_CMD.length;
+      byte [] nmsg = new byte[data.length+hdrlen];
+      System.arraycopy(LOCOFI_SETTINGS_WRITE_CMD,0,
+            nmsg,0,hdrlen);
+      System.arraycopy(data,0,nmsg,hdrlen,data.length);
+      
+      int v = car/2;
+      if (v >= 5) v = 5;
+      data[18] = (byte) v;
+      ShoreLog.logD("Setting momemntum to " + v + " " + (1 << v) * 50);
+      
+      byte [] ndata = sendReplyMessage(net_address,nmsg,0,nmsg.length);
+      if (ndata == null) {
+         return false;
+       }
+      
+      return true;
+   }
    
    boolean sendClearConsist() {
       byte [] msg = LOCOFI_CLEAR_CONSIST_CMD;

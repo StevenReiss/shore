@@ -64,7 +64,7 @@ class ModelDiagram implements ModelConstants, IfaceDiagram
 
 private String diagram_id;
 private double diagram_scale;
-private boolean invert_y;
+private boolean invert_display;
 
 private Map<String,ModelPoint> diagram_points;
 private Map<String,ModelSwitch> diagram_switches;
@@ -86,7 +86,7 @@ ModelDiagram(Element xml)
    diagram_id = null;
    diagram_points = new HashMap<>();
    diagram_switches = new HashMap<>();
-   diagram_blocks = new HashMap<>();
+   diagram_blocks = new HashMap<>(); 
    diagram_sensors = new HashMap<>();
    diagram_signals = new HashMap<>();
     
@@ -161,7 +161,7 @@ Collection<ModelSignal> getModelSignals()
 
 double getEngineSize()                          { return diagram_scale; }
 
-@Override public boolean invertY()              { return invert_y; }
+@Override public boolean invertDisplay()        { return invert_display; } 
 
 ModelPoint getPointById(String id)      
 {
@@ -179,7 +179,7 @@ private void preloadDiagram(Element xml)
 {
    diagram_id = IvyXml.getAttrString(xml,"ID");
    diagram_scale = IvyXml.getAttrDouble(xml,"ENGINE",10);
-   invert_y = IvyXml.getAttrBool(xml,"INVERT");
+   invert_display = IvyXml.getAttrBool(xml,"INVERT");
    
    for (Element ptxml : IvyXml.children(xml,"POINT")) {
       ModelPoint pt = new ModelPoint(this,ptxml);  

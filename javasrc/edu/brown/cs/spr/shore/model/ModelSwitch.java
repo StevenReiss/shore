@@ -43,6 +43,7 @@ import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSwitch;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
+import javafx.application.Platform;
 
 class ModelSwitch implements IfaceSwitch, ModelConstants
 {
@@ -141,14 +142,7 @@ ModelSwitch getAssociatedSwitch()
 
 @Override public void setSwitch(ShoreSwitchState st)
 {
-   if (switch_state == st) return;
-   
-   if (for_model.doingChanges()) {
-      for_model.addChange(this,st);
-    }
-   else {
-      actualSetSwitch(st);
-    }
+   Platform.runLater(() -> actualSetSwitch(st));
 }
 
 

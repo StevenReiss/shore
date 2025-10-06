@@ -51,6 +51,7 @@ import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceSignal;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
+import javafx.application.Platform;
 
 class ModelSignal implements IfaceSignal, ModelConstants
 {
@@ -200,12 +201,7 @@ List<ModelSensor> getModelStopSensors()
 
 @Override public void setSignalState(ShoreSignalState state)
 {
-   if (for_model.doingChanges()) {
-      for_model.addChange(this,state);
-    }
-   else {
-      actualSetSignal(state);
-    }
+   Platform.runLater(() -> actualSetSignal(state));
 }
 
 

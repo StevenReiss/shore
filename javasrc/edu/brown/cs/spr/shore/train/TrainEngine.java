@@ -76,6 +76,7 @@ private boolean                 rear_light;
 private EngineState             engine_state;
 private Color                   engine_color;
 private String                  engine_id;
+private int                     car_count;
 
 private int                     start_speed;
 private int                     max_speed;
@@ -143,6 +144,7 @@ private void initialize()
    max_display = 200;
    num_steps = 8;
    use_kmph = false;
+   car_count = 0;
    saved_throttle = new HashMap<>();
 }
 
@@ -195,6 +197,9 @@ void setEngineAddress(SocketAddress sa)
 void setNoRearLight()                                   { has_rear_light = false; }
 
 @Override public boolean hasRearLight()                 { return has_rear_light; }
+
+@Override public int getCarCount()                      { return car_count; } 
+
  
 
 
@@ -242,7 +247,7 @@ void setNoRearLight()                                   { has_rear_light = false
 @Override public int getThrottleSteps()                 { return num_steps; } 
 @Override public double getStartSpeed()                 { return start_speed; }
 
-
+ 
 @Override public void setSpeedParameters(int start,int max,int nstep,double maxdisplay,boolean kmph) 
 {
    start_speed = start;
@@ -251,6 +256,16 @@ void setNoRearLight()                                   { has_rear_light = false
    max_display = maxdisplay;
    use_kmph = kmph;
 } 
+
+
+@Override public void setCarCount(int ct) 
+{
+   if (car_count == ct) return;
+   
+   car_count = ct;
+   train_factory.getNetworkModel().sendCarCount(this,ct); 
+   // need to set engine properties
+}
 
 
 

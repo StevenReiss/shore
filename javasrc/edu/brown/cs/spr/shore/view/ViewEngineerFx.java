@@ -58,6 +58,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.HPos;
+import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
@@ -76,8 +77,11 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority; 
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.util.Duration;
 
 class ViewEngineerFx extends GridPane implements ViewConstants 
@@ -106,6 +110,7 @@ private MenuItem        config_button;
 private MenuItem        manage_button;
 private MenuItem        reset_button;
 private boolean        control_pressed;
+private Slider          carcount_slider;
 
 
 
@@ -160,10 +165,27 @@ ViewEngineerFx(ViewFactory fac,IfaceEngine engine)
    add(tach_gauge,4,1,1,1);
    setFillHeight(tach_gauge,true);
    setHalignment(tach_gauge,HPos.CENTER);
-   Label spacer1 = new Label();
-   spacer1.setMinHeight(100);
-   spacer1.getStyleClass().add(".clearButton");
-   add(spacer1,4,2,1,1);
+   
+   carcount_slider = getCarCount();
+// carcount_slider.setMinHeight(100);
+   Label cclbl = new Label("Number of Cars");
+   Font f1 = cclbl.getFont();
+   f1 = Font.font(f1.getFamily(),FontWeight.BOLD,14.0);
+   cclbl.setTextFill(Color.BLUE);
+   cclbl.setFont(f1);
+   cclbl.setMaxHeight(15.0);
+   cclbl.setPrefHeight(10.0);
+   Label cclbl1 = new Label("");
+   VBox bv = new VBox(cclbl,carcount_slider,cclbl1);
+   VBox.setVgrow(cclbl1,Priority.ALWAYS);
+   VBox.setVgrow(cclbl,Priority.NEVER);
+   VBox.setVgrow(carcount_slider,Priority.NEVER);
+   bv.setAlignment(Pos.TOP_CENTER);
+   add(bv,4,2,1,1);
+// Label spacer1 = new Label();
+// spacer1.setMinHeight(100);
+// spacer1.getStyleClass().add(".clearButton");
+// add(spacer1,4,2,1,1);
    
    Button horn = getHornButton();
    add(horn,4,3,1,1);
@@ -313,6 +335,54 @@ private final class ThrottleChange implements ChangeListener<Number> {
     }
    
 }
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Number of cars                                                          */
+/*                                                                              */
+/********************************************************************************/
+
+private Slider getCarCount()
+{
+   Slider s = new Slider();
+   s.setMin(0);
+   s.setMax(8);
+   s.setValue(for_engine.getCarCount());
+   s.setShowTickMarks(true);
+   s.setShowTickLabels(true);
+   s.setSnapToTicks(true);
+   s.setMajorTickUnit(2);
+   s.setBlockIncrement(1);
+   s.setMinorTickCount(1);
+   s.setOrientation(Orientation.HORIZONTAL);
+   s.getStyleClass().add("carcount");
+   s.setPadding(new Insets(5));
+   s.valueProperty().addListener(new CarCountChange());
+   
+   return s;
+}
+
+
+private final class CarCountChange implements ChangeListener<Number> {
+   
+   @Override public void changed(ObservableValue<? extends Number> obs,Number oldv,Number newv) {
+      boolean chng = carcount_slider.isValueChanging();
+      ShoreLog.logD("VIEW","Set car count " + newv + " " + oldv + " " + chng + " " + 
+            carcount_slider.getMin() + " " + carcount_slider.getMax() + " " +
+            for_engine.getEngineState());
+      
+      if (newv.intValue() != newv.doubleValue()) {
+         // adjusting the slider
+         return;
+       }
+      
+      for_engine.setCarCount(newv.intValue());
+    }
+
+}       // end of inner class CarCountChange
+
 
 
 /********************************************************************************/

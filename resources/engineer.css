@@ -1,13 +1,33 @@
-.slider .track {
+.throttle .track {
    -fx-pref-width: 30;
    -fx-background-color: linear-gradient(red,yellow,green);
 }
 
-.slider .thumb {
+.throttle .thumb {
    -fx-pref-height: 30;
    -fx-pref-width: 40;
    -fx-background-color: black;
 }
+
+.carcount .track {
+   -fx-pref-height: 5;
+   -fx-background-color: yellow;
+}
+
+.carcount .thumb {
+   -fx-pref-height: 15;
+   -fx-pref-width: 15;
+   -fx-background-color: black;
+}
+
+.carcount .axis {
+   -fx-font-weight: bold;
+   -fx-text-size: 12px;
+   -fx-text-fill: green;
+   -fx-tick-label-fill: blue;
+   -fx-font-size: 12;
+}
+
 
 ,clearButton {
   -fx-border-color: transparent;
@@ -26,7 +46,3 @@
 .clearButton:pressed {
   -fx-background-color: white;
 }
-
-
-
-

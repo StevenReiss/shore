@@ -70,7 +70,7 @@ IfaceBlock getPendingFrom();
  *      Returns true if the state was set.
  **/
 
-boolean setPendingFrom(IfaceBlock blk);
+void setPendingFrom(IfaceBlock blk);
 
 
 

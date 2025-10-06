@@ -123,6 +123,11 @@ void sendStartStopEngine(IfaceEngine e,boolean start);
  **/
 void sendReboot(IfaceEngine e);
 
+/**
+ *      Send a message to reset engine parameters based on car count
+ **/
+void sendCarCount(IfaceEngine e,int ct);
+
 }	// end of interface IfaceNetwork
 
 

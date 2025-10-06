@@ -70,6 +70,7 @@ boolean isFrontLightOn();
 boolean isRearLightOn();
 boolean hasRearLight();
 boolean isMuted();
+int getCarCount();
 
 EngineState getEngineState();
 Color getEngineColor();
@@ -86,6 +87,7 @@ void setMute(boolean on);
 void setReverse(boolean fg);
 void setState(EngineState state);
 void setEmergencyStop(boolean on);
+void setCarCount(int ct);
 
 void doReboot();
 

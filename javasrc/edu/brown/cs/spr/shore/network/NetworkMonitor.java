@@ -354,6 +354,12 @@ public void sendEmergencyStop(IfaceEngine tr,boolean stop)
 }
 
 
+@Override public void sendCarCount(IfaceEngine ent,int ct)
+{
+   locofi_processor.sendCarCount(ent,ct);
+}
+
+
 /********************************************************************************/
 /*										*/
 /*	Handle Send requests							*/

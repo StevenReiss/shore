@@ -85,7 +85,7 @@ Collection<IfaceBlock> getBlocks();
 /**
  *      Indicates that low y is at the bottom if true, top if false.  
  **/
-boolean invertY();
+boolean invertDisplay();
 
 
 

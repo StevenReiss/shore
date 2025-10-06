@@ -104,18 +104,16 @@
      <POINT ID='C12' X='116' Y='68' TYPE='GAP' />
      <POINT ID='C13' X='110' Y='68' TYPE='SENSOR' REF='120A' />
      <POINT ID='C14' X='100' Y='68' TYPE='BLOCK' REF='14' />
-     <POINT ID='C15' X='83' Y='68' TYPE='LABEL' REF='To Yard'>
-	<LABEL TEXT='To Yard (14)' />
-     </POINT>
      <POINT ID='C16' X='70' Y='68' TYPE='DIAGRAM' />
-     <POINT ID='L1' X='3' Y='3' TYPE='LABEL' REF='LOOP A' >
+     <POINT ID='L1' X='12' Y='7' TYPE='LABEL' REF='LOOP A' >
 	<LABEL TEXT='LOOP A' />
      </POINT>
-     <POINT ID='L2' X='27' Y='17' TYPE='LABEL' REF='LOOP B' >
+     <POINT ID='L2' X='33' Y='22' TYPE='LABEL' REF='LOOP B' >
 	<LABEL TEXT='LOOP B' />
      </POINT>
-
-
+     <POINT ID='L3' X='55' Y='68' TYPE='LABEL' REF='TO YARD' >
+	<LABEL TEXT='To Yard (14)' />
+     </POINT>
      <!-- Connect the dots -->
      <CONNECT POINTS='M1 M2 M3 M4 M5 M6 M6a M7 M8 M9 M9a M10 M11 M12 M13 M14 M15 M15a M16' />
      <CONNECT POINTS='M16 M17 M18 M19 M19a M20 M21 M22 M22a M23 M24 M25 M26 M26a M27 M28 M1' />
@@ -125,7 +123,7 @@
      <CONNECT POINTS='M20 S1 S2' />
      <CONNECT POINTS='M26 R1 R2 R3 R4 R4a R5 R5a R6 R7 R8 R9 N12' />
      <CONNECT POINTS='N25 C1 C2 C4 C5 C7 C8' />
-     <CONNECT POINTS='C4 C9 C9a C10 C11 C12 C13 C14 C15 C16' />
+     <CONNECT POINTS='C4 C9 C9a C10 C11 C12 C13 C14 C16' />
      <!-- Define the blocks -->
      <BLOCK ID='1' POINT='N23' />
      <BLOCK ID='2' POINT='M22' />
@@ -241,7 +239,10 @@
      <POINT ID='Y55' X='164' Y='12' TYPE='TURNING' />
      <POINT ID='Y13a' X='151' Y='12' TYPE='SIGNAL' REF='14to1' />
      <POINT ID='Y13b' X='133' Y='12' TYPE='SIGNAL' REF='14to12,13' />
-     <POINT ID='Y15' X='113' Y='12' TYPE='DIAGRAM' REF='To Mainline (1)' />
+     <POINT ID='Y15' X='113' Y='12' TYPE='DIAGRAM' />
+     <POINT ID='Y15a' X='101' Y='12' TYPE='LABEL' REF='To Mainline'>
+	<LABEL TEXT='TO Mainline (1)' />
+     </POINT>
      <POINT ID='Y16' X='17' Y='57' TYPE='END' REF='118c' />
      <POINT ID='Y17' X='50' Y='57' TYPE='BLOCK' REF='11' />
      <POINT ID='Y17a' X='62' Y='57' TYPE='SIGNAL' REF='11to12,13' />

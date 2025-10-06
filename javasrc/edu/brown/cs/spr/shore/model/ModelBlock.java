@@ -46,6 +46,7 @@ import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceConnection;
 import edu.brown.cs.spr.shore.shore.ShoreLog;
+import javafx.application.Platform;
 
 class ModelBlock implements ModelConstants, IfaceBlock
 {
@@ -108,14 +109,7 @@ ModelBlock(ModelBase model,Element xml)
 
 @Override public void setBlockState(ShoreBlockState st)
 {
-   if (block_state == st) return;
-   
-   if (for_model.doingChanges()) {
-      for_model.addChange(this,st,null);
-    }
-   else {
-      actualSetBlockState(st);
-    }
+   Platform.runLater(() -> actualSetBlockState(st));
 }
 
 
@@ -134,32 +128,26 @@ void actualSetBlockState(ShoreBlockState st)
 }
 
 
-@Override public boolean setPendingFrom(IfaceBlock blk)  
+@Override public void setPendingFrom(IfaceBlock blk)  
 {
-   if (blk == null) {
-      setBlockState(ShoreBlockState.EMPTY);
-      return true;
-    }
-   
-   if (block_state != ShoreBlockState.EMPTY &&
-         block_state != ShoreBlockState.UNKNOWN) return false;
-// if (!checkNextPending(blk)) return false;
-   
-   if (for_model.doingChanges()) {
-      for_model.addChange(this,ShoreBlockState.PENDING,blk);
-    }
-   else {
-      actualSetPendingFrom(blk);
-    }
-  
-   return true;
+   Platform.runLater(() -> actualSetPendingFrom(blk));
 }
 
 
 void actualSetPendingFrom(IfaceBlock blk)
 {
-   pending_from = (ModelBlock) blk;
-   actualSetBlockState(ShoreBlockState.PENDING);
+   if (blk == null) {
+      actualSetBlockState(ShoreBlockState.EMPTY);
+      return;
+    }
+   else if (block_state != ShoreBlockState.EMPTY &&
+         block_state != ShoreBlockState.UNKNOWN) {
+      // do nothing
+    }
+   else {  
+      pending_from = (ModelBlock) blk;
+      actualSetBlockState(ShoreBlockState.PENDING);
+    }
 }
 
 
