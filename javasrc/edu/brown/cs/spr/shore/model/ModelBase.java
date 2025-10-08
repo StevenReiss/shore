@@ -542,7 +542,7 @@ void fireSignalChanged(ModelSignal signal)
 void fireBlockChanged(ModelBlock block)
 {
    for (ModelCallback cb : model_listeners) {
-      Platform.runLater(() -> { cb.blockChanged(block); });
+      Platform.runLater(() -> cb.blockChanged(block));
     }
 }
 

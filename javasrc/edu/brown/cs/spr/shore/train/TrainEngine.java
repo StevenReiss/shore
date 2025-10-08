@@ -626,14 +626,14 @@ void setCurrentPoints(IfacePoint cur,IfacePoint prior)
 private void fireEngineChanged()
 {
    for (EngineCallback cb : engine_listeners) {
-      cb.engineChanged(this);
+      Platform.runLater(() -> cb.engineChanged(this));
     }
 }
 
 private void fireEnginePositionChanged()
 {
    for (EngineCallback cb : engine_listeners) {
-      cb.enginePositionChanged(this);
+      Platform.runLater(() -> cb.enginePositionChanged(this));
     }
 }
 
