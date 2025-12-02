@@ -52,6 +52,16 @@
      </javac>
   </target>
 
+  <target name='compile1' depends='setup'>
+     <javac srcdir='.' destdir='${SHORE}/java' debug='on' deprecation='on' includeantruntime='false' fork='true' >
+	<classpath refid='spr.classpath' />
+	<compilerarg value="--module-path" />
+	<compilerarg value="/pro/javafx/lib" />
+	<compilerarg value="--add-modules" />
+	<compilerarg value="javafx.controls" />
+     </javac>
+  </target>
+
   <target name='jar' depends='compile'>
      <jar destfile='shore.jar'>
 	<manifest>
