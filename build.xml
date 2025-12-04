@@ -47,7 +47,9 @@
   <target name='all' depends='setup,compile,jar' />
 
   <target name='compile' depends='setup'>
-     <javac srcdir='.' destdir='${SHORE}/java' debug='on' deprecation='on' includeantruntime='false'>
+     <javac srcdir='.' destdir='${SHORE}/java' debug='on' deprecation='on'
+	     target='17' source='17'
+	     includeantruntime='false'>
 	<classpath refid='spr.classpath' />
      </javac>
   </target>
