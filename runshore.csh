@@ -6,7 +6,7 @@ set JAVAFX = $PRO/javafx/lib
 set OPENCV = /usr/share/java
 set IVY = $PRO/ivy/lib
 set JAVA = java
-set MODS = 1
+set MODS = 0
 
 if (-e /usr/share/openjfx/lib) then
   set JAVAFX = /usr/share/openjfx/lib
