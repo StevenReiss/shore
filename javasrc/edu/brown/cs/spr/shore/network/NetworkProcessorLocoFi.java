@@ -281,7 +281,7 @@ private synchronized byte [] sendReplyMessage(SocketAddress who,byte[] msg,int o
    
    byte[] reply = rh.getReply();
    if (reply == null) {
-      ShoreLog.logE("NETWORK","No reply received from " + who + " " + msg[0]);
+      ShoreLog.logI("NETWORK","No reply received from " + who + " " + msg[0]);
     }
    return reply;
 }
@@ -303,13 +303,14 @@ private synchronized byte [] sendReplyMessage(SocketAddress who,byte[] msg,int o
    ReplyHandler rh = reply_map.remove(sa);
    if (rh != null) {
       byte [] rslt = new byte[msg.getLength()];
-      System.arraycopy(msg.getData(),msg.getOffset(),rslt,0,msg.getLength());
+      System.arraycopy(msg.getData(),msg.getOffset(),rslt,
+            0,msg.getLength());
       if (!rh.handleReply(rslt)) {
          ShoreLog.logE("NETWORK","Late message from engine");
        }
     }
    else {
-      ShoreLog.logE("NETWORK","Unsolicited message from engine");
+      ShoreLog.logI("NETWORK","Unsolicited message from engine");
       // if we get here, we should spawn a thread to handle the request
     }
 }
@@ -352,7 +353,8 @@ private final class LocoFiStatusUpdater extends Thread {
                if (iv == null) iv = 0;
                bad_count.put(ei,iv+1);
                if (iv > MAX_NO_STATE_REPLY) { 
-                  ShoreLog.logE("NETWORK","Engine " + ei.getEngineId() + " timed out");
+                  ShoreLog.logE("NETWORK","Engine " + ei.getEngineId() +
+                        " " + ei.getSocketAddress() + " timed out");
                   IfaceEngine eng = findEngine(ei.getEngineId());
                   if (eng != null) {
                      engine_model.setEngineSocket(eng,null);

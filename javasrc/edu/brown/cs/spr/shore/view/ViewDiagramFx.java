@@ -952,7 +952,10 @@ private class EngineDrawData implements IfaceEngine.EngineCallback {
    
    void doSetEngine() {
       IfacePoint pt0 = for_engine.getCurrentPoint();
-      if (pt0 == null) return;
+      if (pt0 == null) {
+         engine_shape.setVisible(false);
+         return;
+       }
       
       ShoreLog.logD("VIEW", "Recompute engine " + for_engine.getEngineId() + " at " + pt0 +
             " " + for_diagram.getId());
