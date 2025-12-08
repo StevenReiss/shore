@@ -293,6 +293,20 @@ public void setSensor(IfaceSensor sen,ShoreSensorState set)
 }
 
 
+@Override 
+public void setUpdateSensors(ShoreSensorSetup state)
+{
+   tower_processor.setupSensors(state);
+}
+
+
+@Override
+public void clearSwitchStates() 
+{
+   tower_processor.clearSwitchStates(); 
+}
+
+
 /********************************************************************************/
 /*                                                                              */
 /*      Locomotive (engine/train) messages                                      */

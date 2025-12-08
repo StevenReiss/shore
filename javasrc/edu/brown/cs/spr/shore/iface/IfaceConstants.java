@@ -66,7 +66,7 @@ enum ShorePointType {
 enum ShoreSensorState {
    OFF,                         // off -- no train at this location
    ON,                          // on-- train at this location
-   UNKNOWN                      // unknown -- initial value
+   UNKNOWN                      // unknown -- initial value     
 };
 
 
@@ -141,6 +141,15 @@ enum ShoreSlowReason {
    ESTOP,                       // emergency stop was set before a stop
 }
 
+
+/**
+ *      Setup sensor types
+ **/
+enum ShoreSensorSetup {
+   SET_OFF,                     // SET ALL SENSORS TO OFF AT CURRENT VALUES
+   ADJUST_OFF,                  // ADJUST VALUES FOR ALL OFF SENSORS
+   ADJUST_ALL                   // ADJUST VALUES FOR ALL SENSORS
+}
 
 
 }       // end of interface IfaceConstants

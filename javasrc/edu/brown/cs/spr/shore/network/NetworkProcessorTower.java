@@ -62,6 +62,8 @@ class NetworkProcessorTower extends NetworkProcessor implements NetworkControlMe
 private IfaceModel layout_model;
 private Map<SocketAddress,ControllerInfo>  controller_map;
 private Map<Integer,ControllerInfo>        id_map;
+private ShoreSensorSetup        sensor_setup;
+private boolean                 clear_switches;
 
 
 /********************************************************************************/
@@ -76,6 +78,8 @@ NetworkProcessorTower(DatagramSocket sock,IfaceModel model)
    layout_model = model;
    controller_map = new ConcurrentHashMap<>();
    id_map = new ConcurrentHashMap<>();
+   sensor_setup = null;
+   clear_switches = false;
 }
 
 /********************************************************************************/
@@ -102,13 +106,15 @@ void setSwitch(IfaceSwitch sw,ShoreSwitchState set)
 
 
 
-private boolean sendSwitchStatus(IfaceSwitch sw) 
+private boolean sendSwitchStatus(IfaceSwitch sw,ShoreSwitchState set) 
 {
    if (sw == null) return false;
    int id = sw.getTowerId();
    ControllerInfo ci = id_map.get(id);
    if (ci == null) return false;
-   ShoreSwitchState set = sw.getSwitchState();
+   if (set == null) {
+      set = sw.getSwitchState();
+    }
    if (set == ShoreSwitchState.R && sw.getTowerRSwitch() >= 0) {
       ci.sendSwitchMessage(sw.getTowerRSwitch(),ShoreSwitchState.N);
     }
@@ -225,6 +231,17 @@ private void broadcastInfo()
     }
 }
 
+
+void setupSensors(ShoreSensorSetup state)
+{
+   sensor_setup = state;
+}
+
+
+void clearSwitchStates()
+{
+   clear_switches = true;
+}
 
 
 /********************************************************************************/
@@ -418,10 +435,43 @@ private final class TowerStatusUpdater extends Thread {
       for ( ; ; ) {
          try {
             broadcastInfo();
+            if (sensor_setup != null) {
+               ShoreSensorSetup ss = sensor_setup;
+               sensor_setup = null;
+               for (IfaceSensor sen : layout_model.getSensors()) {
+                  ShoreSensorState state = sen.getSensorState();
+                  switch (ss) {
+                     case ADJUST_OFF :
+                        if (state == ShoreSensorState.ON) {
+                           continue;
+                         }
+                        break;
+                     case SET_OFF :
+                        state = ShoreSensorState.OFF;
+                        break;
+                     case ADJUST_ALL :
+                        break;
+                   }
+                  if (sen.getSensorRange() == ShoreSensorRange.HIGH) continue;
+                  setSensor(sen,state);
+                  shortDelay();
+                }
+             }
+            if (clear_switches) {
+               clear_switches = false;
+               for (IfaceSwitch sw : layout_model.getSwitches()) {
+                  sendSwitchStatus(sw,ShoreSwitchState.UNKNOWN);
+                  shortDelay();
+                  sendSwitchStatus(sw,sw.getSwitchState());
+                  delay();
+                }
+             }
             for (IfaceSensor sen : layout_model.getSensors()) {
+               if (sensor_setup != null || clear_switches) continue;
                if (sendDefSensor(sen)) delay();
              }
             for (IfaceSignal sig : layout_model.getSignals()) {
+               if (sensor_setup != null || clear_switches) continue;
                if (sendDefSignal(sig)) {
                   delay();
                   sendSignalStatus(sig);
@@ -429,10 +479,11 @@ private final class TowerStatusUpdater extends Thread {
                 }
              }
             for (IfaceSwitch sw : layout_model.getSwitches()) {
+               if (sensor_setup != null || clear_switches) continue;
                if (sendDefSwitch(sw)) {
                   delay();
                 }
-               if (sendSwitchStatus(sw)) {
+               if (sendSwitchStatus(sw,sw.getSwitchState())) {
                   delay();
                 }
              }
@@ -459,6 +510,15 @@ private final class TowerStatusUpdater extends Thread {
        }
       catch (InterruptedException e) { }
     }
+   
+   private void shortDelay() {
+      checkHeartbeat();
+      try {
+         Thread.sleep(SHORT_DELAY);  
+       }
+      catch (InterruptedException e) { }
+    }
+   
    
    private void finalDelay() {
       for (int i = 0; i < FINAL_DELAY; ++i) {

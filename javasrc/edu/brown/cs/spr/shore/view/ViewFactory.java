@@ -36,6 +36,7 @@
 package edu.brown.cs.spr.shore.view;
 
 import edu.brown.cs.spr.shore.iface.IfaceModel;
+import edu.brown.cs.spr.shore.iface.IfaceNetwork;
 import edu.brown.cs.spr.shore.iface.IfacePlanner;
 import edu.brown.cs.spr.shore.iface.IfaceSafety;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
@@ -54,6 +55,7 @@ private IfaceModel	layout_model;
 private IfaceTrains	train_model;
 private IfaceSafety     safety_model;
 private IfacePlanner    planner_model;
+private IfaceNetwork    network_model;
 
 
 
@@ -64,12 +66,14 @@ private IfacePlanner    planner_model;
 /*										*/
 /********************************************************************************/
 
-public ViewFactory(IfaceSafety safe,IfaceModel mdl,IfaceTrains trns,IfacePlanner plan)
+public ViewFactory(IfaceSafety safe,IfaceModel mdl,IfaceTrains trns,
+      IfacePlanner plan,IfaceNetwork net)
 {
    safety_model = safe;
    layout_model = mdl;
    train_model = trns;
    planner_model = plan;
+   network_model = net;
 }
 
 
@@ -91,6 +95,9 @@ IfaceSafety getSafetyModel()                    { return safety_model; }
 
 
 IfacePlanner getPlannerModel()                  { return planner_model; }
+
+
+IfaceNetwork getNetworkModel()                  { return network_model; }
 
 
 

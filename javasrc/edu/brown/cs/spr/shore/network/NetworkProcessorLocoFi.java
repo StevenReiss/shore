@@ -356,7 +356,7 @@ private final class LocoFiStatusUpdater extends Thread {
                   ShoreLog.logE("NETWORK","Engine " + ei.getEngineId() +
                         " " + ei.getSocketAddress() + " timed out");
                   IfaceEngine eng = findEngine(ei.getEngineId());
-                  if (eng != null) {
+                  if (eng !=  null) {
                      engine_model.setEngineSocket(eng,null);
                    }
                   if (todel == null) todel = new ArrayList<>();

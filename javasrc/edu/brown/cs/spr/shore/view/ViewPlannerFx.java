@@ -41,6 +41,8 @@ import java.util.List;
 
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
+import edu.brown.cs.spr.shore.iface.IfaceModel;
+import edu.brown.cs.spr.shore.iface.IfaceNetwork;
 import edu.brown.cs.spr.shore.iface.IfacePlanner;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSafety;
@@ -65,8 +67,17 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Spinner;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.Border;
+import javafx.scene.layout.BorderStroke;
+import javafx.scene.layout.BorderStrokeStyle;
+import javafx.scene.layout.BorderWidths;
+import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -91,6 +102,9 @@ private IfacePlanner planner_model;
 private IfaceSafety safety_model;
 private List<TrainPlanner> train_plans;
 private TrainPlanner train_planner;
+private IfaceModel layout_model;
+private ControlBox control_box;
+private IfaceNetwork network_model; 
 
 private static int      STEP_START = -1;
 private static int      STEP_DONE = 0;
@@ -107,14 +121,21 @@ ViewPlannerFx(ViewFactory vf)
 {
    planner_model = vf.getPlannerModel();
    safety_model = vf.getSafetyModel();
+   network_model = vf.getNetworkModel();
+   layout_model = vf.getLayoutModel();
    train_plans = new ArrayList<>();
+   control_box = new ControlBox();
    
    setSpacing(10.0);
    setFillHeight(true);
    
    train_planner = new TrainPlanner();
    train_plans.add(train_planner);
-   getChildren().add(train_planner);
+   
+   Region spacer = new Region();
+   HBox.setHgrow(spacer,Priority.ALWAYS);
+   getChildren().addAll(train_planner,spacer,control_box);
+   
    
    EngineChanged cb = new EngineChanged();
    for (IfaceEngine eng : vf.getTrainModel().getAllEngines()) {
@@ -841,6 +862,85 @@ private class ViewerClose implements EventHandler<ActionEvent> {
     }
    
 }       // end of inner class ViewerClose
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Control Box                                                             */
+/*                                                                              */
+/********************************************************************************/
+
+private final class ControlBox extends VBox {
+   
+   ControlBox() {
+      Button b1 = new Button("Adjust Off Sensors");
+      b1.setOnAction(new AdjustOffSensors());
+      Button b2 = new Button("Set All Sensors Off");
+      b2.setOnAction(new SetSensorsOff());
+      Button b3 = new Button("Clear Switch States");
+      b3.setOnAction(new ClearSwitchStates());
+      Button b4 = new Button("Clear Blocks");
+      b4.setOnAction(new ClearBlocks());
+      getChildren().addAll(b1,b2,b3,b4);
+     
+      setSpacing(15.0);
+      BackgroundFill fill = new BackgroundFill(Color.LIGHTYELLOW,CornerRadii.EMPTY,
+            Insets.EMPTY);
+      Background bkg = new Background(fill);
+      setBackground(bkg);
+      BorderStroke bs = new BorderStroke(Color.YELLOW,BorderStrokeStyle.SOLID,
+            CornerRadii.EMPTY,new BorderWidths(5));
+      Border b = new Border(bs);
+      setBorder(b);
+    }
+   
+}       // end of inner class ControlBox
+
+
+private class AdjustOffSensors implements EventHandler<ActionEvent> {
+
+   AdjustOffSensors() { }
+   
+   @Override public void handle(ActionEvent evt) {
+      network_model.setUpdateSensors(ShoreSensorSetup.ADJUST_OFF);
+    }
+   
+}       // end of inner class SignalSetter
+
+
+private class SetSensorsOff implements EventHandler<ActionEvent> {
+   
+   SetSensorsOff() { }
+   
+   @Override public void handle(ActionEvent evt) {
+      network_model.setUpdateSensors(ShoreSensorSetup.SET_OFF);
+    }
+   
+}       // end of inner class SignalSetter
+
+
+private class ClearSwitchStates implements EventHandler<ActionEvent> {
+   
+   ClearSwitchStates() { }
+   
+   @Override public void handle(ActionEvent evt) {
+      network_model.clearSwitchStates();
+    }
+   
+}       // end of inner class SignalSetter
+
+
+private class ClearBlocks implements EventHandler<ActionEvent> {
+   
+   ClearBlocks() { }
+   
+   @Override public void handle(ActionEvent evt) {
+      for (IfaceBlock blk : layout_model.getBlocks()) {
+         blk.setBlockState(ShoreBlockState.EMPTY);
+       }
+    }
+   
+}       // end of inner class SignalSetter
 
 
 

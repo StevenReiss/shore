@@ -128,6 +128,18 @@ void sendReboot(IfaceEngine e);
  **/
 void sendCarCount(IfaceEngine e,int ct);
 
+
+/**
+ *      Update/adjust sensors
+ **/
+void setUpdateSensors(ShoreSensorSetup state);
+
+
+/**
+ *      Clear the state of all switches so they are set correctly
+ **/
+void clearSwitchStates();
+
 }	// end of interface IfaceNetwork
 
 

@@ -58,6 +58,7 @@ int	BUFFER_SIZE = 256;
 long    STATUS_DELAY = 500;            // delay between status messages
 int     FINAL_DELAY = 10;               // Multiplier for final delay (of STATUS_DELAY)
 long    HEARTBEAT_TIME = 70000;         // heartbeat check (should be 30000 after updates)
+long    SHORT_DELAY = 10;               // delay for sending a cluster of messages
 
 long    REPLY_DELAY = 4000;
 long    LOCOFI_STATUS_DELAY = 100;

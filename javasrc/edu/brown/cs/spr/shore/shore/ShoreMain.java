@@ -124,7 +124,8 @@ private void process()
    
    planner_base = new PlannerFactory(safety_base,model_base,train_base);    
    
-   view_base = new ViewFactory(safety_base,model_base,train_base,planner_base); 
+   view_base = new ViewFactory(safety_base,model_base,train_base,
+         planner_base,network_monitor); 
    
    // set up vision module here
    // set up user interface module here  
