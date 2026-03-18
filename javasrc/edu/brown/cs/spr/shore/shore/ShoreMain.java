@@ -132,8 +132,9 @@ private void process()
    // set up control module here
    ShoreLog.logD("SHORE","ALL MODULES SET UP");
    
-   network_monitor.start(); 
    view_base.startDisplay(); 
+   
+   network_monitor.start(); 
 }
 
 

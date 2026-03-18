@@ -431,7 +431,7 @@ private final class TowerStatusUpdater extends Thread {
       setDaemon(true);
     }
    
-   @Override public void run() {
+    @Override public void run() {
       for ( ; ; ) {
          try {
             broadcastInfo();

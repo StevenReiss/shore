@@ -518,6 +518,7 @@ void fireSensorChanged(ModelSensor sensor)
 void firePreSensorChanged(ModelSensor sensor)
 {
    for (ModelCallback cb : model_listeners) {
+     
       Platform.runLater(() -> { cb.preSensorChanged(sensor); });
     }
 }

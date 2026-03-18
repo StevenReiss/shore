@@ -110,7 +110,8 @@ IfaceNetwork getNetworkModel()                  { return network_model; }
 public void startDisplay()
 {
    JavaFxStarter starter = new JavaFxStarter();
-   starter.start();
+// starter.start();
+   starter.run();
 }
 
 
