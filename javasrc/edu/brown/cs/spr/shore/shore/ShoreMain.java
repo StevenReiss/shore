@@ -129,14 +129,12 @@ private void process()
    view_base = new ViewFactory(safety_base,model_base,train_base,
          planner_base,network_monitor); 
    
-   // set up vision module here
-   // set up user interface module here  
-   // set up control module here
    ShoreLog.logD("SHORE","ALL MODULES SET UP");
    
+   network_monitor.start();
    view_base.startDisplay(); 
    
-   network_monitor.start(); 
+// network_monitor.start(); 
 }
 
 
