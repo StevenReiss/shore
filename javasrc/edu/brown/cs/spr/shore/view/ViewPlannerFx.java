@@ -106,8 +106,8 @@ private IfaceModel layout_model;
 private ControlBox control_box;
 private IfaceNetwork network_model; 
 
-private static int      STEP_START = -1;
-private static int      STEP_DONE = 0;
+private static final int      STEP_START = -1;
+private static final int      STEP_DONE = 0;
 
 
 
