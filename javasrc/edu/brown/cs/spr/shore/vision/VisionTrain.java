@@ -60,9 +60,6 @@ private IfaceEngine     for_engine;
 private LinkedList<Point2D>     point_list;
 private List<Point2D>     initial_points;
 
-private static final double INITIAL_TOLERANCE = 0.5;
-private static final double LIST_TOLERANCE = 0.1;
-
 
 
 /********************************************************************************/
@@ -136,13 +133,13 @@ void updateTrain(Point2D p0,Point2D p1)
        }
       if (p0 != null &&
             isBetween(initial_points.get(0),initial_points.get(1),
-                  p0,INITIAL_TOLERANCE)) {
+                  p0,TRAIN_INITIAL_TOLERANCE)) {
          Collections.reverse(point_list);
          initial_points = null;
        }
       else if (p1 != null &&
             isBetween(initial_points.get(0),initial_points.get(1),
-                  p1,INITIAL_TOLERANCE)) {
+                  p1,TRAIN_INITIAL_TOLERANCE)) {
          initial_points = null;
        }
       else if (p0 != null && p1 != null) {
@@ -228,7 +225,7 @@ private void cleanPoints()
       Point2D cur = li.next();
       if (prev != null && li.hasNext()) {
          Point2D next = point_list.get(li.nextIndex());
-         if (isBetween(prev,next,cur,LIST_TOLERANCE)) {
+         if (isBetween(prev,next,cur,TRAIN_LIST_TOLERANCE)) {
             li.remove();
           }
        }

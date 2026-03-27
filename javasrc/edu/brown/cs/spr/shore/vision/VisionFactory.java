@@ -46,6 +46,8 @@ public class VisionFactory implements VisionConstants
 /*                                                                              */
 /********************************************************************************/
 
+private VisionRecorder         vision_recorder;
+private VisionLayout            vision_layout;
 
 
 /********************************************************************************/
@@ -53,6 +55,28 @@ public class VisionFactory implements VisionConstants
 /*      Constructors                                                            */
 /*                                                                              */
 /********************************************************************************/
+
+
+public VisionFactory()
+{
+   vision_recorder = new VisionRecorder();
+   vision_layout = new VisionLayout();
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Startup methods                                                         */
+/*                                                                              */
+/********************************************************************************/
+
+public void start()
+{
+   vision_layout.load(null);
+   
+   vision_recorder.start();
+}
 
 
 

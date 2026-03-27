@@ -42,6 +42,12 @@ public interface VisionConstants
 
 int CAMERA_ID = 0;
 
+double TRAIN_INITIAL_TOLERANCE = 0.5;
+double TRAIN_LIST_TOLERANCE = 0.1;
+
+double DELTA_THRESHOLD = 50;
+double MIN_THRESOLD = 50; 
+double MIN_SIZE = 10;
 
 }       // end of interface VisionConstants
 

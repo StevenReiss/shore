@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              ShoreMain.java                                                  */
+/*              VisionLayout.java                                               */
 /*                                                                              */
-/*      Main program for Smart HO Railroad Environment                          */
+/*      Hold layout based on vision                                             */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -32,36 +32,20 @@
  ********************************************************************************/
 
 
+package edu.brown.cs.spr.shore.vision;
 
-package edu.brown.cs.spr.shore.shore;
-
+import java.awt.geom.Point2D;
 import java.io.File;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
-import edu.brown.cs.spr.shore.model.ModelBase;
-import edu.brown.cs.spr.shore.network.NetworkMonitor;
-import edu.brown.cs.spr.shore.planner.PlannerFactory;
-import edu.brown.cs.spr.shore.safety.SafetyFactory;
-import edu.brown.cs.spr.shore.train.TrainFactory;
-import edu.brown.cs.spr.shore.view.ViewFactory;
-import edu.brown.cs.spr.shore.vision.VisionFactory;
+import edu.brown.cs.spr.shore.iface.IfacePoint;
+import edu.brown.cs.spr.shore.iface.IfaceSensor;
+import edu.brown.cs.spr.shore.iface.IfaceConstants.ShoreSensorState;
 
-public final class ShoreMain implements ShoreConstants
+class VisionLayout implements VisionConstants
 {
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Main program                                                            */
-/*                                                                              */
-/********************************************************************************/
-
-public static void main(String [] args)
-{
-   ShoreMain sm = new ShoreMain(args);
-   sm.process();
-}
 
 
 /********************************************************************************/
@@ -70,16 +54,7 @@ public static void main(String [] args)
 /*                                                                              */
 /********************************************************************************/
 
-private NetworkMonitor  network_monitor;
-private ModelBase       model_base;
-private TrainFactory    train_base;
-private SafetyFactory   safety_base;
-private ViewFactory     view_base;
-private PlannerFactory  planner_base;
-private VisionFactory   vision_base;
-
-private File            model_file;
-private File            report_file;
+private Collection<VisionPoint>  point_set;
 
 
 
@@ -89,104 +64,130 @@ private File            report_file;
 /*                                                                              */
 /********************************************************************************/
 
-private ShoreMain(String [] args)
+VisionLayout()
 {
-   ShoreLog.setup();
-   
-   model_base = null;
-   network_monitor = null;
-   model_file = null;
-   train_base = null;
-   safety_base = null;
-   report_file = null;
-   vision_base = null;
-   
-   scanArgs(args);
+   point_set = new ArrayList<>();
 }
 
 
-
 /********************************************************************************/
 /*                                                                              */
-/*      Processing methods                                                      */
+/*      Access methods                                                          */
 /*                                                                              */
 /********************************************************************************/
 
-private void process()
+VisionPoint findLayoutPoint(Point2D given)
 {
-   ShoreLog.logD("SHORE","STARTING with " + model_file + " at " + (new Date()));
-   
-   model_base = new ModelBase(model_file); 
-   train_base = new TrainFactory(model_base); 
-   
-   if (report_file != null) {
-      model_base.createReport(report_file,train_base);   
-    }
-   network_monitor = new NetworkMonitor(model_base,train_base);
-   train_base.setNetworkModel(network_monitor);
-   
-   safety_base = new SafetyFactory(network_monitor,model_base,train_base); 
-   
-   planner_base = new PlannerFactory(safety_base,model_base,train_base);    
-   
-   view_base = new ViewFactory(safety_base,model_base,train_base,
-         planner_base,network_monitor); 
-   
-   vision_base = new VisionFactory();
-   
-   ShoreLog.logD("SHORE","ALL MODULES SET UP");
-   
-   network_monitor.start();
-   vision_base.start();
-   
-   view_base.startDisplay(); 
-}
-
-
-
-/********************************************************************************/
-/*                                                                              */
-/*      Argument scanning methods                                               */
-/*                                                                              */
-/********************************************************************************/
-
-private void scanArgs(String [] args)
-{
-   for (int i = 0; i < args.length; ++i) {
-      String arg = args[i];
-      if (arg.startsWith("-")) {
-         if (arg.startsWith("-m")) {                            // -model <file>
-            if (i+1 < args.length && model_file == null) {
-               model_file = new File(args[++i]);
-             }
-            else badArgs();
-          }
-         else if (arg.startsWith("-r") && i+1 < args.length) {  // -report <file>
-            report_file = new File(args[++i]);
-          }
-         else badArgs();
-       }
-      else if (model_file == null) {
-         model_file = new File(arg);
-       }
+   if (given instanceof VisionPoint) {
+      return (VisionPoint) given;
     }
    
-   if (model_file == null || !model_file.canRead()) badArgs();
+   VisionPoint pt = new VisionPoint(given.getX(),given.getY());
+   point_set.add(pt);
+   return pt;
 }
 
 
-private void badArgs()
+IfacePoint getShorePoint(Point2D given)
 {
-   System.err.println("SHORE -m <modelfile>");
-   System.exit(1);
+   VisionPoint vp = findLayoutPoint(given);
+   
+   return vp.getCorrespondingPoint();
 }
 
 
 
-}       // end of class ShoreMain
+/********************************************************************************/
+/*                                                                              */
+/*      Setup methods                                                           */
+/*                                                                              */
+/********************************************************************************/
+
+VisionPoint recordPoint(Point2D point,Point2D prior)
+{
+   return findLayoutPoint(point);
+}
+
+
+void noteSensor(Point2D pt0,IfaceSensor sen,ShoreSensorState st)
+{
+   VisionPoint vp = findLayoutPoint(pt0);
+   IfacePoint pt = sen.getAtPoint();
+   if (st == ShoreSensorState.ON) {
+      vp.setCorresondingPoint(pt);
+      vp.setSensor(sen);
+    }
+}
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      I/O methods                                                             */
+/*                                                                              */
+/********************************************************************************/
+
+boolean load(File f)
+{
+   return false;
+}
+
+
+void save(File f)
+{
+   // save contents in file so it can be reloaded
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Vision point                                                            */
+/*                                                                              */
+/********************************************************************************/
+
+static class VisionPoint extends Point2D.Double {
+   
+   private List<VisionPoint> connect_to;
+   private IfacePoint correspond_to;
+   private IfaceSensor use_sensor;
+   
+   private static final long serialVersionUID = 1;
+   
+   
+   VisionPoint(double x,double y) {
+      super(x,y);
+      connect_to = new ArrayList<>();
+      correspond_to = null;
+      use_sensor = null;
+    }
+   
+   List<VisionPoint> connectedTo() {
+      return connect_to;
+    }
+
+   IfacePoint getCorrespondingPoint() {
+      return correspond_to;
+    }
+   
+   IfaceSensor getSensor() {
+      return use_sensor;
+    }
+   
+   void setCorresondingPoint(IfacePoint pt) {
+      correspond_to = pt;
+    }
+   
+   void setSensor(IfaceSensor sen) {
+      use_sensor = sen;
+    }
+   
+}       // end of inner class VisionPoint
+
+
+}       // end of class VisionLayout
 
 
 
 
-/* end of ShoreMain.java */
+/* end of VisionLayout.java */
 
