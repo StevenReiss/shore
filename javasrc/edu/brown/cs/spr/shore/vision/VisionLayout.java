@@ -103,7 +103,7 @@ IfacePoint getShorePoint(Point2D given)
 /*                                                                              */
 /********************************************************************************/
 
-VisionPoint recordPoint(Point2D point,Point2D prior)
+VisionPoint recordPoint(Point2D point)
 {
    return findLayoutPoint(point);
 }

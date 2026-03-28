@@ -34,6 +34,9 @@
 
 package edu.brown.cs.spr.shore.vision;
 
+import java.awt.geom.Point2D;
+import java.util.List;
+import java.util.ListIterator;
 
 
 public class VisionFactory implements VisionConstants
@@ -47,7 +50,7 @@ public class VisionFactory implements VisionConstants
 /********************************************************************************/
 
 private VisionRecorder         vision_recorder;
-private VisionLayout            vision_layout;
+private VisionLayout           vision_layout;
 
 
 /********************************************************************************/
@@ -59,7 +62,7 @@ private VisionLayout            vision_layout;
 
 public VisionFactory()
 {
-   vision_recorder = new VisionRecorder();
+   vision_recorder = new VisionRecorder(this); 
    vision_layout = new VisionLayout();
 }
 
@@ -76,6 +79,30 @@ public void start()
    vision_layout.load(null);
    
    vision_recorder.start();
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Point (delta) recording methods                                         */
+/*                                                                              */
+/********************************************************************************/
+
+void recordDeltaPoints(List<Point2D> pts)
+{
+   for (ListIterator<Point2D> it = pts.listIterator(); it.hasNext(); ) {
+      Point2D pt = it.next();
+      Point2D pt0 = vision_layout.recordPoint(pt); 
+      if (pt0 != pt) {
+         it.set(pt0);
+       }
+    }
+   
+   // need logic to group pairs of points as front/back
+   if (pts.size() == 2) {
+      // add to train information
+    }
 }
 
 

@@ -34,6 +34,7 @@
 
 package edu.brown.cs.spr.shore.vision;
 
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.WritableRaster;
@@ -42,10 +43,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.opencv.core.Core;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfInt;
-import org.opencv.core.MatOfPoint;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
@@ -62,6 +60,7 @@ class VisionRecorder implements VisionConstants
 /*                                                                              */
 /********************************************************************************/
 
+private VisionFactory   vision_base;
 private boolean         is_paused;
 private Mat             prior_image;
 private VideoCapture    train_cam;
@@ -77,9 +76,11 @@ private AtomicInteger   image_count = new AtomicInteger(0);
 /*                                                                              */
 /********************************************************************************/
 
-VisionRecorder()
+VisionRecorder(VisionFactory vb)
 {
    System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+   vision_base = vb;
+   is_paused = false;
    prior_image = null;
    train_cam = new VideoCapture(CAMERA_ID);
    camera_thread = null;
@@ -150,8 +151,6 @@ void handleNextFrame()
 {
    Mat matrix = new Mat();
    train_cam.read(matrix);
-   
- 
   
    if (prior_image == null) {
       prior_image = matrix;
@@ -160,47 +159,13 @@ void handleNextFrame()
    
    Mat delta = new Mat();
    Core.absdiff(prior_image,matrix,delta);
-// saveMatrix(delta,"/vol/spr/delta" + ct + ".jpg");
-   
-// int [] idata = new int[3];
-// byte [] data = new byte[3];
-// byte [] data0 = new byte[3];
-// byte [] data1 = new byte[3];
-// int type = delta.type();
-// int dims = delta.dims();
-// int chk8 = CvType.CV_8UC(3);
-// int chk32 = CvType.CV_16UC(3);
-// 
-// int ctr = 0;
-// for (int j = 0; j < delta.rows(); ++j) {
-//    for (int i = 0; i < delta.cols(); ++i) {
-//       delta.get(j,i,data);
-//       double dist = data[0] * data[0] + data[1] * data[1] + data[2] * data[2];
-//       dist = Math.sqrt(dist);
-//       if (dist > DELTA_THRESHOLD) { 
-//          matrix.get(j,i,data0);
-//          prior_image.get(j,i,data1);
-//          data[0] = (byte) 255;
-//          data[1] = (byte) 255; 
-//          data[2] = (byte) 255;
-//          delta.put(j,i,data);
-//          ++ctr;
-//        }
-//     }
-//  }
-   
-   
-// if (ctr == 0) return;
-// saveMatrix(delta,"/vol/spr/xdelta" + ct + ".jpg");
    
    Mat gray = new Mat();
    Imgproc.cvtColor(delta,gray,Imgproc.COLOR_BGR2GRAY);
    Mat thresh = new Mat();
    Imgproc.threshold(gray,thresh,MIN_THRESOLD,255,
          Imgproc.THRESH_BINARY); 
-// saveMatrix(thresh,"/vol/spr/thresh" + ct + ".jpg");  
    
-   Mat hier = new Mat();
    Mat lbls = new Mat();
    Mat stats = new Mat();
    Mat cent = new Mat();
@@ -210,44 +175,38 @@ void handleNextFrame()
    IvyLog.logD("VISION","Components with stats returned " +
          c0 + " " + lbls.size() + " " + stats.size() + " " + cent.size());
    int ctr = 0;
+   List<Point2D> usepoints = new ArrayList<>();
    for (int i = 1; i < stats.height(); ++i) {
       double sz = stats.get(i,4)[0];
       if (sz >= 2) {
          IvyLog.logD("VISION","Found block of size " + sz);
        }
       if (sz >= MIN_SIZE) {
-         ++ctr; 
-         double xpos = cent.get(i,0)[0];
-         double ypos = cent.get(i,1)[0];
-         IvyLog.logD("VISION","USE DELTA " + " " +
-               xpos + " " + ypos + " " +
-               stats.get(i,2)[0] + " " + stats.get(i,3)[0] + " " +
-               stats.get(i,4)[0]);
+         ++ctr;
+         if (sz < MIN_SIZE) {
+            double xpos = cent.get(i,0)[0];
+            double ypos = cent.get(i,1)[0];
+            usepoints.add(new Point2D.Double(xpos,ypos));
+            IvyLog.logD("VISION","USE DELTA " + " " +
+                  xpos + " " + ypos + " " +
+                  stats.get(i,2)[0] + " " + stats.get(i,3)[0] + " " +
+                  stats.get(i,4)[0]);
+          }
        }
     }
    if (ctr == 0) return;
    
-   int ct = image_count.incrementAndGet();
-   IvyLog.logD("Images saved as " + ct);
-   saveMatrix(matrix,"/vol/spr/image" + ct + ".jpg");
-   saveMatrix(delta,"/vol/spr/delta" + ct + ".jpg");
-   saveMatrix(thresh,"/vol/spr/thresh" + ct + ".jpg");  
+   if (!usepoints.isEmpty()) {
+      int ct = image_count.incrementAndGet();
+      vision_base.recordDeltaPoints(usepoints); 
+      
+      IvyLog.logD("Images saved as " + ct);
+      saveMatrix(matrix,"/vol/spr/image" + ct + ".jpg");
+      saveMatrix(delta,"/vol/spr/delta" + ct + ".jpg");
+      saveMatrix(thresh,"/vol/spr/thresh" + ct + ".jpg");  
+    }
    
    prior_image = matrix;
-   
-// List<MatOfPoint> contours = new ArrayList<>();
-// Imgproc.findContours(thresh,contours,hier,
-//       Imgproc.RETR_TREE,Imgproc.CHAIN_APPROX_SIMPLE);
-// System.err.println("VISION: Countour count : " + contours.size());
-// if (contours.size() == 0) return;
-// 
-// Mat conn = new Mat();
-// Imgproc.connectedComponents(thresh,conn);
-// System.err.println("VISION: computed connected components " + conn.size());
-   
-   // for each component identified,
-   //   find center point
-   //   pass that point onto layout and train
 }
 
 
@@ -261,8 +220,6 @@ void handleNextFrame()
 private void saveMatrix(Mat matrix,String file)
 {
    if (matrix.width() == 0 || matrix.height() == 0) return;
-   
-   
    
    BufferedImage image = new BufferedImage(matrix.width(),
          matrix.height(),BufferedImage.TYPE_3BYTE_BGR);

@@ -48,6 +48,7 @@ double TRAIN_LIST_TOLERANCE = 0.1;
 double DELTA_THRESHOLD = 50;
 double MIN_THRESOLD = 50; 
 double MIN_SIZE = 10;
+double MAX_SIZE = 100;
 
 }       // end of interface VisionConstants
 
