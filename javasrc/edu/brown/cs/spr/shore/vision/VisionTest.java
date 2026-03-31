@@ -178,7 +178,7 @@ private void process2()
    
    List<MatOfPoint> contours = new ArrayList<>();
    Imgproc.findContours(thresh,contours,null,
-         Imgproc.RETR_TREE,Imgproc.CHAIN_APPROX_SIMPLE);
+         Imgproc.RETR_LIST,Imgproc.CHAIN_APPROX_SIMPLE);
    
    Mat conn = new Mat();
    Imgproc.connectedComponents(thresh,conn);

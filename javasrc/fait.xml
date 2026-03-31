@@ -1,6 +1,36 @@
 <FAIT>
+   <METHOD NAME='edu.brown.cs.spr.shore.network.NetworkProcessorTower.TowerStatusUpdater.run'
+	NOETURN='true' SCAN='true' />
+
    <PACKAGE NAME='org.opencv' />
+
    <PACKAGE NAME='javax.jmdns.impl' />
+   <METHOD NAME='javax.jmdns.JmmDNS.addServiceListener'
+	CALLBACK='serviceAdded serviceRemoved serviceResolved serviceTypeAdded
+		subtypeForServiceTypeAdded' CBARGS='1' />
+
+   <PACKAGE NAME='javafx' />
+   <METHOD NAME='javafx.scene.shape.Node.setOnMouseClicked'
+      CALLBACK='handle' CBARGS='1' />
+   <METHOD NAME='javafx.scene.shape.Node.setOnMousePressed'
+      CALLBACK='handle' CBARGS='1' />
+   <METHOD NAME='javafx.scene.shape.Node.setOnMouseReleased'
+      CALLBACK='handle' CBARGS='1' />
+   <METHOD NAME='javafx.scene.shape.Node.setOnMouseEntered'
+      CALLBACK='handle' CBARGS='1' />
+   <METHOD NAME='javafx.scene.shape.Node.setOnMouseExited'
+      CALLBACK='handle' CBARGS='1' />
+   <METHOD NAME='javafx.scene.shape.Node.setOnMouseMoved'
+      CALLBACK='handle' CBARGS='1' />
+   <METHOD NAME='javafx.scene.shape.Node.setOnKeyPressed'
+      CALLBACK='handle' CBARGS='1' />
+   <METHOD NAME='javafx.scene.shape.Node.setOnKeyReleased'
+      CALLBACK='handle' CBARGS='1' />
+   <METHOD NAME='javafx.scene.shape.Node.setOnKeyTyped'
+      CALLBACK='handle' CBARGS='1' />
+
+
+
 </FAIT>
 
 

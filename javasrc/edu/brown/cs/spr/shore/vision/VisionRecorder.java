@@ -44,6 +44,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.Point;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.videoio.VideoCapture;
@@ -147,7 +149,7 @@ private synchronized void waitForRunning()
 /*                                                                              */
 /********************************************************************************/
 
-void handleNextFrame()
+private void handleNextFrame()
 {
    Mat matrix = new Mat();
    train_cam.read(matrix);
@@ -169,11 +171,17 @@ void handleNextFrame()
    Mat lbls = new Mat();
    Mat stats = new Mat();
    Mat cent = new Mat();
+   Mat hier = new Mat();
    
    int c0 = Imgproc.connectedComponentsWithStats(thresh,lbls,stats,cent);
    
+   List<MatOfPoint> contours = new ArrayList<>();
+   Imgproc.findContours(thresh,contours,hier,
+         Imgproc.RETR_EXTERNAL,Imgproc.CHAIN_APPROX_SIMPLE);
+   
    IvyLog.logD("VISION","Components with stats returned " +
-         c0 + " " + lbls.size() + " " + stats.size() + " " + cent.size());
+         c0 + " " + lbls.size() + " " + stats.size() + " " + cent.size() + " " +
+         contours.size() + " " + hier.size());
    int ctr = 0;
    List<Point2D> usepoints = new ArrayList<>();
    for (int i = 1; i < stats.height(); ++i) {
@@ -183,7 +191,7 @@ void handleNextFrame()
        }
       if (sz >= MIN_SIZE) {
          ++ctr;
-         if (sz < MIN_SIZE) {
+         if (sz < MAX_SIZE) {
             double xpos = cent.get(i,0)[0];
             double ypos = cent.get(i,1)[0];
             usepoints.add(new Point2D.Double(xpos,ypos));
@@ -191,6 +199,34 @@ void handleNextFrame()
                   xpos + " " + ypos + " " +
                   stats.get(i,2)[0] + " " + stats.get(i,3)[0] + " " +
                   stats.get(i,4)[0]);
+          }
+         else if (sz < IGNORE_SIZE) { 
+            int cont = -1;
+            for (int j = 0; j < contours.size(); ++j) {
+               MatOfPoint mp = contours.get(j);
+               double [] coord = mp.get(0,0);
+               int x0 = (int) coord[0];
+               int y0 = (int) coord[1];
+               double [] lbl = lbls.get(y0,x0);
+               if (lbl[0] == i) {
+                  IvyLog.logD("VISION","Found contour " + i + " " + lbl[0] + " " + j + 
+                        " " + x0 + " " + y0);
+                  cont = j;
+                  break;
+                }
+             }
+            // look for rectangle here
+            // go through contour points, find X for min(Y),max(Y) 
+            //          find Y for min(X), max(X)
+            // handle aligned case
+            // find long direction
+            // get center points along long direction
+            
+            double xpos = cent.get(i,0)[0];
+            double ypos = cent.get(i,1)[0];
+            IvyLog.logD("VISION","Check for rectangle " + xpos + " " + ypos);
+            // loo through contours to find one containing (xpos,ypos)
+            usepoints.add(new Point2D.Double(xpos,ypos));
           }
        }
     }
@@ -255,8 +291,12 @@ private final class CameraThread extends Thread {
             // possibly wait here to fixed interval
           }
          last_read = System.currentTimeMillis();
-       
-         handleNextFrame();
+         try {
+            handleNextFrame();
+          }
+         catch (Throwable t) {
+            IvyLog.logE("VISION","Problem handling vision frame",t);
+          }
        }
     }
    
