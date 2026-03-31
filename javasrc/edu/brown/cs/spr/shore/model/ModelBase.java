@@ -510,7 +510,12 @@ private void addNextPoints(IfacePoint pt,Set<IfacePoint> rslt,Set<IfacePoint> pr
 void fireSensorChanged(ModelSensor sensor)
 {
    for (ModelCallback cb : model_listeners) {
-      Platform.runLater(() -> { cb.sensorChanged(sensor); });
+      try {
+         Platform.runLater(() -> { cb.sensorChanged(sensor); });
+       }
+      catch (IllegalStateException e) {
+         cb.sensorChanged(sensor);
+       }
     }
 }
 
@@ -518,8 +523,12 @@ void fireSensorChanged(ModelSensor sensor)
 void firePreSensorChanged(ModelSensor sensor)
 {
    for (ModelCallback cb : model_listeners) {
-     
-      Platform.runLater(() -> { cb.preSensorChanged(sensor); });
+      try {
+         Platform.runLater(() -> { cb.preSensorChanged(sensor); });
+       }
+      catch (IllegalStateException e) {
+         cb.preSensorChanged(sensor);
+       }
     }
 }
 
@@ -527,7 +536,12 @@ void firePreSensorChanged(ModelSensor sensor)
 void fireSwitchChanged(ModelSwitch sw)
 {
    for (ModelCallback cb : model_listeners) {
-      Platform.runLater(() -> { cb.switchChanged(sw); });
+      try {
+         Platform.runLater(() -> { cb.switchChanged(sw); });
+       }
+      catch (IllegalStateException e) {
+         cb.switchChanged(sw);
+       }
     }
 }
 
@@ -535,7 +549,12 @@ void fireSwitchChanged(ModelSwitch sw)
 void fireSignalChanged(ModelSignal signal)
 {
    for (ModelCallback cb : model_listeners) {
-      Platform.runLater(() -> { cb.signalChanged(signal); });
+      try {
+         Platform.runLater(() -> { cb.signalChanged(signal); });
+       }
+      catch (IllegalStateException e) {
+         cb.signalChanged(signal);
+       }
     }
 }
 
@@ -543,7 +562,12 @@ void fireSignalChanged(ModelSignal signal)
 void fireBlockChanged(ModelBlock block)
 {
    for (ModelCallback cb : model_listeners) {
-      Platform.runLater(() -> cb.blockChanged(block));
+      try {
+         Platform.runLater(() -> { cb.blockChanged(block); });
+       }
+      catch (IllegalStateException e) {
+         cb.blockChanged(block);
+       }
     }
 }
 

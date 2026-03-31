@@ -38,6 +38,8 @@ import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.ListIterator;
 
+import org.opencv.core.Mat;
+
 
 public class VisionFactory implements VisionConstants
 {
@@ -106,6 +108,16 @@ void recordDeltaPoints(List<Point2D> pts)
 }
 
 
+int getLayoutSize()
+{
+   return vision_layout.getSize(); 
+}
+
+
+void fillInLayout(Mat out)
+{
+   vision_layout.fillInLayout(out); 
+}
 
 }       // end of class VisionFactory
 

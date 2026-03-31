@@ -51,8 +51,8 @@ double MIN_SIZE = 10;
 double MAX_SIZE = 100;
 double IGNORE_SIZE = 200;
 
-double MIN_DISTANCE_SAVE = 1;
-double MIN_DISTANCE_CONNECT = 7;
+double MIN_DISTANCE_SAME = 5;
+double MIN_DISTANCE_CONNECT = 10;
 
 
 

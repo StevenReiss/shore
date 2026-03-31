@@ -42,6 +42,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.opencv.core.Mat;
+import org.opencv.core.Point;
+import org.opencv.core.Scalar;
+import org.opencv.imgproc.Imgproc;
+
 import edu.brown.cs.ivy.file.IvyLog;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
@@ -96,14 +101,18 @@ VisionPoint findLayoutPoint(Point2D given)
    double mind = -1;
    for (Map.Entry<VisionPoint,Double> ent : close.entrySet()) {
       double d = ent.getValue();
-      if (d <= MIN_DISTANCE_SAVE) {
+      if (d <= MIN_DISTANCE_SAME) { 
          if (rslt == null || mind > d) {
             rslt = ent.getKey();
             mind = d;
           }
        }
     }
-   if (rslt != null) return rslt;
+   if (rslt != null) {
+      IvyLog.logD("VISION","Reuse existing point " + rslt.getX() + " " +
+            rslt.getY());
+      return rslt;
+    }
    
    rslt = new VisionPoint(given.getX(),given.getY());
    IvyLog.logD("VISION","Create new VisionPoint " + given.getX() +
@@ -132,6 +141,12 @@ VisionPoint findLayoutPoint(Point2D given)
 }
 
 
+int getSize()
+{
+   return connected_set.size();
+}
+
+
 IfacePoint getShorePoint(Point2D given)
 {
    VisionPoint vp = findLayoutPoint(given);
@@ -140,6 +155,33 @@ IfacePoint getShorePoint(Point2D given)
 }
 
 
+void fillInLayout(Mat out)
+{
+   for (VisionPoint vp : connected_set) {
+      int xv = (int) vp.getX();
+      int yv = (int) vp.getY();
+      for (int i = -2; i <= 2; ++i) {
+         for (int j = -2; j <= 2; ++j) {
+            out.put(yv+i,xv+j,new double [] { 255,255,0});
+          }
+       }
+      Point pa = new Point(xv,yv);
+      for (VisionPoint xvp : vp.connectedTo()) {
+         Point pb = new Point(xvp.getX(),xvp.getY());
+         Imgproc.line(out,pa,pb,
+               new Scalar(255,255,255));
+       }
+    }
+   for (VisionPoint vp : singleton_set) {
+      int xv = (int) vp.getX();
+      int yv = (int) vp.getY();
+      for (int i = -1; i <= 1; ++i) {
+         for (int j = -1; j <= 1; ++j) {
+            out.put(yv+i,xv+j,new double [] { 255,0,255});
+          }
+       }
+    }
+}
 
 /********************************************************************************/
 /*                                                                              */
