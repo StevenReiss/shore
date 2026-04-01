@@ -1,8 +1,8 @@
 /********************************************************************************/
 /*                                                                              */
-/*              VisionConstants.java                                            */
+/*              IfaceVision.java                                                */
 /*                                                                              */
-/*      Constants for using computer vision to detect trainsrr55                    */
+/*      Facade for vision processing                                            */
 /*                                                                              */
 /********************************************************************************/
 /*      Copyright 2023 Brown University -- Steven P. Reiss                    */
@@ -33,34 +33,23 @@
 
 
 
-package edu.brown.cs.spr.shore.vision;
+package edu.brown.cs.spr.shore.iface;
 
 
 
-public interface VisionConstants
+public interface IfaceVision extends IfaceConstants
 {
 
-int CAMERA_ID = 0;
+void startRecording();
+void finishRecording();
+void pauseRecording(boolean pause);
+boolean isRecording();
+boolean isPaused();
 
-double TRAIN_INITIAL_TOLERANCE = 0.5;
-double TRAIN_LIST_TOLERANCE = 0.1;
-
-double DELTA_THRESHOLD = 50;
-double MIN_THRESOLD = 50; 
-double MIN_SIZE = 10;
-double MAX_SIZE = 100;
-double IGNORE_SIZE = 200;
-
-double MIN_DISTANCE_SAME = 5;
-double MIN_DISTANCE_CONNECT = 10;
-double MAX_DISTANCE_FIND = 10;
-
-
-
-}       // end of interface VisionConstants
+}       // end of interface IfaceVision
 
 
 
 
-/* end of VisionConstants.java */
+/* end of IfaceVision.java */
 

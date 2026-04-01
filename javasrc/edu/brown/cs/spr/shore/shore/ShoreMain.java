@@ -129,10 +129,11 @@ private void process()
    
    planner_base = new PlannerFactory(safety_base,model_base,train_base);    
    
-   view_base = new ViewFactory(safety_base,model_base,train_base,
-         planner_base,network_monitor); 
+   vision_base = new VisionFactory(model_base); 
    
-   vision_base = new VisionFactory();
+   view_base = new ViewFactory(safety_base,model_base,train_base,
+         planner_base,network_monitor,vision_base);  
+   
    
    ShoreLog.logD("SHORE","ALL MODULES SET UP");
    

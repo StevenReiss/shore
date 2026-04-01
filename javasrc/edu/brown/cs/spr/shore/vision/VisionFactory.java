@@ -35,13 +35,20 @@
 package edu.brown.cs.spr.shore.vision;
 
 import java.awt.geom.Point2D;
+import java.io.File;
 import java.util.List;
 import java.util.ListIterator;
 
 import org.opencv.core.Mat;
 
+import edu.brown.cs.spr.shore.iface.IfaceModel;
+import edu.brown.cs.spr.shore.iface.IfaceSensor;
+import edu.brown.cs.spr.shore.iface.IfaceVision;
+import edu.brown.cs.spr.shore.model.ModelBase;
 
-public class VisionFactory implements VisionConstants
+
+public class VisionFactory implements VisionConstants, IfaceVision, 
+      IfaceModel.ModelCallback 
 {
 
 
@@ -50,9 +57,12 @@ public class VisionFactory implements VisionConstants
 /*      Private Storage                                                         */
 /*                                                                              */
 /********************************************************************************/
-
+ 
 private VisionRecorder         vision_recorder;
 private VisionLayout           vision_layout;
+private ModelBase              model_base;
+private File                   vision_file;
+
 
 
 /********************************************************************************/
@@ -61,11 +71,15 @@ private VisionLayout           vision_layout;
 /*                                                                              */
 /********************************************************************************/
 
-
-public VisionFactory()
+public VisionFactory(ModelBase mb)
 {
+   model_base = mb;
    vision_recorder = new VisionRecorder(this); 
+   vision_recorder.pauseRecording();
    vision_layout = new VisionLayout();
+   
+   File f1 = new File(System.getProperty("user.home"));
+   vision_file = new File(f1,"shorevision.xml");
 }
 
 
@@ -78,9 +92,49 @@ public VisionFactory()
 
 public void start()
 {
-   vision_layout.load(null);
-   
+   vision_layout.load(vision_file);
    vision_recorder.start();
+}
+
+
+@Override public void startRecording()
+{
+   vision_layout.clearLayout();
+   vision_recorder.resumeRecording();  
+   model_base.addModelCallback(this);
+}
+
+
+@Override public void finishRecording() 
+{
+   vision_recorder.pauseRecording();
+   vision_layout.save(vision_file);
+   model_base.removeModelCallback(this);
+}
+
+
+@Override public void pauseRecording(boolean puase)
+{
+   if (puase) vision_recorder.pauseRecording();
+   else vision_recorder.resumeRecording(); 
+}
+
+
+@Override public boolean isRecording() 
+{
+   return vision_recorder.isRecording(); 
+}
+
+
+@Override public boolean isPaused()
+{
+   return vision_recorder.isPaused(); 
+}
+
+
+boolean isLayoutReady()
+{
+   return vision_layout.isLayoutReady();
 }
 
 
@@ -118,6 +172,36 @@ void fillInLayout(Mat out)
 {
    vision_layout.fillInLayout(out); 
 }
+
+
+/********************************************************************************/
+/*                                                                                  */
+/*      Handle vision processing when not recording                               */
+/*                                                                                  */
+/********************************************************************************/
+
+void noteDeltaPoints(List<Point2D> pts)
+{
+   
+   // find corresponding layout point
+   // trigger sensor if there is one associated
+}
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Model callback while recording                                          */
+/*                                                                              */
+/********************************************************************************/
+
+@Override public void sensorChanged(IfaceSensor sen)
+{
+   if (isRecording() && !isPaused()) {
+      vision_layout.noteSensorChanged(sen);  
+    }
+}
+
 
 }       // end of class VisionFactory
 

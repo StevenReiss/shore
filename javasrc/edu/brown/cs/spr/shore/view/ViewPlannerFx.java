@@ -46,7 +46,8 @@ import edu.brown.cs.spr.shore.iface.IfaceNetwork;
 import edu.brown.cs.spr.shore.iface.IfacePlanner;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSafety;
-import edu.brown.cs.spr.shore.iface.IfaceSignal; 
+import edu.brown.cs.spr.shore.iface.IfaceSignal;
+import edu.brown.cs.spr.shore.iface.IfaceVision;
 import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanAction;
 import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanActionType;
 import edu.brown.cs.spr.shore.iface.IfacePlanner.PlanCallback;
@@ -104,7 +105,10 @@ private List<TrainPlanner> train_plans;
 private TrainPlanner train_planner;
 private IfaceModel layout_model;
 private ControlBox control_box;
-private IfaceNetwork network_model; 
+private IfaceNetwork network_model;
+private IfaceVision vision_model;
+private Button  record_button;
+private Button  pause_button;
 
 private static final int      STEP_START = -1;
 private static final int      STEP_DONE = 0;
@@ -123,8 +127,11 @@ ViewPlannerFx(ViewFactory vf)
    safety_model = vf.getSafetyModel();
    network_model = vf.getNetworkModel();
    layout_model = vf.getLayoutModel();
+   vision_model = vf.getVisionModel();
    train_plans = new ArrayList<>();
    control_box = new ControlBox();
+   record_button = null;
+   pause_button = null;
    
    setSpacing(10.0);
    setFillHeight(true);
@@ -881,7 +888,12 @@ private final class ControlBox extends VBox {
       b3.setOnAction(new ClearSwitchStates());
       Button b4 = new Button("Clear Blocks");
       b4.setOnAction(new ClearBlocks());
-      getChildren().addAll(b1,b2,b3,b4);
+      pause_button = new Button("Pause Vision Recording");
+      pause_button.setDisable(true);
+      pause_button.setOnAction(new PauseRecording());
+      record_button = new Button("New Vision Recording");
+      record_button.setOnAction(new RecordState());
+      getChildren().addAll(b1,b2,b3,b4,record_button,pause_button);
      
       setSpacing(15.0);
       BackgroundFill fill = new BackgroundFill(Color.LIGHTYELLOW,CornerRadii.EMPTY,
@@ -942,6 +954,47 @@ private class ClearBlocks implements EventHandler<ActionEvent> {
    
 }       // end of inner class SignalSetter
 
+
+private class RecordState implements EventHandler<ActionEvent> {
+   
+   RecordState() { }
+   
+   @Override public void handle(ActionEvent evt) {
+      Button bx = (Button) evt.getSource();
+      if (vision_model.isRecording()) {
+         vision_model.finishRecording();
+         bx.setText("New Vision Recording");
+         if (pause_button != null) pause_button.setDisable(true);
+       }
+      else {
+         vision_model.startRecording();
+         bx.setText("Finish Vision Recording");
+         if (pause_button != null) pause_button.setDisable(false);
+       }
+    }
+   
+}       // end of inner class RecordState
+
+
+private class PauseRecording implements EventHandler<ActionEvent> {
+
+   PauseRecording() { }
+   
+   @Override public void handle(ActionEvent evt) {
+      Button bx = (Button) evt.getSource();
+      if (vision_model.isRecording()) {
+         if (vision_model.isPaused()) {
+            vision_model.pauseRecording(false);
+            bx.setText("Pause Vision Recording");
+          }
+         else {
+            vision_model.pauseRecording(true);
+            bx.setText("Resume Vision Recording");
+          }
+       }
+    }
+   
+}       // end of inner class PauseRecording
 
 
 

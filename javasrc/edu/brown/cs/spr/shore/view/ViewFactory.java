@@ -40,6 +40,7 @@ import edu.brown.cs.spr.shore.iface.IfaceNetwork;
 import edu.brown.cs.spr.shore.iface.IfacePlanner;
 import edu.brown.cs.spr.shore.iface.IfaceSafety;
 import edu.brown.cs.spr.shore.iface.IfaceTrains;
+import edu.brown.cs.spr.shore.iface.IfaceVision;
 
 public class ViewFactory implements ViewConstants
 {
@@ -56,6 +57,7 @@ private IfaceTrains	train_model;
 private IfaceSafety     safety_model;
 private IfacePlanner    planner_model;
 private IfaceNetwork    network_model;
+private IfaceVision     vision_model;
 
 
 
@@ -67,13 +69,14 @@ private IfaceNetwork    network_model;
 /********************************************************************************/
 
 public ViewFactory(IfaceSafety safe,IfaceModel mdl,IfaceTrains trns,
-      IfacePlanner plan,IfaceNetwork net)
+      IfacePlanner plan,IfaceNetwork net,IfaceVision vision)
 {
    safety_model = safe;
    layout_model = mdl;
    train_model = trns;
    planner_model = plan;
    network_model = net;
+   vision_model = vision;
 }
 
 
@@ -98,6 +101,9 @@ IfacePlanner getPlannerModel()                  { return planner_model; }
 
 
 IfaceNetwork getNetworkModel()                  { return network_model; }
+
+
+IfaceVision getVisionModel()                    { return vision_model; }
 
 
 

@@ -46,8 +46,10 @@ import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
+import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.file.IvyLog;
+import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceConstants.ShoreSensorState;
@@ -62,9 +64,11 @@ class VisionLayout implements VisionConstants
 /*                                                                              */
 /********************************************************************************/
 
-private Collection<VisionPoint>  point_set;
-private Collection<VisionPoint>  connected_set;
-private Collection<VisionPoint>  singleton_set;
+private Collection<VisionPoint> point_set;
+private Collection<VisionPoint> connected_set;
+private Collection<VisionPoint> singleton_set;
+private boolean                  layout_ready;
+private IfaceSensor              last_sensor;
 
 
 
@@ -79,6 +83,8 @@ VisionLayout()
    point_set = new ArrayList<>();
    connected_set = new ArrayList<>();
    singleton_set = new ArrayList<>();
+   layout_ready = false;
+   last_sensor = null;
 }
 
 
@@ -88,59 +94,6 @@ VisionLayout()
 /*                                                                              */
 /********************************************************************************/
 
-VisionPoint findLayoutPoint(Point2D given)
-{
-   if (given instanceof VisionPoint) {
-      return (VisionPoint) given;
-    }
-   
-   Map<VisionPoint,Double> close = findClosestPoints(given,MIN_DISTANCE_CONNECT);
-   
-   // see if there is an existing point close enough
-   VisionPoint rslt = null;
-   double mind = -1;
-   for (Map.Entry<VisionPoint,Double> ent : close.entrySet()) {
-      double d = ent.getValue();
-      if (d <= MIN_DISTANCE_SAME) { 
-         if (rslt == null || mind > d) {
-            rslt = ent.getKey();
-            mind = d;
-          }
-       }
-    }
-   if (rslt != null) {
-      IvyLog.logD("VISION","Reuse existing point " + rslt.getX() + " " +
-            rslt.getY());
-      return rslt;
-    }
-   
-   rslt = new VisionPoint(given.getX(),given.getY());
-   IvyLog.logD("VISION","Create new VisionPoint " + given.getX() +
-         " " + given.getY());
-   
-   for (VisionPoint conn : close.keySet()) {
-      // need to restrict this set to closest connected points that aren't
-      //   already connected or to points inbetween a connection
-      if (singleton_set.contains(conn)) {
-         singleton_set.remove(conn);
-         connected_set.add(conn);
-       }
-      IvyLog.logD("VISION","Connect to " + conn.getX() + " " + conn.getY());
-      conn.connectTo(rslt);
-      rslt.connectTo(conn);
-    }
-   point_set.add(rslt);
-   if (!close.isEmpty()) {
-      connected_set.add(rslt);
-    }
-   else {
-      singleton_set.add(rslt);
-    }
-   
-   return rslt;
-}
-
-
 int getSize()
 {
    return connected_set.size();
@@ -149,7 +102,21 @@ int getSize()
 
 IfacePoint getShorePoint(Point2D given)
 {
-   VisionPoint vp = findLayoutPoint(given);
+   VisionPoint vp = null;
+   if (given instanceof VisionPoint) {
+      vp = (VisionPoint) given;
+    }
+   else {
+      Map<VisionPoint,Double> close = findClosestPoints(given,MAX_DISTANCE_FIND); 
+      double mind = -1;
+      for (Map.Entry<VisionPoint,Double> ent : close.entrySet()) {
+         double d = ent.getValue();
+         if (vp == null || mind > d) {
+            vp = ent.getKey();
+            mind = d;
+          }
+       }
+    }
    
    return vp.getCorrespondingPoint();
 }
@@ -183,27 +150,116 @@ void fillInLayout(Mat out)
     }
 }
 
+
+boolean isLayoutReady()
+{
+   return layout_ready;
+}
+
+
+
+void noteSensorChanged(IfaceSensor sen)
+{
+   if (sen.getSensorState() == ShoreSensorState.ON) {
+      last_sensor = sen;
+    }
+}
+
+
+
 /********************************************************************************/
 /*                                                                              */
 /*      Setup methods                                                           */
 /*                                                                              */
 /********************************************************************************/
 
+void clearLayout()
+{
+   point_set = new ArrayList<>();
+   connected_set = new ArrayList<>();
+   singleton_set = new ArrayList<>();
+   layout_ready = false;
+}
+
+
 VisionPoint recordPoint(Point2D point)
 {
-   return findLayoutPoint(point);
+   return addLayoutPoint(point);
 }
 
 
 void noteSensor(Point2D pt0,IfaceSensor sen,ShoreSensorState st)
 {
-   VisionPoint vp = findLayoutPoint(pt0);
+   VisionPoint vp = addLayoutPoint(pt0);
    IfacePoint pt = sen.getAtPoint();
    if (st == ShoreSensorState.ON) {
-      vp.setCorresondingPoint(pt);
+      vp.setCorrespondingPoint(pt);
       vp.setSensor(sen);
     }
 }
+
+
+private VisionPoint addLayoutPoint(Point2D given)
+{
+   if (given instanceof VisionPoint) {
+      return (VisionPoint) given;
+    }
+   
+   Map<VisionPoint,Double> close = findClosestPoints(given,MIN_DISTANCE_CONNECT);
+   
+   // see if there is an existing point close enough
+   VisionPoint rslt = null;
+   double mind = -1;
+   for (Map.Entry<VisionPoint,Double> ent : close.entrySet()) {
+      double d = ent.getValue();
+      if (d <= MIN_DISTANCE_SAME) { 
+         if (rslt == null || mind > d) {
+            rslt = ent.getKey();
+            mind = d;
+          }
+       }
+    }
+   if (rslt != null) {
+      rslt.reusePoint();
+      IvyLog.logD("VISION","Reuse existing point " + rslt.getX() + " " +
+            rslt.getY() + " " + last_sensor);
+      return rslt;
+    }
+   
+   rslt = new VisionPoint(given.getX(),given.getY());
+   if (last_sensor != null) {
+      IvyLog.logD("VISION","Note sensor " + last_sensor + " at " +
+            rslt.getX() + " " + rslt.getY());
+      rslt.setCorrespondingPoint(last_sensor.getAtPoint());
+      rslt.setSensor(last_sensor);
+      last_sensor = null;
+    }
+   IvyLog.logD("VISION","Create new VisionPoint " + given.getX() +
+         " " + given.getY());
+   
+   for (VisionPoint conn : close.keySet()) {
+      // need to restrict this set to closest connected points that aren't
+      //   already connected or to points inbetween a connection
+      if (singleton_set.contains(conn)) {
+         singleton_set.remove(conn);
+         connected_set.add(conn);
+       }
+      IvyLog.logD("VISION","Connect to " + conn.getX() + " " + conn.getY());
+      conn.connectTo(rslt);
+      rslt.connectTo(conn);
+    }
+   point_set.add(rslt);
+   if (!close.isEmpty()) {
+      connected_set.add(rslt);
+    }
+   else {
+      singleton_set.add(rslt);
+    }
+   
+   return rslt;
+}
+
+
 
 
 /********************************************************************************/
@@ -233,15 +289,24 @@ Map<VisionPoint,Double> findClosestPoints(Point2D pt,double max)
 /*                                                                              */
 /********************************************************************************/
 
-boolean load(File f)
+void load(File f)
 {
-   return false;
+   layout_ready = false;     
+   
+   Element data = IvyXml.loadXmlFromFile(f);
+   if (data == null) {
+      return;
+    }
+   
+   // build sets
+   layout_ready = true;
 }
 
 
 void save(File f)
 {
    // save contents in file so it can be reloaded
+   layout_ready = true;
 }
 
 
@@ -257,6 +322,7 @@ static class VisionPoint extends Point2D.Double {
    private List<VisionPoint> connect_to;
    private IfacePoint correspond_to;
    private IfaceSensor use_sensor;
+   private int point_count;
    
    private static final long serialVersionUID = 1;
    
@@ -266,6 +332,7 @@ static class VisionPoint extends Point2D.Double {
       connect_to = new ArrayList<>();
       correspond_to = null;
       use_sensor = null;
+      point_count = 1;
     }
    
    List<VisionPoint> connectedTo() {
@@ -280,7 +347,11 @@ static class VisionPoint extends Point2D.Double {
       return use_sensor;
     }
    
-   void setCorresondingPoint(IfacePoint pt) {
+   int getPointCount() {
+      return point_count;
+    }
+   
+   void setCorrespondingPoint(IfacePoint pt) {
       correspond_to = pt;
     }
    
@@ -290,6 +361,10 @@ static class VisionPoint extends Point2D.Double {
    
    void connectTo(VisionPoint vp) {
       connect_to.add(vp);
+    }
+   
+   void reusePoint() {
+      point_count++;
     }
    
 }       // end of inner class VisionPoint

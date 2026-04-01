@@ -63,6 +63,7 @@ class VisionRecorder implements VisionConstants
 
 private VisionFactory   vision_base;
 private boolean         is_paused;
+private boolean         is_recording;
 private Mat             prior_image;
 private VideoCapture    train_cam;
 private CameraThread    camera_thread;
@@ -84,11 +85,13 @@ VisionRecorder(VisionFactory vb)
    System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
    vision_base = vb;
    is_paused = false;
+   is_recording = false;
    prior_image = null;
    train_cam = new VideoCapture(CAMERA_ID);
    camera_thread = null;
    prior_size = 0;
    total_image = null;
+   
 }
 
 
@@ -100,33 +103,32 @@ VisionRecorder(VisionFactory vb)
 
 void start()
 { 
-   Mat matrix = new Mat();
-   train_cam.read(matrix);
    try {
-      Thread.sleep(1000);
+      Mat matrix = new Mat();
+      train_cam.read(matrix);
+      try {
+         Thread.sleep(1000);
+       }
+      catch (InterruptedException e) { }
     }
-   catch (InterruptedException e) { }
-   
-   saveMatrix(matrix,"/vol/spr/image0.jpg");
+   catch (Throwable t) {
+      IvyLog.logE("VISION","Initial camera read failed",t);
+    }
    
    if (camera_thread == null) {
       camera_thread = new CameraThread();
       camera_thread.start();
     }
-   else {
-      resume();
-    }
 }
 
 
-
-synchronized void pause()
+synchronized void pauseRecording()
 {
    is_paused = true;
 }
 
 
-synchronized void resume()
+synchronized void resumeRecording()
 {
    prior_image = null;
    is_paused = false;
@@ -136,12 +138,24 @@ synchronized void resume()
 
 private synchronized void waitForRunning()
 {
-   while (is_paused) {
+   while (!vision_base.isLayoutReady() && is_paused) { 
       try {
-         wait(5000);
+         wait(60000);
        }
       catch (InterruptedException e) { }
     }
+}
+
+
+boolean isRecording()
+{
+   return is_recording;
+}
+
+
+boolean isPaused()
+{
+   return is_paused;
 }
 
 
@@ -241,29 +255,33 @@ private Mat handleNextFrame(Mat matrix)
    Mat rslt = null;
    if (ctr > 0) {
       if (!usepoints.isEmpty()) {
-         int ct = image_count.incrementAndGet();
-         vision_base.recordDeltaPoints(usepoints); 
-         
-         if (ct % 25 == 0) {
-            IvyLog.logD("Images saved as " + ct);
-            saveMatrix(matrix,"/vol/spr/image" + ct + ".jpg");
-            saveMatrix(delta,"/vol/spr/delta" + ct + ".jpg");
-            saveMatrix(thresh,"/vol/spr/thresh" + ct + ".jpg");
-         if (total_image == null) {
-            total_image = thresh.clone();
+         if (is_recording) {
+            vision_base.recordDeltaPoints(usepoints); 
+            int ct = image_count.incrementAndGet();
+            if (ct % 25 == 0) {
+//             IvyLog.logD("Images saved as " + ct);
+//             saveMatrix(matrix,"/vol/spr/image" + ct + ".jpg");
+//             saveMatrix(delta,"/vol/spr/delta" + ct + ".jpg");
+//             saveMatrix(thresh,"/vol/spr/thresh" + ct + ".jpg");
+               if (total_image == null) {
+                  total_image = thresh.clone();
+                }
+               else {
+                  Core.bitwise_or(total_image,thresh,total_image);
+                }
+               rslt = prior_image;
+             }
+            int sz = vision_base.getLayoutSize();
+            if (sz > 0 && sz % 100 == 0 && sz != prior_size) {
+               prior_size = sz;
+               Mat out = Mat.ones(matrix.size(),matrix.type());
+               vision_base.fillInLayout(out); 
+               saveMatrix(out,"/vol/spr/layout" + ct + ".jpg"); 
+               saveMatrix(total_image,"/vol/spr/total" + ct + ".jpg");
+             }
           }
          else {
-            Core.bitwise_or(total_image,thresh,total_image);
-          }
-         rslt = prior_image;
-          }
-         int sz = vision_base.getLayoutSize();
-         if (sz > 0 && sz % 100 == 0 && sz != prior_size) {
-            prior_size = sz;
-            Mat out = Mat.ones(matrix.size(),matrix.type());
-            vision_base.fillInLayout(out); 
-            saveMatrix(out,"/vol/spr/layout" + ct + ".jpg"); 
-            saveMatrix(total_image,"/vol/spr/total" + ct + ".jpg");
+            vision_base.noteDeltaPoints(usepoints); 
           }
        }
       prior_image = matrix;
