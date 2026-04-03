@@ -36,15 +36,19 @@ package edu.brown.cs.spr.shore.vision;
 
 import java.awt.geom.Point2D;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
 import org.opencv.core.Mat;
 
+import edu.brown.cs.ivy.file.IvyLog;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
+import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceVision;
 import edu.brown.cs.spr.shore.model.ModelBase;
+import edu.brown.cs.spr.shore.vision.VisionLayout.VisionPoint;
 
 
 public class VisionFactory implements VisionConstants, IfaceVision, 
@@ -58,10 +62,11 @@ public class VisionFactory implements VisionConstants, IfaceVision,
 /*                                                                              */
 /********************************************************************************/
  
-private VisionRecorder         vision_recorder;
-private VisionLayout           vision_layout;
-private ModelBase              model_base;
-private File                   vision_file;
+private VisionRecorder          vision_recorder;
+private VisionLayout            vision_layout;
+private ModelBase               model_base;
+private File                    vision_file;
+private List<Point2D>           last_points;
 
 
 
@@ -77,6 +82,7 @@ public VisionFactory(ModelBase mb)
    vision_recorder = new VisionRecorder(this); 
    vision_recorder.pauseRecording();
    vision_layout = new VisionLayout();
+   last_points = new ArrayList<>();
    
    File f1 = new File(System.getProperty("user.home"));
    vision_file = new File(f1,"shorevision.xml");
@@ -100,14 +106,14 @@ public void start()
 @Override public void startRecording()
 {
    vision_layout.clearLayout();
-   vision_recorder.resumeRecording();  
+   vision_recorder.startRecording();  
    model_base.addModelCallback(this);
 }
 
 
 @Override public void finishRecording() 
 {
-   vision_recorder.pauseRecording();
+   vision_recorder.finishRecording();
    vision_layout.save(vision_file);
    model_base.removeModelCallback(this);
 }
@@ -132,7 +138,7 @@ public void start()
 }
 
 
-boolean isLayoutReady()
+@Override public boolean isLayoutReady() 
 {
    return vision_layout.isLayoutReady();
 }
@@ -147,17 +153,14 @@ boolean isLayoutReady()
 
 void recordDeltaPoints(List<Point2D> pts)
 {
+   last_points = new ArrayList<>(pts);
+   
    for (ListIterator<Point2D> it = pts.listIterator(); it.hasNext(); ) {
       Point2D pt = it.next();
-      Point2D pt0 = vision_layout.recordPoint(pt); 
-      if (pt0 != pt) {
+      VisionPoint pt0 = vision_layout.recordPoint(pt); 
+      if (pt0 != pt) {          // replace in original list for caller
          it.set(pt0);
        }
-    }
-   
-   // need logic to group pairs of points as front/back
-   if (pts.size() == 2) {
-      // add to train information
     }
 }
 
@@ -175,16 +178,56 @@ void fillInLayout(Mat out)
 
 
 /********************************************************************************/
-/*                                                                                  */
-/*      Handle vision processing when not recording                               */
-/*                                                                                  */
+/*                                                                              */
+/*      Handle vision processing when not recording                             */
+/*                                                                              */
 /********************************************************************************/
 
 void noteDeltaPoints(List<Point2D> pts)
 {
+   if (!pts.isEmpty()) last_points = new ArrayList<>(pts);
    
-   // find corresponding layout point
-   // trigger sensor if there is one associated
+   for (ListIterator<Point2D> it = pts.listIterator(); it.hasNext(); ) {
+      Point2D pt = it.next();
+      VisionPoint pt0 = vision_layout.getLayoutPoint(pt,true);  
+      // update for caller
+      if (pt0 == null) it.remove();
+      else {
+         if (pt0 != pt) {
+            it.set(pt0);
+          }
+       }
+    }
+   
+   // trigger corresponding virutal sensor based on last_points 
+   // find train position thru approximation between sensors
+}
+
+
+public boolean noteSensorAtLastPoint(IfaceSensor sen)
+{
+   if (last_points == null) return false;
+   
+   IfacePoint ipoint = sen.getAtPoint();
+   
+   VisionPoint best = null;
+   double bestd = 0;
+   for (Point2D pt : last_points) {
+      VisionPoint pt0 = vision_layout.getLayoutPoint(pt,false);
+      if (pt0.getCorrespondingPoint() != null && 
+            pt0.getCorrespondingPoint() != ipoint) continue;
+      double d = pt.distance(pt0);
+      if (best == null || d < bestd) {
+         best = pt0;
+         bestd = d;
+       }
+    }
+   
+   if (best == null) return false;
+   
+   best.setCorrespondingPoint(ipoint);
+   best.setSensor(sen);
+   return true;
 }
 
 
@@ -194,9 +237,11 @@ void noteDeltaPoints(List<Point2D> pts)
 /*      Model callback while recording                                          */
 /*                                                                              */
 /********************************************************************************/
-
+ 
 @Override public void sensorChanged(IfaceSensor sen)
 {
+   IvyLog.logD("VISION","Note sensor changed " + sen);
+   
    if (isRecording() && !isPaused()) {
       vision_layout.noteSensorChanged(sen);  
     }

@@ -100,7 +100,7 @@ int getSize()
 }
 
 
-IfacePoint getShorePoint(Point2D given)
+VisionPoint getLayoutPoint(Point2D given,boolean coord)
 {
    VisionPoint vp = null;
    if (given instanceof VisionPoint) {
@@ -111,25 +111,50 @@ IfacePoint getShorePoint(Point2D given)
       double mind = -1;
       for (Map.Entry<VisionPoint,Double> ent : close.entrySet()) {
          double d = ent.getValue();
-         if (vp == null || mind > d) {
-            vp = ent.getKey();
+         VisionPoint xp = ent.getKey();
+         boolean use = (vp == null || mind > d);
+         if (vp != null && coord) {
+            if (vp.getCorrespondingPoint() == null && xp.getCorrespondingPoint() != null) {
+               use = true;
+             }
+            if (vp.getCorrespondingPoint() != null && xp.getCorrespondingPoint() == null) {
+               use = false;
+             }
+          }
+         if (use) {
+            vp = xp;
             mind = d;
           }
        }
     }
    
+   return vp;
+}
+
+
+IfacePoint getShorePoint(Point2D given)
+{
+   VisionPoint vp = getLayoutPoint(given,true);
+   
    return vp.getCorrespondingPoint();
 }
 
 
+
 void fillInLayout(Mat out)
 {
+   double [] c0 = new double [] { 255,255,0 };
+   double [] c1 = new double [] { 255,0,255 };
+   double [] c2 = new double [] { 0,255,255 };
+   
    for (VisionPoint vp : connected_set) {
       int xv = (int) vp.getX();
       int yv = (int) vp.getY();
+      double [] c = c0;
+      if (vp.getCorrespondingPoint() != null) c = c2;
       for (int i = -2; i <= 2; ++i) {
          for (int j = -2; j <= 2; ++j) {
-            out.put(yv+i,xv+j,new double [] { 255,255,0});
+            out.put(yv+i,xv+j,c);
           }
        }
       Point pa = new Point(xv,yv);
@@ -142,9 +167,11 @@ void fillInLayout(Mat out)
    for (VisionPoint vp : singleton_set) {
       int xv = (int) vp.getX();
       int yv = (int) vp.getY();
+      double [] c = c1;
+      if (vp.getCorrespondingPoint() != null) c = c2;
       for (int i = -1; i <= 1; ++i) {
          for (int j = -1; j <= 1; ++j) {
-            out.put(yv+i,xv+j,new double [] { 255,0,255});
+            out.put(yv+i,xv+j,c);
           }
        }
     }
@@ -162,6 +189,7 @@ void noteSensorChanged(IfaceSensor sen)
 {
    if (sen.getSensorState() == ShoreSensorState.ON) {
       last_sensor = sen;
+      IvyLog.logD("VISION","Record last sensor " + sen);
     }
 }
 
@@ -212,7 +240,8 @@ private VisionPoint addLayoutPoint(Point2D given)
    double mind = -1;
    for (Map.Entry<VisionPoint,Double> ent : close.entrySet()) {
       double d = ent.getValue();
-      if (d <= MIN_DISTANCE_SAME) { 
+      VisionPoint vp0 = ent.getKey();
+      if (d <= MIN_DISTANCE_SAME || vp0.getCorrespondingPoint() != null) { 
          if (rslt == null || mind > d) {
             rslt = ent.getKey();
             mind = d;

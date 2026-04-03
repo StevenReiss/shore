@@ -120,7 +120,7 @@ private void process()
    train_base = new TrainFactory(model_base); 
    
    if (report_file != null) {
-      model_base.createReport(report_file,train_base);   
+      model_base.createReport(report_file,train_base);    
     }
    network_monitor = new NetworkMonitor(model_base,train_base);
    train_base.setNetworkModel(network_monitor);

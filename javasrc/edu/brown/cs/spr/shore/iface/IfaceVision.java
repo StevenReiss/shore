@@ -45,6 +45,7 @@ void finishRecording();
 void pauseRecording(boolean pause);
 boolean isRecording();
 boolean isPaused();
+boolean isLayoutReady();
 
 }       // end of interface IfaceVision
 

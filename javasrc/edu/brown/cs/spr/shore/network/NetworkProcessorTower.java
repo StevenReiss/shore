@@ -326,7 +326,7 @@ private ControllerInfo findController(SocketAddress sa)
 @Override public void handleMessage(DatagramPacket msg)
 {
    String msgtxt = decodeMessage(msg.getData(),msg.getOffset(),msg.getLength());
-   ShoreLog.logD("NETWORK","Received from " + msg.getAddress() + " " +
+   ShoreLog.logD("NETWORK","Received tower from " + msg.getAddress() + " " +
          msg.getPort() + " " + msg.getLength() + " " + msg.getOffset() + ": " +
          msgtxt);
    
@@ -339,7 +339,8 @@ private ControllerInfo findController(SocketAddress sa)
    ControllerInfo ci = findController(sa);
    ControllerInfo ci1 = id_map.get(id);
    if (ci1 == null && data[0] != CONTROL_ID) {
-      ShoreLog.logI("NETWORK","Message without heartbeat " + id);
+      ShoreLog.logI("NETWORK","Message without heartbeat " + id + " " +
+            msg.getAddress() + " " + msg.getPort());
       //    id_map.put(id,ci);
       //    ShoreLog.logD("NETWORK","Assign id to controller " + id);
       //    ci.setId(id);

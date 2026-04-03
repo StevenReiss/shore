@@ -291,7 +291,7 @@ private synchronized byte [] sendReplyMessage(SocketAddress who,byte[] msg,int o
 @Override public void handleMessage(DatagramPacket msg)
 {
    String msgtxt = decodeMessage(msg.getData(),msg.getOffset(),msg.getLength());
-   ShoreLog.logD("NETWORK","Received from " + msg.getAddress() + " " +
+   ShoreLog.logD("NETWORK","Received loco from " + msg.getAddress() + " " +
          msg.getPort() + " " + msg.getLength() + " " + msg.getOffset() + ": " +
          msgtxt);
    

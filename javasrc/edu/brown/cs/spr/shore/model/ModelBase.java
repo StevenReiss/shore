@@ -52,6 +52,7 @@ import java.util.TreeMap;
 
 import org.w3c.dom.Element;
 
+import edu.brown.cs.ivy.file.IvyLog;
 import edu.brown.cs.ivy.swing.SwingEventListenerList;
 import edu.brown.cs.ivy.xml.IvyXml;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
@@ -509,65 +510,158 @@ private void addNextPoints(IfacePoint pt,Set<IfacePoint> rslt,Set<IfacePoint> pr
 
 void fireSensorChanged(ModelSensor sensor)
 {
-   for (ModelCallback cb : model_listeners) {
-      try {
-         Platform.runLater(() -> { cb.sensorChanged(sensor); });
-       }
-      catch (IllegalStateException e) {
-         cb.sensorChanged(sensor);
-       }
-    }
+   runChange(new SensorChanged(sensor));
 }
-
 
 void firePreSensorChanged(ModelSensor sensor)
 {
-   for (ModelCallback cb : model_listeners) {
-      try {
-         Platform.runLater(() -> { cb.preSensorChanged(sensor); });
-       }
-      catch (IllegalStateException e) {
-         cb.preSensorChanged(sensor);
-       }
-    }
+   runChange(new PreSensorChanged(sensor));
 }
 
 
 void fireSwitchChanged(ModelSwitch sw)
 {
-   for (ModelCallback cb : model_listeners) {
-      try {
-         Platform.runLater(() -> { cb.switchChanged(sw); });
-       }
-      catch (IllegalStateException e) {
-         cb.switchChanged(sw);
-       }
-    }
+   runChange(new SwitchChanged(sw));
 }
 
 
 void fireSignalChanged(ModelSignal signal)
 {
-   for (ModelCallback cb : model_listeners) {
-      try {
-         Platform.runLater(() -> { cb.signalChanged(signal); });
-       }
-      catch (IllegalStateException e) {
-         cb.signalChanged(signal);
-       }
-    }
+   runChange(new SignalChanged(signal));
 }
-
 
 void fireBlockChanged(ModelBlock block)
 {
-   for (ModelCallback cb : model_listeners) {
+   runChange(new BlockChanged(block));
+}
+
+
+private class SensorChanged implements Runnable {
+   
+   private ModelSensor for_sensor;
+   
+   SensorChanged(ModelSensor s) {
+      for_sensor = s;
+    }
+   
+   @Override public void run() {
+      for (ModelCallback cb : model_listeners) {
+         try {
+            cb.sensorChanged(for_sensor);
+          }
+         catch (Throwable t) {
+            IvyLog.logE("MODEL","Problem handling sensor changed",t);
+          }
+       }
+    }
+   
+}       // end of inner class SensorChanged
+
+
+
+private class PreSensorChanged implements Runnable {
+  
+   private ModelSensor for_sensor;
+   
+   PreSensorChanged(ModelSensor s) {
+      for_sensor = s;
+    }
+   
+   @Override public void run() {
+      for (ModelCallback cb : model_listeners) {
+         try {
+            cb.preSensorChanged(for_sensor);
+          }
+         catch (Throwable t) {
+            IvyLog.logE("MODEL","Problem handling presensor changed",t);
+          }
+       }
+    }
+   
+}       // end of inner class PreSensorChanged
+
+
+private class SwitchChanged implements Runnable {
+   
+   private ModelSwitch for_switch;
+   
+   SwitchChanged(ModelSwitch s) {
+      for_switch = s;
+    }
+   
+   @Override public void run() {
+      for (ModelCallback cb : model_listeners) {
+         try {
+            cb.switchChanged(for_switch);
+          }
+         catch (Throwable t) {
+            IvyLog.logE("MODEL","Problem handling switch changed",t);
+          }
+       }
+    }
+
+}       // end of inner class SwitchChanged
+
+
+private class SignalChanged implements Runnable {
+   
+   private ModelSignal for_signal;
+   
+   SignalChanged(ModelSignal s) {
+      for_signal = s;
+    }
+   
+   @Override public void run() {
+      for (ModelCallback cb : model_listeners) {
+         try {
+            cb.signalChanged(for_signal);
+          }
+         catch (Throwable t) {
+            IvyLog.logE("MODEL","Problem handling signal changed",t);
+          }
+       }
+    }
+   
+}       // end of inner class SignalChanged
+
+
+
+
+private class BlockChanged implements Runnable {
+   
+   private ModelBlock for_block;
+   
+   BlockChanged(ModelBlock s) {
+      for_block = s;
+    }
+   
+   @Override public void run() {
+      for (ModelCallback cb : model_listeners) {
+         try {
+            cb.blockChanged(for_block);
+          }
+         catch (Throwable t) {
+            IvyLog.logE("MODEL","Problem handling block changed",t);
+          }
+       }
+    }
+   
+}       // end of inner class BlockChanged
+
+
+
+private void runChange(Runnable chng)
+{
+   if (!Platform.isFxApplicationThread()) {
       try {
-         Platform.runLater(() -> { cb.blockChanged(block); });
+         Platform.runLater(chng);
        }
       catch (IllegalStateException e) {
-         cb.blockChanged(block);
+         chng.run();
        }
+    }
+   else {
+      chng.run();
     }
 }
 
@@ -677,8 +771,6 @@ private void loadModel(File file) throws ShoreException
           }
        }
     }
-   
-   
 }
  
 

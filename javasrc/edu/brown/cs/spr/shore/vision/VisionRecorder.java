@@ -122,17 +122,36 @@ void start()
 }
 
 
+synchronized void startRecording()
+{
+   is_recording = true;
+   resumeRecording();
+}
+ 
+
+
+synchronized void finishRecording()
+{
+   is_recording = false;
+   is_paused = true;
+   notifyAll();
+}
+
+
 synchronized void pauseRecording()
 {
-   is_paused = true;
+   if (is_recording) is_paused = true;
 }
+
 
 
 synchronized void resumeRecording()
 {
-   prior_image = null;
-   is_paused = false;
-   notifyAll();
+   if (is_recording) {
+      prior_image = null;
+      is_paused = false;
+      notifyAll();
+    }
 }
 
 

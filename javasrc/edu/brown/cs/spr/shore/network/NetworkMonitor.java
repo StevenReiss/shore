@@ -69,7 +69,7 @@ public class NetworkMonitor implements NetworkConstants, NetworkControlMessages,
 /*										*/
 /********************************************************************************/
 
-private DatagramSocket	our_socket;
+private DatagramSocket  our_socket;
 private DatagramSocket  alt_socket;
 private DatagramSocket  speed_socket;
 private DatagramSocket  rpm_socket;

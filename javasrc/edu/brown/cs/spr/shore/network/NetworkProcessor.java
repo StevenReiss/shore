@@ -172,7 +172,10 @@ protected SocketAddress getServiceSocket(ServiceInfo si,Map<?,?> known)
    for (InetAddress ia : possibles) {
       ShoreLog.logD("NETWORK","Check address " + ia);
       SocketAddress sa = new InetSocketAddress(ia,port);
-      if (known != null && known.containsKey(sa)) return sa;
+      if (known != null && known.containsKey(sa)) {
+         ShoreLog.logD("NETWORK","Known address " + sa);
+         return sa;
+       }
       if (use == null) use = ia;
       else if (use.isLoopbackAddress()) continue;
       else if (use.isAnyLocalAddress()) continue;
@@ -218,7 +221,7 @@ private final class MessageThread extends Thread {
    void processMessage(DatagramPacket packet) {
       String msgtxt = decodeMessage(packet.getData(),packet.getOffset(),packet.getLength());
       ShoreLog.logD("NETWORK","Queue message from " + packet.getAddress() + " " +
-            packet.getPort() + ": " + msgtxt);
+            packet.getPort() + " " + message_queue.size() + ": " + msgtxt);
       message_queue.offer(packet);
     }
    
@@ -228,11 +231,12 @@ private final class MessageThread extends Thread {
             DatagramPacket packet = message_queue.take();
             message_handler.handleMessage(packet);
           }
-         catch (InterruptedException e) { }
+         catch (InterruptedException e) {
+            ShoreLog.logE("NETWORK","Message processing interrupted",e);
+          }
          catch (Throwable t) {
             ShoreLog.logE("NETWORK","Problem processing message",t);
           }
-        
        }
     }
    

@@ -109,6 +109,8 @@ private IfaceNetwork network_model;
 private IfaceVision vision_model;
 private Button  record_button;
 private Button  pause_button;
+private Button  sensor_button;
+
 
 private static final int      STEP_START = -1;
 private static final int      STEP_DONE = 0;
@@ -891,9 +893,12 @@ private final class ControlBox extends VBox {
       pause_button = new Button("Pause Vision Recording");
       pause_button.setDisable(true);
       pause_button.setOnAction(new PauseRecording());
-      record_button = new Button("New Vision Recording");
+      sensor_button = new Button("Set Virtual Sensor");
+      if (!vision_model.isLayoutReady()) sensor_button.setDisable(true);
+      sensor_button.setOnAction(new VirtualSensor());
+      record_button = new Button("Start Vision Recording");
       record_button.setOnAction(new RecordState());
-      getChildren().addAll(b1,b2,b3,b4,record_button,pause_button);
+      getChildren().addAll(b1,b2,b3,b4,record_button,pause_button,sensor_button);
      
       setSpacing(15.0);
       BackgroundFill fill = new BackgroundFill(Color.LIGHTYELLOW,CornerRadii.EMPTY,
@@ -965,11 +970,17 @@ private class RecordState implements EventHandler<ActionEvent> {
          vision_model.finishRecording();
          bx.setText("New Vision Recording");
          if (pause_button != null) pause_button.setDisable(true);
+         if (sensor_button != null) {
+            sensor_button.setDisable(!vision_model.isLayoutReady());
+          }
        }
       else {
+         // pop up a frame telling what to do while recording
+         // have a start button on that frame
          vision_model.startRecording();
          bx.setText("Finish Vision Recording");
          if (pause_button != null) pause_button.setDisable(false);
+         if (sensor_button != null) sensor_button.setDisable(false);
        }
     }
    
@@ -986,15 +997,29 @@ private class PauseRecording implements EventHandler<ActionEvent> {
          if (vision_model.isPaused()) {
             vision_model.pauseRecording(false);
             bx.setText("Pause Vision Recording");
+            if (sensor_button != null) sensor_button.setDisable(false);
           }
          else {
             vision_model.pauseRecording(true);
             bx.setText("Resume Vision Recording");
+            if (sensor_button != null) sensor_button.setDisable(true);
           }
        }
     }
    
 }       // end of inner class PauseRecording
+
+
+private class VirtualSensor implements EventHandler<ActionEvent> {
+   
+   VirtualSensor() { }
+   
+   @Override public void handle(ActionEvent evt) {
+      // need to ask the user for the virtual sensor id -- dialog to choose
+      // then call vision_model.noteSensorAtLastPoint
+    }
+
+}       // end of inner class VirtualSensor
 
 
 

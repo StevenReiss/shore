@@ -197,7 +197,7 @@ private void checkBlockExit(IfaceSensor s)
              } 
           }
        }
-      if (checkexit) {
+      if (checkexit && pbd != null) {
          pbd.checkEmptyBlock();
        }
     }
