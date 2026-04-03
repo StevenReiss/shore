@@ -201,8 +201,34 @@ List<ModelSensor> getModelStopSensors()
 
 @Override public void setSignalState(ShoreSignalState state)
 {
-   Platform.runLater(() -> actualSetSignal(state));
+   if (Platform.isFxApplicationThread()) {
+      actualSetSignal(state);
+    }
+   else {
+      SetSignal ss = new SetSignal(state);
+      try {
+         Platform.runLater(ss);
+       }
+      catch (IllegalStateException e) {
+         ss.run();
+       }
+    }
 }
+
+
+private class SetSignal implements Runnable {
+   
+   private ShoreSignalState set_state;
+   
+   SetSignal(ShoreSignalState st) {
+      set_state = st;
+    }
+   
+   @Override public void run() {
+      actualSetSignal(set_state);
+    }
+   
+}       // end of inner class SetSignal
 
 
 void actualSetSignal(ShoreSignalState state) 

@@ -199,6 +199,7 @@ private IfaceEngine findEngine(String nameid)
       if (nameid.equals(eng.getEngineId())) return eng;
       if (nameid.equals(eng.getEngineName())) return eng;  
     }
+   
    return null;
 }
 
@@ -221,6 +222,7 @@ private EngineInfo findEngineInfo(IfaceEngine eng)
          return ei;
        }
     }
+   
    return null;
 }
 
@@ -241,24 +243,26 @@ private EngineInfo findEngineInfo(IfaceEngine eng)
 private EngineInfo setupEngine(SocketAddress sa)
 {
    if (sa == null) return null;
+   
    EngineInfo ei = engine_map.get(sa);
    if (ei == null) {
       ei = new EngineInfo(sa);
       EngineInfo nei = engine_map.putIfAbsent(sa,ei);
       if (nei != null) ei = nei;
       else {
-         ShoreLog.logD("NETWORK","New engine " + ei.getEngineId());
          ei.sendClearConsist();
          ei.sendQueryAboutMessage();
+         ShoreLog.logD("NETWORK","New engine " + sa + " " + ei.getEngineId());
          IfaceEngine eng = findEngine(ei.getEngineId());
          engine_model.setEngineSocket(eng,sa);
          ei.sendQuerySettingsMessage();
          ei.sendQueryVersionMessage();
-         ei.sendHeartbeatMessage(true);
          ei.sendQueryStateMessage();
          ei.sendSpeedReportMessage();
          ei.sendRpmReportMessage();
          ei.sendCarCount(0);
+         ei.sendHeartbeatMessage(true);
+         ei.noteSetup();
        }
     }
    
@@ -342,6 +346,7 @@ private final class LocoFiStatusUpdater extends Thread {
       for ( ; ; ) {
          List<EngineInfo> todel = null;
          for (EngineInfo ei : engine_map.values()) {
+            if (!ei.isSetup()) continue;
             ei.sendHeartbeatMessage(true);
             if (ei.sendQueryStateMessage()) {
                bad_count.remove(ei);
@@ -482,16 +487,21 @@ private class EngineInfo {
    private SocketAddress net_address;
    private String engine_id;
    private int engine_status;
+   private boolean is_setup;
    
    EngineInfo(SocketAddress net) {
       net_address = net;
       engine_id = null;
       engine_status = -1;
+      is_setup = false;
     }
    
    String getEngineId()                                 { return engine_id; }
    
    SocketAddress getSocketAddress()                     { return net_address; }
+   
+   boolean isSetup()                                    { return is_setup; }
+   void noteSetup()                                     { is_setup = true; }
    
    boolean sendQueryStateMessage() {
       byte [] msg = LOCOFI_QUERY_LOCO_STATE_CMD;

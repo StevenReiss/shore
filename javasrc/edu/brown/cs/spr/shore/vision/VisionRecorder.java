@@ -282,13 +282,14 @@ private Mat handleNextFrame(Mat matrix)
 //             saveMatrix(matrix,"/vol/spr/image" + ct + ".jpg");
 //             saveMatrix(delta,"/vol/spr/delta" + ct + ".jpg");
 //             saveMatrix(thresh,"/vol/spr/thresh" + ct + ".jpg");
-               if (total_image == null) {
-                  total_image = thresh.clone();
-                }
-               else {
-                  Core.bitwise_or(total_image,thresh,total_image);
-                }
-               rslt = prior_image;
+             }
+            rslt = prior_image;
+            
+            if (total_image == null) {
+               total_image = thresh.clone();
+             }
+            else {
+               Core.bitwise_or(total_image,thresh,total_image);
              }
             int sz = vision_base.getLayoutSize();
             if (sz > 0 && sz % 100 == 0 && sz != prior_size) {

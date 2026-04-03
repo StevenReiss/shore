@@ -107,7 +107,9 @@ VisionPoint getLayoutPoint(Point2D given,boolean coord)
       vp = (VisionPoint) given;
     }
    else {
-      Map<VisionPoint,Double> close = findClosestPoints(given,MAX_DISTANCE_FIND); 
+      double d0 = MAX_DISTANCE_FIND;
+      if (coord) d0 = MAX_DISTANCE_FIND_POINT; 
+      Map<VisionPoint,Double> close = findClosestPoints(given,d0); 
       double mind = -1;
       for (Map.Entry<VisionPoint,Double> ent : close.entrySet()) {
          double d = ent.getValue();

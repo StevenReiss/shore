@@ -180,7 +180,7 @@ private class SwitchData {
             break;
          case SET :
             if (sen == null || sen == ShoreSensorState.ON) {
-               if (last_state == state) return;
+               if (last_state == state && for_switch.getSwitchState() == state) return;
                doTrigger(state);
              }
             else {

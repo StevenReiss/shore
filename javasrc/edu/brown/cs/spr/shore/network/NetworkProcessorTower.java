@@ -297,6 +297,8 @@ private ControllerInfo findController(SocketAddress sa)
       else { 
          ShoreLog.logD("NETWORK","New Controller " + sa);
          ci.sendSyncMessage();
+         ci.sendQueryMessage();
+         ci.sendHeartbeatMessage(true);
        }
     }
    
@@ -604,6 +606,17 @@ private class ControllerInfo {
    
    void sendSyncMessage() {
       byte [] msg = { CONTROL_SYNC, MESSAGE_ALL, 0, 0 };
+      sendMessage(net_address,msg,0,4);
+    }
+   
+   void sendQueryMessage() {
+      byte [] msg = { CONTROL_QUERY, MESSAGE_ALL, 0, 0 };
+      sendMessage(net_address,msg,0,4);
+    }
+   
+   void sendHeartbeatMessage(boolean on) {
+      byte onbyte = (on ? (byte) 1 : 0);
+      byte [] msg = { CONTROL_HEARTBEAT, MESSAGE_ALL, onbyte, 0 };
       sendMessage(net_address,msg,0,4);
     }
    
