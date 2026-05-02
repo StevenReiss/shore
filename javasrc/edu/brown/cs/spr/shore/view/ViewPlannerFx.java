@@ -35,10 +35,13 @@
 
 package edu.brown.cs.spr.shore.view;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import edu.brown.cs.ivy.file.IvyFile;
 import edu.brown.cs.spr.shore.iface.IfaceBlock;
 import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
@@ -86,6 +89,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
+import javafx.scene.web.WebView;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
 
@@ -110,6 +114,7 @@ private IfaceVision vision_model;
 private Button  record_button;
 private Button  pause_button;
 private Button  sensor_button;
+private VisionPanel vision_panel;
 
 
 private static final int      STEP_START = -1;
@@ -132,6 +137,10 @@ ViewPlannerFx(ViewFactory vf)
    vision_model = vf.getVisionModel();
    train_plans = new ArrayList<>();
    control_box = new ControlBox();
+   
+   vision_panel = new VisionPanel();
+   vision_panel.setVisible(false);
+   
    record_button = null;
    pause_button = null;
    
@@ -143,8 +152,7 @@ ViewPlannerFx(ViewFactory vf)
    
    Region spacer = new Region();
    HBox.setHgrow(spacer,Priority.ALWAYS);
-   getChildren().addAll(train_planner,spacer,control_box);
-   
+   getChildren().addAll(train_planner,spacer,vision_panel,control_box);
    
    EngineChanged cb = new EngineChanged();
    for (IfaceEngine eng : vf.getTrainModel().getAllEngines()) {
@@ -158,7 +166,6 @@ ViewPlannerFx(ViewFactory vf)
 /*      Methods to return viable options for planner                            */
 /*                                                                              */
 /********************************************************************************/
-
 
 private ObservableList<PlanAction> startOptions()
 {
@@ -435,7 +442,8 @@ private class PlanStarter implements EventHandler<ActionEvent> {
       if (sig == null) return;
       
       PlanViewer pv = new PlanViewer(pe);
-      getChildren().add(pv);
+      int idx = getChildren().size() - 2;
+      getChildren().add(idx,pv);
       
       safety_model.setSignal(sig,ShoreSignalState.GREEN);
       // create a display for the executing plan
@@ -871,6 +879,51 @@ private class ViewerClose implements EventHandler<ActionEvent> {
     }
    
 }       // end of inner class ViewerClose
+
+
+
+/********************************************************************************/
+/*                                                                              */
+/*      Vision Setup Controller                                                 */
+/*                                                                              */
+/********************************************************************************/
+
+private final class VisionPanel extends VBox {
+   
+   private Button start_button;
+   private Button pause_button;
+   private Button finish_button;
+   private Button cancel_button;
+   
+   VisionPanel() {
+      String prompt = "Vision prompt";
+      try {
+         InputStream ins = getClass().getClassLoader().
+            getResourceAsStream("visionprompt.html");    
+         prompt = IvyFile.loadFile(ins);
+       }
+      catch (IOException e) {}
+      
+      WebView ta = new WebView();
+      ta.getEngine().loadContent(prompt);
+      
+      HBox ctrls = new HBox();
+      ctrls.setAlignment(Pos.CENTER);
+      start_button = new Button("Start");
+      pause_button = new Button("Pause");
+      pause_button.setDisable(true);
+      finish_button = new Button("Finish");
+      finish_button.setDisable(true);
+      ctrls.getChildren().addAll(start_button,pause_button,finish_button);
+      
+      HBox cbox = new HBox();
+      cbox.setAlignment(Pos.CENTER_RIGHT);
+      
+      getChildren().addAll(ta,ctrls,cbox);
+    }
+   
+}       // end of inner class VisionPanel
+
 
 
 /********************************************************************************/

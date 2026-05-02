@@ -71,6 +71,7 @@
 	</manifest>
 	<fileset dir='${SHORE}/java' includes='**/*.class' />
 	<fileset dir='${SHORE}/resources' includes="*.xml" />
+	<fileset dir='${SHORE}/resources' includes="*.html" />
 	<zipfileset src='${IVYLIB}/ivy.jar' excludes='META-INF/*' />
 	<zipfileset src='${IVYLIB}/slf4j-api.jar' excludes='META-INF/*' />
 	<zipfileset src='${SHORELIB}/jmdns.jar' includes='**/*.class' />
