@@ -212,19 +212,22 @@ private Mat handleNextFrame(Mat matrix)
    Mat hier = new Mat();
    
    int c0 = Imgproc.connectedComponentsWithStats(thresh,lbls,stats,cent);
+   if (c0 == 0) {
+      IvyLog.logD("VIEW","NO components found");
+    }
    
    List<MatOfPoint> contours = new ArrayList<>();
    Imgproc.findContours(thresh,contours,hier,
          Imgproc.RETR_EXTERNAL,Imgproc.CHAIN_APPROX_SIMPLE);
    
-   IvyLog.logD("VISION","Components with stats returned " +
-         c0 + " " + lbls.size() + " " + stats.size() + " " + cent.size() + " " +
-         contours.size() + " " + hier.size());
+// IvyLog.logD("VISION","Components with stats returned " +
+//       c0 + " " + lbls.size() + " " + stats.size() + " " + cent.size() + " " +
+//       contours.size() + " " + hier.size());
    int ctr = 0;
    List<Point2D> usepoints = new ArrayList<>();
    for (int i = 1; i < stats.height(); ++i) {
       double sz = stats.get(i,4)[0];
-      if (sz >= 2) {
+      if (sz >= MIN_SIZE-2) {
          IvyLog.logD("VISION","Found block of size " + sz);
        }
       if (sz >= MIN_SIZE) {
@@ -445,7 +448,7 @@ private final class CameraThread extends Thread {
          waitForRunning();
          long now = System.currentTimeMillis();
          if (last_read != 0) {
-            IvyLog.logD("VISION","Delta time " + (now-last_read));
+   //       IvyLog.logD("VISION","Delta time " + (now-last_read));
             // possibly wait here to fixed interval
           }
          if (now - last_read > 500) {
@@ -460,8 +463,8 @@ private final class CameraThread extends Thread {
             train_cam.read(matrix);
             Mat release = handleNextFrame(matrix);
             if (release != null) release.release();
-            long endnow = System.currentTimeMillis();
-            IvyLog.logD("VISION","Processing time " + (endnow - last_read));
+   //       long endnow = System.currentTimeMillis();
+   //       IvyLog.logD("VISION","Processing time " + (endnow - last_read));
           }
          catch (Throwable t) {
             IvyLog.logE("VISION","Problem handling vision frame",t);

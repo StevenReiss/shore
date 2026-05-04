@@ -40,8 +40,9 @@ package edu.brown.cs.spr.shore.iface;
 public interface IfaceVision extends IfaceConstants
 {
 
-void startRecording();
+void startRecording(boolean clear);
 void finishRecording();
+void saveRecording();
 void pauseRecording(boolean pause);
 boolean isRecording();
 boolean isPaused();

@@ -111,10 +111,8 @@ private IfaceModel layout_model;
 private ControlBox control_box;
 private IfaceNetwork network_model;
 private IfaceVision vision_model;
-private Button  record_button;
-private Button  pause_button;
-private Button  sensor_button;
 private VisionPanel vision_panel;
+private Button      record_button;
 
 
 private static final int      STEP_START = -1;
@@ -140,9 +138,6 @@ ViewPlannerFx(ViewFactory vf)
    
    vision_panel = new VisionPanel();
    vision_panel.setVisible(false);
-   
-   record_button = null;
-   pause_button = null;
    
    setSpacing(10.0);
    setFillHeight(true);
@@ -888,15 +883,162 @@ private class ViewerClose implements EventHandler<ActionEvent> {
 /*                                                                              */
 /********************************************************************************/
 
-private final class VisionPanel extends VBox {
+private final class VisionPanel extends VBox implements EventHandler<ActionEvent> {
    
    private Button start_button;
+   private Button augment_button;
    private Button pause_button;
    private Button finish_button;
    private Button cancel_button;
+   private Button accept_button;
+   private Button marker_button;
+   private Label  marker_label;
    
    VisionPanel() {
-      String prompt = "Vision prompt";
+      Label ttl = new Label("Vision Setup Controller");
+      ttl.setAlignment(Pos.CENTER);
+      ttl.setTextAlignment(TextAlignment.CENTER);
+      ttl.setTextFill(Color.GREEN.darker());
+      ttl.setFont(Font.font(20));
+      ttl.setMaxWidth(Double.MAX_VALUE);
+      
+      WebView ta = new WebView();
+      StackPane cont = new StackPane(ta);
+      BorderStroke bs = new BorderStroke(Color.BLACK,BorderStrokeStyle.SOLID,
+            CornerRadii.EMPTY,new BorderWidths(3));
+      cont.setBorder(new Border(bs));
+      cont.setPrefHeight(200);
+      ta.setVisible(true);
+      
+      HBox ctrls = new HBox();
+      ctrls.setAlignment(Pos.CENTER);
+      ctrls.setSpacing(5);
+      start_button = new Button("New");
+      start_button.setOnAction(this);
+      augment_button = new Button("Augment");
+      augment_button.setOnAction(this);
+      
+      pause_button = new Button("Pause");
+      pause_button.setDisable(true);
+      pause_button.setOnAction(this);
+      finish_button = new Button("Finish");
+      finish_button.setDisable(true);
+      finish_button.setOnAction(this);
+      ctrls.getChildren().addAll(start_button,augment_button,pause_button,finish_button);
+      
+      Region sp1 = new Region();
+      sp1.setPrefHeight(10);
+      HBox marker = new HBox();
+      marker_label = new Label("Mark virtual position");
+      marker_button = new Button("MARK");
+      marker_button.setDisable(true);
+      marker_button.setOnAction(new VirtualSensor());
+      marker.setAlignment(Pos.CENTER);
+      marker.setSpacing(10);
+      marker.getChildren().addAll(marker_label,marker_button);
+      
+      HBox cbox = new HBox();
+      cbox.setAlignment(Pos.CENTER_RIGHT);
+      cbox.setSpacing(15);
+      accept_button = new Button("Accept");
+      accept_button.setOnAction(this);
+      accept_button.setDisable(true);
+      cancel_button = new Button("Cancel");
+      cancel_button.setOnAction(this);
+      cbox.getChildren().addAll(accept_button,cancel_button);
+      
+      Region spacer = new Region();
+      VBox.setVgrow(spacer,Priority.ALWAYS);
+      
+      getChildren().addAll(ttl,cont,ctrls,sp1,marker,spacer,cbox);
+      setSpacing(5);
+      setPrefWidth(300);
+      Color c1 = Color.PALEGREEN.desaturate().desaturate();
+      BackgroundFill fill = new BackgroundFill(c1,
+            CornerRadii.EMPTY,
+            Insets.EMPTY);
+      Background bkg = new Background(fill);
+      setBackground(bkg);
+      BorderStroke bs1 = new BorderStroke(Color.GREEN,
+            BorderStrokeStyle.SOLID,
+            CornerRadii.EMPTY,new BorderWidths(5));
+      Border b = new Border(bs1);
+      setBorder(b);
+      
+      Platform.runLater(new VisionContent(ta));
+    }
+   
+   void reset() {
+      start_button.setDisable(false);
+      augment_button.setDisable(false);
+      pause_button.setDisable(true);
+      finish_button.setDisable(true);
+      marker_button.setDisable(true);
+      accept_button.setDisable(true);
+      cancel_button.setDisable(false);
+    }
+   
+   @Override public void handle(ActionEvent evt) {
+      Button bx = (Button) evt.getSource();
+      if (bx == cancel_button) {
+         if (vision_model.isRecording()) {
+            vision_model.finishRecording();
+          }
+         vision_panel.setVisible(false);
+         vision_panel.reset();
+         record_button.setDisable(false);
+       }
+      else if (bx == accept_button) {
+         if (vision_model.isRecording()) {
+            vision_model.finishRecording();
+          }
+         vision_model.saveRecording();
+         vision_panel.setVisible(false);
+         vision_panel.reset();
+         record_button.setDisable(false);
+       }
+      else if (vision_model.isRecording() && bx == finish_button) {
+         vision_model.finishRecording();
+         reset();
+       }
+      else if (vision_model.isRecording()) {
+         if (vision_model.isPaused()) {
+            vision_model.pauseRecording(false);
+            bx.setText("Pause");
+          }
+         else {
+            vision_model.pauseRecording(true);
+            bx.setText("Resume");
+          } 
+       }
+      else {
+         boolean clr = false;
+         if (bx == start_button) clr = true;
+         vision_model.startRecording(clr);
+         if (pause_button != null) {
+            pause_button.setText("Pause");
+            pause_button.setDisable(false);
+          }
+         finish_button.setDisable(false);
+         start_button.setDisable(true);
+         augment_button.setDisable(true);
+       }
+    }
+   
+   
+}       // end of inner class VisionPanel
+
+
+private class VisionContent implements Runnable {
+   
+   private WebView web_view;
+   
+   VisionContent(WebView wv) { 
+      web_view = wv;
+    }
+   
+   @Override public void run() {
+      String prompt = "<html><body>Vision prompt</body></html>";
       try {
          InputStream ins = getClass().getClassLoader().
             getResourceAsStream("visionprompt.html");    
@@ -904,25 +1046,25 @@ private final class VisionPanel extends VBox {
        }
       catch (IOException e) {}
       
-      WebView ta = new WebView();
-      ta.getEngine().loadContent(prompt);
-      
-      HBox ctrls = new HBox();
-      ctrls.setAlignment(Pos.CENTER);
-      start_button = new Button("Start");
-      pause_button = new Button("Pause");
-      pause_button.setDisable(true);
-      finish_button = new Button("Finish");
-      finish_button.setDisable(true);
-      ctrls.getChildren().addAll(start_button,pause_button,finish_button);
-      
-      HBox cbox = new HBox();
-      cbox.setAlignment(Pos.CENTER_RIGHT);
-      
-      getChildren().addAll(ta,ctrls,cbox);
+      web_view.getEngine().loadContent(prompt,"text/html");
     }
    
-}       // end of inner class VisionPanel
+}       // end of inner class VisionContent
+
+
+
+
+private class VirtualSensor implements EventHandler<ActionEvent> {
+   
+   VirtualSensor() { }
+   
+   @Override public void handle(ActionEvent evt) {
+      // need to ask the user for the virtual sensor id -- dialog to choose
+      // then call vision_model.noteSensorAtLastPoint
+    }
+   
+}       // end of inner class VirtualSensor
+
 
 
 
@@ -943,15 +1085,9 @@ private final class ControlBox extends VBox {
       b3.setOnAction(new ClearSwitchStates());
       Button b4 = new Button("Clear Blocks");
       b4.setOnAction(new ClearBlocks());
-      pause_button = new Button("Pause Vision Recording");
-      pause_button.setDisable(true);
-      pause_button.setOnAction(new PauseRecording());
-      sensor_button = new Button("Set Virtual Sensor");
-      if (!vision_model.isLayoutReady()) sensor_button.setDisable(true);
-      sensor_button.setOnAction(new VirtualSensor());
       record_button = new Button("Start Vision Recording");
-      record_button.setOnAction(new RecordState());
-      getChildren().addAll(b1,b2,b3,b4,record_button,pause_button,sensor_button);
+      record_button.setOnAction(new StartVision());
+      getChildren().addAll(b1,b2,b3,b4,record_button);
      
       setSpacing(15.0);
       BackgroundFill fill = new BackgroundFill(Color.LIGHTYELLOW,CornerRadii.EMPTY,
@@ -1013,66 +1149,18 @@ private class ClearBlocks implements EventHandler<ActionEvent> {
 }       // end of inner class SignalSetter
 
 
-private class RecordState implements EventHandler<ActionEvent> {
+private class StartVision implements EventHandler<ActionEvent> {
    
-   RecordState() { }
-   
-   @Override public void handle(ActionEvent evt) {
-      Button bx = (Button) evt.getSource();
-      if (vision_model.isRecording()) {
-         vision_model.finishRecording();
-         bx.setText("New Vision Recording");
-         if (pause_button != null) pause_button.setDisable(true);
-         if (sensor_button != null) {
-            sensor_button.setDisable(!vision_model.isLayoutReady());
-          }
-       }
-      else {
-         // pop up a frame telling what to do while recording
-         // have a start button on that frame
-         vision_model.startRecording();
-         bx.setText("Finish Vision Recording");
-         if (pause_button != null) pause_button.setDisable(false);
-         if (sensor_button != null) sensor_button.setDisable(false);
-       }
-    }
-   
-}       // end of inner class RecordState
-
-
-private class PauseRecording implements EventHandler<ActionEvent> {
-
-   PauseRecording() { }
+   StartVision() { }
    
    @Override public void handle(ActionEvent evt) {
-      Button bx = (Button) evt.getSource();
-      if (vision_model.isRecording()) {
-         if (vision_model.isPaused()) {
-            vision_model.pauseRecording(false);
-            bx.setText("Pause Vision Recording");
-            if (sensor_button != null) sensor_button.setDisable(false);
-          }
-         else {
-            vision_model.pauseRecording(true);
-            bx.setText("Resume Vision Recording");
-            if (sensor_button != null) sensor_button.setDisable(true);
-          }
-       }
-    }
-   
-}       // end of inner class PauseRecording
-
-
-private class VirtualSensor implements EventHandler<ActionEvent> {
-   
-   VirtualSensor() { }
-   
-   @Override public void handle(ActionEvent evt) {
-      // need to ask the user for the virtual sensor id -- dialog to choose
-      // then call vision_model.noteSensorAtLastPoint
+      vision_panel.reset();
+      vision_panel.setVisible(true);
+      record_button.setDisable(true);
     }
 
-}       // end of inner class VirtualSensor
+}       // end of inner class StartVision
+
 
 
 

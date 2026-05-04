@@ -103,9 +103,9 @@ public void start()
 }
 
 
-@Override public void startRecording()
+@Override public void startRecording(boolean clear)
 {
-   vision_layout.clearLayout();
+   if (clear) vision_layout.clearLayout(); 
    vision_recorder.startRecording();  
    model_base.addModelCallback(this);
 }
@@ -114,8 +114,13 @@ public void start()
 @Override public void finishRecording() 
 {
    vision_recorder.finishRecording();
-   vision_layout.save(vision_file);
    model_base.removeModelCallback(this);
+}
+
+
+@Override public void saveRecording()
+{ 
+   vision_layout.save(vision_file);
 }
 
 
