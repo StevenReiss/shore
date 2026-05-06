@@ -107,6 +107,8 @@ boolean goesTo(IfacePoint prev,IfacePoint pt,IfacePoint tgt);
 IfaceBlock findNextBlock(IfacePoint prev,IfacePoint at);
 
 
+IfacePoint getPointById(String id);
+
 /**
  *      Return the XML used to load the model.  This is provided
  *      so that the XML can include additional information for 

@@ -36,11 +36,14 @@ package edu.brown.cs.spr.shore.vision;
 
 import java.awt.geom.Point2D;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -50,6 +53,7 @@ import org.w3c.dom.Element;
 
 import edu.brown.cs.ivy.file.IvyLog;
 import edu.brown.cs.ivy.xml.IvyXml;
+import edu.brown.cs.ivy.xml.IvyXmlWriter;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
 import edu.brown.cs.spr.shore.iface.IfaceConstants.ShoreSensorState;
@@ -69,6 +73,8 @@ private Collection<VisionPoint> connected_set;
 private Collection<VisionPoint> singleton_set;
 private boolean                  layout_ready;
 private IfaceSensor              last_sensor;
+
+private static AtomicInteger id_counter = new AtomicInteger(0);
 
 
 
@@ -250,14 +256,20 @@ private VisionPoint addLayoutPoint(Point2D given)
           }
        }
     }
+   
+   boolean reuse = false;
    if (rslt != null) {
       rslt.reusePoint();
+      reuse = true;
       IvyLog.logD("VISION","Reuse existing point " + rslt.getX() + " " +
             rslt.getY() + " " + last_sensor);
-      return rslt;
+    }
+   else {
+      rslt = new VisionPoint(given.getX(),given.getY());
+      IvyLog.logD("VISION","Create new VisionPoint " + given.getX() +
+            " " + given.getY());
     }
    
-   rslt = new VisionPoint(given.getX(),given.getY());
    if (last_sensor != null) {
       IvyLog.logD("VISION","Note sensor " + last_sensor + " at " +
             rslt.getX() + " " + rslt.getY());
@@ -265,26 +277,26 @@ private VisionPoint addLayoutPoint(Point2D given)
       rslt.setSensor(last_sensor);
       last_sensor = null;
     }
-   IvyLog.logD("VISION","Create new VisionPoint " + given.getX() +
-         " " + given.getY());
    
-   for (VisionPoint conn : close.keySet()) {
-      // need to restrict this set to closest connected points that aren't
-      //   already connected or to points inbetween a connection
-      if (singleton_set.contains(conn)) {
-         singleton_set.remove(conn);
-         connected_set.add(conn);
+   if (!reuse) {
+      for (VisionPoint conn : close.keySet()) {
+         // need to restrict this set to closest connected points that aren't
+         //   already connected or to points inbetween a connection
+         if (singleton_set.contains(conn)) {
+            singleton_set.remove(conn);
+            connected_set.add(conn);
+          }
+         IvyLog.logD("VISION","Connect to " + conn.getX() + " " + conn.getY());
+         conn.connectTo(rslt);
+         rslt.connectTo(conn);
        }
-      IvyLog.logD("VISION","Connect to " + conn.getX() + " " + conn.getY());
-      conn.connectTo(rslt);
-      rslt.connectTo(conn);
-    }
-   point_set.add(rslt);
-   if (!close.isEmpty()) {
-      connected_set.add(rslt);
-    }
-   else {
-      singleton_set.add(rslt);
+      point_set.add(rslt);
+      if (!close.isEmpty()) {
+         connected_set.add(rslt);
+       }
+      else {
+         singleton_set.add(rslt);
+       }
     }
    
    return rslt;
@@ -322,15 +334,39 @@ Map<VisionPoint,Double> findClosestPoints(Point2D pt,double max)
 
 void load(File f)
 {
-   layout_ready = false;     
-   
    Element data = IvyXml.loadXmlFromFile(f);
    if (data == null) {
-      return;
+      clearLayout();
+      Map<String,VisionPoint> pts = new HashMap<>();
+      Element ptxml = IvyXml.getChild(data,"POINTS");
+      for (Element pe : IvyXml.children(ptxml,"POINT")) {
+         VisionPoint vp = new VisionPoint(pe);
+         pts.put(vp.getId(),vp);
+       }
+      for (Element pe : IvyXml.children(ptxml,"POINT")) {
+         String id = IvyXml.getAttrString(pe,"ID");
+         String conn = IvyXml.getAttrString(pe,"CONNECT");
+         if (conn != null) {
+            VisionPoint vp0 = pts.get(id);
+            for (StringTokenizer tok = new StringTokenizer(conn); tok.hasMoreTokens(); ) {
+               String cid = tok.nextToken();
+               VisionPoint cpt = pts.get(cid);
+               if (cpt != null && cpt != vp0) {
+                  vp0.connectTo(cpt);
+                  cpt.connectTo(vp0);
+                }
+             }
+          }
+       }
+      for (VisionPoint vp : pts.values()) {
+         point_set.add(vp);
+         if (!vp.connectedTo().isEmpty()) {
+            connected_set.add(vp);
+          }
+       }
+      last_sensor = null;
+      layout_ready = true;
     }
-   
-   // build sets
-   layout_ready = true;
 }
 
 
@@ -338,6 +374,25 @@ void save(File f)
 {
    // save contents in file so it can be reloaded
    layout_ready = true;
+   
+   try (IvyXmlWriter xw = new IvyXmlWriter(f)) {
+      xw.begin("LAYOUT");
+      xw.begin("POINTS");
+      for (VisionPoint vp : point_set) {
+         if (vp.getCorrespondingPoint() == null &&
+               vp.getSensor() == null &&
+               vp.connectedTo().isEmpty()) {
+            // ignore irrelevant points
+            continue;
+          }
+         vp.outputXml(xw);
+       }
+      xw.end("POINTS");
+      xw.end("LAYOUT");
+    }
+   catch (IOException e) {
+      IvyLog.logE("VISION","Save layout failed",e);
+    }
 }
 
 
@@ -354,6 +409,7 @@ static class VisionPoint extends Point2D.Double {
    private IfacePoint correspond_to;
    private IfaceSensor use_sensor;
    private int point_count;
+   private String point_id;
    
    private static final long serialVersionUID = 1;
    
@@ -364,6 +420,23 @@ static class VisionPoint extends Point2D.Double {
       correspond_to = null;
       use_sensor = null;
       point_count = 1;
+      point_id = "POINT_" + id_counter.incrementAndGet();
+    }
+   
+   VisionPoint(Element xml) {
+      super(IvyXml.getAttrDouble(xml,"X"),IvyXml.getAttrDouble(xml,"Y"));
+      point_count = IvyXml.getAttrInt(xml,"COUNT");
+      point_id = IvyXml.getAttrString(xml,"ID");
+      connect_to = new ArrayList<>();
+      String cpt = IvyXml.getAttrString(xml,"CORRESPOND");
+      correspond_to = null;
+      if (cpt != null) {
+         // find point for model with id cpt
+       }
+      String sid = IvyXml.getAttrString(xml,"SENSOR");
+      if (sid != null) {
+         // find sensor for model with id sid
+       }
     }
    
    List<VisionPoint> connectedTo() {
@@ -394,8 +467,35 @@ static class VisionPoint extends Point2D.Double {
       connect_to.add(vp);
     }
    
+   String getId() {
+      return point_id;
+    }
+   
    void reusePoint() {
       point_count++;
+    }
+   
+   void outputXml(IvyXmlWriter xw) {
+      xw.begin("POINT");
+      xw.field("ID",point_id);
+      xw.field("COUNT",point_count);
+      xw.field("X",getX());
+      xw.field("Y",getY());
+      if (correspond_to != null) {
+         xw.field("CORRESPOND",correspond_to.getId());
+       }
+      if (use_sensor != null) {
+         xw.field("SENSOR",use_sensor.getId());
+       }
+      StringBuffer buf = new StringBuffer();
+      for (VisionPoint vp : connect_to) {
+         if (!buf.isEmpty()) buf.append(" ");
+         buf.append(vp.point_id);
+       }
+      if (!buf.isEmpty()) {
+         xw.field("CONNECT",buf.toString());
+       }
+      xw.end("POINT");
     }
    
 }       // end of inner class VisionPoint

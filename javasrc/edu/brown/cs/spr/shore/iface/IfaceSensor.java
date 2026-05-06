@@ -85,6 +85,11 @@ IfaceBlock getBlock();
  **/
 ShoreSensorState getSensorState();
 
+/** 
+ *      Indicates if the sensor is virtual (vision-based) or physical
+ **/
+boolean isVirtual();
+
 
 /**
  *      Set the state of the sensor

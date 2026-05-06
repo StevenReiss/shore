@@ -64,6 +64,12 @@ double getY();
 
 
 /**
+ *      Return the points ID
+ **/
+String getId();
+
+
+/**
  *      Return the type of point.  This indicates what is associated with the point.
  **/
 ShorePointType getType();

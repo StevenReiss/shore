@@ -121,7 +121,7 @@ void connectTo(ModelPoint pt)
 
 @Override public ModelDiagram getDiagram()      { return in_diagram; } 
 
-String getId()                                  { return point_id; }
+@Override public String getId()                 { return point_id; } 
 
 @Override public double getX()                  { return point_x; } 
 

@@ -76,6 +76,7 @@ private byte tower_id;
 private byte tower_index;
 private ShoreSensorState force_state;
 private boolean is_ignored;
+private boolean is_virtual;
 private ShoreSensorRange sensor_range;
 private Set<IfaceSensor> adjacent_sensors;
 
@@ -98,8 +99,12 @@ ModelSensor(ModelBase mdl,Element xml)
    is_ignored = IvyXml.getAttrBool(xml,"IGNORED");
    sensor_range = IvyXml.getAttrEnum(xml,"RANGE",ShoreSensorRange.NORMAL);
    
+   is_virtual = IvyXml.getAttrBool(xml,"VIRTUAL");
    if (IvyXml.getAttrPresent(xml,"STATE")) {
       force_state = IvyXml.getAttrEnum(xml,"STATE",ShoreSensorState.UNKNOWN);
+    }
+   else if (is_virtual) {
+      force_state = ShoreSensorState.UNKNOWN;
     }
    else {
       force_state = null;
@@ -214,6 +219,9 @@ void addSignal(ModelSignal sig)
 @Override public byte getTowerSensor()          { return tower_index; }
 
 ShoreSensorState getForceState()                 { return force_state; }
+void setForceState(ShoreSensorState st)         { force_state = st; }
+
+@Override public boolean isVirtual()            { return is_virtual; } 
 
 @Override public byte getDefinitionCode()
 {

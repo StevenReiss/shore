@@ -271,7 +271,7 @@ ModelDiagram findDiagram(String id)
 }
 
 
-ModelPoint getPointById(String id)
+@Override public ModelPoint getPointById(String id)
 {
    if (id == null) return null;
    

@@ -43,6 +43,7 @@ import java.util.ListIterator;
 import org.opencv.core.Mat;
 
 import edu.brown.cs.ivy.file.IvyLog;
+import edu.brown.cs.spr.shore.iface.IfaceEngine;
 import edu.brown.cs.spr.shore.iface.IfaceModel;
 import edu.brown.cs.spr.shore.iface.IfacePoint;
 import edu.brown.cs.spr.shore.iface.IfaceSensor;
@@ -52,7 +53,7 @@ import edu.brown.cs.spr.shore.vision.VisionLayout.VisionPoint;
 
 
 public class VisionFactory implements VisionConstants, IfaceVision, 
-      IfaceModel.ModelCallback 
+      IfaceModel.ModelCallback, IfaceEngine.EngineCallback 
 {
 
 
@@ -204,7 +205,21 @@ void noteDeltaPoints(List<Point2D> pts)
        }
     }
    
-   // trigger corresponding virutal sensor based on last_points 
+   if (!isRecording()) {
+      for (Point2D p0 : pts) {
+         VisionPoint vp = (VisionPoint) p0;
+         IfaceSensor sen = vp.getSensor();
+         if (sen != null) {
+            IvyLog.logD("Vision sensor " + sen + " " +
+                  sen.getAtPoint() + " " + sen.isVirtual() +
+                  sen.getSensorState());
+                  // trigger vp.getSensor()
+                  // need to know on or off
+          }
+         // trigger virtual sensor at vp
+       }
+    }
+   
    // find train position thru approximation between sensors
 }
 
@@ -249,6 +264,20 @@ public boolean noteSensorAtLastPoint(IfaceSensor sen)
    
    if (isRecording() && !isPaused()) {
       vision_layout.noteSensorChanged(sen);  
+    }
+}
+
+
+@Override public void enginePositionChanged(IfaceEngine eng)
+{
+   IvyLog.logD("VISION","Note engine position changed " + eng);
+   
+   if (isRecording() && !isPaused()) {
+      // compute next virtual sensor and inform view module
+    }
+   else if (!isRecording()) {
+      // check for virtual sensor and trigger it?
+      // or should this be done by vision module
     }
 }
 
