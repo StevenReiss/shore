@@ -363,7 +363,7 @@ private boolean goesTo(IfacePoint prev,IfacePoint pt,IfacePoint tgt,Set<IfacePoi
    ShoreLog.logD("MODEL","Next points: " + next);
    for (IfacePoint pt : next) {
       IfaceBlock curblk = pt.getBlock();
-      for (IfaceConnection c : pt.getBlock().getConnections()) {
+      for (IfaceConnection c : curblk.getConnections()) {
          IfaceSensor xsen = c.getExitSensor(curblk);
          if (xsen == null) continue;
          if (next.contains(xsen.getAtPoint())) {
